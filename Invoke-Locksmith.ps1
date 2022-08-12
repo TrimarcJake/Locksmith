@@ -19,7 +19,7 @@ take a while to enumerate.
 .PARAMETER InputPath
 Specifies an input file containing a list of domains to be checked. Input file should consist of
 a domain per line of the input file. If this parameter is not defined at runtime,
-Invoke-Locksmith.ps1 will attempt to scan any AD CS installation it can find in the forest.
+Invoke-Locksmith.ps1 will attempt to scan every AD CS installation it can find in the forest.
 
 .PARAMETER Mode
 Specifies sets of common configurations.
@@ -27,7 +27,6 @@ Specifies sets of common configurations.
 Finds and displays any malconfiguration in the console.
 Outputs a custom PS object for further processing.
 No attempt is made to fix identified issues.
-Same as Mode not defined. 
 
 -Mode 1
 Finds any malconfigurations and writes them to a series of CSV files.
@@ -122,41 +121,46 @@ $Logo = "
 "
 $Logo
 
-# Get domains to analyze
-if ($Domain) {
-    $AllDomains = $Domain
-} elseif ($InputPath) {
-    $AllDomains = Get-Content $InputPath
-} else {
-    $AllDomains = (Get-ADForest).Domains
-}
-
-# Set OutputPath if not defined at runtime
-if ($OutputPath) {
-} else {
-    $OutputPath = (Get-Location).Path
-}
-
-# Create one output directory per domain
-foreach ( $domain in $AllDomains ) {
-    $DomainPath = $OutputPath + "`\" + $domain
-    New-Item -Path $DomainPath -ItemType Directory -Force
-}
-
-# Gather AD CS Objects from Public Key Services Container of each domain.
-foreach ( $domain in $AllDomains ) {
-    $DomainPath = $OutputPath + "`\" + $Domain
-    $ADRoot = ( Get-ADRootDSE -Server $domain ).rootDomainNamingContext
-    $OutputFile = $DomainPath + "`\" + $domain + ".xml"
-    $AllObjects = Get-ADObject -Filter * -SearchBase "CN=Public Key Services,CN=Services,CN=Configuration,$ADRoot" -SearchScope 2 -Properties * 
-    $AllObjects | ForEach-Object {
-        $_ | Add-Member -Force -MemberType NoteProperty -Name Owner -Value $_.ntSecurityDescriptor.Owner
-        $ACL = $_.ntSecurityDescriptor.Access | ForEach-Object {
-            [string]$ACE = "`"$($_.IdentityReference)`",`"$($_.ActiveDirectoryRights)`""
-            $ACE
-        }
-        $_ | Add-Member -Force -MemberType NoteProperty -Name ACL -Value $ACL
+function Set-Targets {
+    # Get domains to analyze
+    if ($Domain) {
+        $AllDomains = $Domain
+    } elseif ($InputPath) {
+        $AllDomains = Get-Content $InputPath
+    } else {
+        $AllDomains = (Get-ADForest).Domains
     }
-    $AllObjects | Export-Clixml $OutputFile
+
+    # Set OutputPath if not defined at runtime
+    if ($OutputPath) {
+    } else {
+        $OutputPath = (Get-Location).Path
+    }
+
+    # Create one output directory per domain
+    foreach ( $domain in $AllDomains ) {
+        $DomainPath = $OutputPath + "`\" + $domain
+        New-Item -Path $DomainPath -ItemType Directory -Force
+    }
 }
+
+function Get-ADCSObjects {
+    # Gather AD CS Objects from Public Key Services Container of each domain.
+    foreach ( $domain in $AllDomains ) {
+        $DomainPath = $OutputPath + "`\" + $Domain
+        $ADRoot = ( Get-ADRootDSE -Server $domain ).rootDomainNamingContext
+        $OutputFile = $DomainPath + "`\" + $domain + ".xml"
+        $AllObjects = Get-ADObject -Filter * -SearchBase "CN=Public Key Services,CN=Services,CN=Configuration,$ADRoot" -SearchScope 2 -Properties * 
+        $AllObjects | ForEach-Object {
+            $_ | Add-Member -Force -MemberType NoteProperty -Name Owner -Value $_.ntSecurityDescriptor.Owner
+            $ACL = $_.ntSecurityDescriptor.Access | ForEach-Object {
+                [string]$ACE = "`"$($_.IdentityReference)`",`"$($_.ActiveDirectoryRights)`""
+                $ACE
+            }
+            $_ | Add-Member -Force -MemberType NoteProperty -Name ACL -Value $ACL
+        }
+        $AllObjects | Export-Clixml $OutputFile
+    }
+}
+
 
