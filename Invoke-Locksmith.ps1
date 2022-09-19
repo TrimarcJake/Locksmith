@@ -104,7 +104,7 @@ interaction to confirm everything looks correct.
 
 [CmdletBinding()]
 param (
-    [string]$Domain,
+    [string]$Forest,
     [string]$InputPath,
     [int]$Mode,
     [string]$OutputPath
@@ -123,14 +123,17 @@ $Logo
 
 function Set-Targets {
     # Get domains to analyze
-    if ($Domain) {
-        $AllDomains = $Domain
+    if ($Forest) {
+        $AllDomains = $Forest
     } elseif ($InputPath) {
         $AllDomains = Get-Content $InputPath
     } else {
         $AllDomains = (Get-ADForest).Domains
     }
+    return $AllDomains
+}
 
+function Set-OutputPaths {
     # Set OutputPath if not defined at runtime
     if ($OutputPath) {
     } else {
@@ -138,29 +141,84 @@ function Set-Targets {
     }
 
     # Create one output directory per domain
-    foreach ( $domain in $AllDomains ) {
-        $DomainPath = $OutputPath + "`\" + $domain
-        New-Item -Path $DomainPath -ItemType Directory -Force
+    foreach ( $forest in $AllDomains ) {
+        $ForestPath = $OutputPath + "`\" + $forest
+        New-Item -Path $ForestPath -ItemType Directory -Force  | Out-Null
     }
+    return $OutputPath
 }
 
 function Get-ADCSObjects {
     # Gather AD CS Objects from Public Key Services Container of each domain.
-    foreach ( $domain in $AllDomains ) {
-        $DomainPath = $OutputPath + "`\" + $Domain
-        $ADRoot = ( Get-ADRootDSE -Server $domain ).rootDomainNamingContext
-        $OutputFile = $DomainPath + "`\" + $domain + ".xml"
-        $AllObjects = Get-ADObject -Filter * -SearchBase "CN=Public Key Services,CN=Services,CN=Configuration,$ADRoot" -SearchScope 2 -Properties * 
-        $AllObjects | ForEach-Object {
-            $_ | Add-Member -Force -MemberType NoteProperty -Name Owner -Value $_.ntSecurityDescriptor.Owner
-            $ACL = $_.ntSecurityDescriptor.Access | ForEach-Object {
-                [string]$ACE = "`"$($_.IdentityReference)`",`"$($_.ActiveDirectoryRights)`""
-                $ACE
-            }
-            $_ | Add-Member -Force -MemberType NoteProperty -Name ACL -Value $ACL
-        }
-        $AllObjects | Export-Clixml $OutputFile
+    $AllObjects = foreach ( $forest in $AllDomains ) {
+        $ADRoot = (Get-ADRootDSE -Server $forest).defaultNamingContext
+        Get-ADObject -Filter * -SearchBase "CN=Public Key Services,CN=Services,CN=Configuration,$ADRoot" -SearchScope 2 -Properties * 
+    }
+    return $AllObjects
+}
+
+function Get-CANames {
+    [array]$ConfigStrings = certutil | Select-String "Config:"
+    [array]$CANames = for ($i = 0; $i -lt $CertutilOutput.length; $i += 1) {
+        [string]$CAConfigString = $CertutilOutput[$i]
+        [string]$CAFullNameTemp = $CAConfigString.split("`"")[1]
+        Add-Content -Path $Output\CANames.txt -Value $CAFullNameTemp
+        [string]$CAShortNameTemp = $CAFullNameTemp.split("\")[1]
+        [string]$CAHostName = $CAFullNameTemp.split("\")[0]
+        Add-Content -Path $Output\CAHostNames.txt -Value $CAHostName
+        certutil -v -CAtemplates -config $CAFullNameTemp | Set-Content $Output\$CAShortNameTemp-CAtemplates.txt
+        
     }
 }
 
+function Get-ADCSAuditing {
+    certutil –getreg CA\AuditFilter
+}
 
+function Find-ESC1 {
+
+}
+
+function Find-ESC2 {
+
+}
+
+function Find-ESC4 {
+
+}
+
+function Find-ESC5 {
+
+}
+
+function Find-ESC6 {
+    certutil -v -config $CAFullNameTemp -getreg "policy\EditFlags" | Set-Content $Output\$CAShortNameTemp-RegConfig.txt
+}
+
+function Repair-ADCSAuditing {
+
+}
+
+function Repair-ESC1 {
+
+}
+
+function Repair-ESC2 {
+
+}
+
+function Repair-ESC4 {
+
+}
+
+function Repair-ESC5 {
+
+}
+
+function Repair-ESC6 {
+
+}
+
+function Write-Findings {
+
+}
