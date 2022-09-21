@@ -149,41 +149,36 @@ function Set-OutputPaths {
 }
 
 function Get-ADCSObjects {
-    # Gather AD CS Objects from Public Key Services Container of each domain.
-    $AllObjects = foreach ( $forest in $AllDomains ) {
+    foreach ( $forest in $AllDomains ) {
         $ADRoot = (Get-ADRootDSE -Server $forest).defaultNamingContext
         Get-ADObject -Filter * -SearchBase "CN=Public Key Services,CN=Services,CN=Configuration,$ADRoot" -SearchScope 2 -Properties * 
     }
-    return $AllObjects
 }
 
 # TODO: Combine Get-*Names functions into a single function
-function Get-CAFullNameArray {
-    [array]$ConfigArray = certutil | Select-String "Config:"
-    [array]$CAFullNames = for ($i = 0; $i -lt $ConfigArray.length; $i += 1) {
-        ($ConfigArray[$i] | Out-String).split("`"")[1]
+function Get-CAFullNames {
+    foreach ($item in (certutil | Select-String "^\s*Config:")) {
+        ($item -Split "`"")[1]
     }
-    [array]$CAFullNameArray = $CAFullNames -split "`r`n"
-    return $CAFullNameArray
 }
 
-# This function currently overselects for "Name:"
-function Get-CANameArray {
-    [array]$NameArray = certutil | Select-String "Name:"
-    [array]$CANames = for ($i = 0; $i -lt $NameArray.length; $i += 1) {
-        ($ConfigArray[$i] | Out-String).split("`"")[1]
+function Get-CANames {
+    foreach ($item in (certutil | Select-String "^\s*Name:")) {
+        ($item -Split "`"")[1]
     }
-    [array]$CANameArray = $CANames -split "`r`n"
-    return $CANameArray
 }
 
-function Get-CANHostnameArray {
-    [array]$ConfigArray = certutil | Select-String "Server:"
-    [array]$CAHostnames = for ($i = 0; $i -lt $NameArray.length; $i += 1) {
-        ($ConfigArray[$i] | Out-String).split("`"")[1]
+function Get-CANHostnames {
+    foreach ($item in (certutil | Select-String "^\s*Server:")) {
+        ($item -Split "`"")[1]
     }
-    [array]$CAHostnameArray = $CAHostnames -split "`r`n"
-    return $CAHostnameArray
+}
+
+# Use this one for testing arrays with length >1
+function Get-CANamesLong {
+    foreach ($item in (certutil | Select-String "Name:")) {
+        ($item -Split "`"")[1]
+    }
 }
 
 function Get-ADCSAuditing { # relies on Get-CAFullNameArray
