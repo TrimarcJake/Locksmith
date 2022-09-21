@@ -186,7 +186,7 @@ function Get-CANHostnameArray {
     return $CAHostnameArray
 }
 
-function Get-ADCSAuditing {
+function Get-ADCSAuditing { # relies on Get-CAFullNameArray
     foreach ($CA in $CAFullNameArray) {
         certutil -config $CA -getreg CA\AuditFilter 
     }
