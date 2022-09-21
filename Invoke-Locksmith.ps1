@@ -157,22 +157,39 @@ function Get-ADCSObjects {
     return $AllObjects
 }
 
-function Get-CANames {
-    [array]$ConfigStrings = certutil | Select-String "Config:"
-    [array]$CANames = for ($i = 0; $i -lt $CertutilOutput.length; $i += 1) {
-        [string]$CAConfigString = $CertutilOutput[$i]
-        [string]$CAFullNameTemp = $CAConfigString.split("`"")[1]
-        Add-Content -Path $Output\CANames.txt -Value $CAFullNameTemp
-        [string]$CAShortNameTemp = $CAFullNameTemp.split("\")[1]
-        [string]$CAHostName = $CAFullNameTemp.split("\")[0]
-        Add-Content -Path $Output\CAHostNames.txt -Value $CAHostName
-        certutil -v -CAtemplates -config $CAFullNameTemp | Set-Content $Output\$CAShortNameTemp-CAtemplates.txt
-        
+# TODO: Combine Get-*Names functions into a single function
+function Get-CAFullNameArray {
+    [array]$ConfigArray = certutil | Select-String "Config:"
+    [array]$CAFullNames = for ($i = 0; $i -lt $ConfigArray.length; $i += 1) {
+        ($ConfigArray[$i] | Out-String).split("`"")[1]
     }
+    [array]$CAFullNameArray = $CAFullNames -split "`r`n"
+    return $CAFullNameArray
+}
+
+# This function currently overselects for "Name:"
+function Get-CANameArray {
+    [array]$NameArray = certutil | Select-String "Name:"
+    [array]$CANames = for ($i = 0; $i -lt $NameArray.length; $i += 1) {
+        ($ConfigArray[$i] | Out-String).split("`"")[1]
+    }
+    [array]$CANameArray = $CANames -split "`r`n"
+    return $CANameArray
+}
+
+function Get-CANHostnameArray {
+    [array]$ConfigArray = certutil | Select-String "Server:"
+    [array]$CAHostnames = for ($i = 0; $i -lt $NameArray.length; $i += 1) {
+        ($ConfigArray[$i] | Out-String).split("`"")[1]
+    }
+    [array]$CAHostnameArray = $CAHostnames -split "`r`n"
+    return $CAHostnameArray
 }
 
 function Get-ADCSAuditing {
-    certutil –getreg CA\AuditFilter
+    foreach ($CA in $CAFullNameArray) {
+        certutil -config $CA -getreg CA\AuditFilter 
+    }
 }
 
 function Find-ESC1 {
