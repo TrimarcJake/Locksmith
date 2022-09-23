@@ -12,13 +12,13 @@ If Locksmith does not identify the AD PS module as installed, it will attempt to
 install the module. If module installation does not complete successfully, 
 Locksmith will fail.
 
-.PARAMETER Domain
-Specifies a single domain to be scanned by Invoke-Locksmith.ps1. Useful in large environments that may
+.PARAMETER Forest
+Specifies a single forest to be scanned by Invoke-Locksmith.ps1. Useful in large environments that may
 take a while to enumerate.
 
 .PARAMETER InputPath
-Specifies an input file containing a list of domains to be checked. Input file should consist of
-a domain per line of the input file. If this parameter is not defined at runtime,
+Specifies an input file containing a list of forests to be checked. Input file should consist of
+a forest per line of the input file. If this parameter is not defined at runtime,
 Invoke-Locksmith.ps1 will attempt to scan every AD CS installation it can find in the forest.
 
 .PARAMETER Mode
@@ -68,12 +68,12 @@ Running Invoke-Locksmith.ps1 with no parameters configured will scan any AD CS i
 and output all discovered AD CS issues to the console.
 
 .EXAMPLE
-PS> .\Invoke-Locksmith.ps1 -InputPath .\TrustedDomains.txt
+PS> .\Invoke-Locksmith.ps1 -InputPath .\TrustedForests.txt
 
 Description
 -------------------------
-Specifying an input file of domains will force Invoke-Locksmith.ps1 to attempt to scan the specific domains
-listed in TrustedDomains.txt regardless of permissions or visibility into the forest. Because no Mode is
+Specifying an input file of forests will force Invoke-Locksmith.ps1 to attempt to scan the specific forests
+listed in TrustedForests.txt regardless of permissions or visibility into the forest. Because no Mode is
 defined, identified issues will not be written to files.
 
 .EXAMPLE
@@ -85,12 +85,12 @@ In Mode 1, Locksmith will scan all AD CS installations it can find and write its
 of CSVs in C:\Users\thanks\Documents.
 
 .EXAMPLE
-PS> .\Invoke-Locksmith.ps1 -Mode 2 -Domain it.example.com
+PS> .\Invoke-Locksmith.ps1 -Mode 2 -Forest it.example.com
 
 Description
 -------------------------
 In this example, Locksmith will only scan the AD CS installation of it.example.com, regardless of how many
-domains it can actually access. All malconfigurations and snippets to fix them will output to the local path.
+forests it can actually access. All malconfigurations and snippets to fix them will output to the local path.
 
 .EXAMPLE
 PS> .\Invoke-Locksmith.ps1 -Mode 3 -OutputPath E:\ADisCheeseSwiss
@@ -107,7 +107,7 @@ param (
     [string]$Forest,
     [string]$InputPath,
     [int]$Mode,
-    [string]$OutputPath
+    [string]$OutputPath = (Get-Location).Path
 )
 
 $Logo = "
@@ -121,41 +121,46 @@ $Logo = "
 "
 $Logo
 
-function Set-Targets {
-    # Get domains to analyze
+# TODO Convert to SID 
+$SafeOwners = "Domain Admins|Enterprise Admins|BUILTIN\\Administrators|NT AUTHORITY\\SYSTEM|\\Cert Publishers|\\Administrator"
+$SafeUsers = "Domain Admins|Enterprise Admins|BUILTIN\\Administrators|NT AUTHORITY\\SYSTEM|\\Cert Publishers|\\Administrator"
+$ClientAuthEKUs = "1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0"
+$DangerousRights = "GenericAll|WriteDacl|WriteOwner"
+
+function Get-Targets {
+    param (
+        [string]$Forest,
+        [string]$InputPath
+    )
+
+    # Get forests to analyze
     if ($Forest) {
-        $AllDomains = $Forest
+        $Targets = $Forest
     } elseif ($InputPath) {
-        $AllDomains = Get-Content $InputPath
+        $Targets = Get-Content $InputPath
     } else {
-        $AllDomains = (Get-ADForest).Domains
+        $Targets = (Get-ADForest).Forests
     }
-    return $AllDomains
+    return $Targets
 }
 
-function Set-OutputPaths {
-    # Set OutputPath if not defined at runtime
-    if ($OutputPath) {
-    } else {
-        $OutputPath = (Get-Location).Path
-    }
-
-    # Create one output directory per domain
-    foreach ( $forest in $AllDomains ) {
+function New-OutputPath {
+    # Create one output directory per forest
+    foreach ( $forest in $Targets ) {
         $ForestPath = $OutputPath + "`\" + $forest
         New-Item -Path $ForestPath -ItemType Directory -Force  | Out-Null
     }
-    return $OutputPath
 }
 
 function Get-ADCSObjects {
-    foreach ( $forest in $AllDomains ) {
+    foreach ( $forest in $Targets ) {
         $ADRoot = (Get-ADRootDSE -Server $forest).defaultNamingContext
         Get-ADObject -Filter * -SearchBase "CN=Public Key Services,CN=Services,CN=Configuration,$ADRoot" -SearchScope 2 -Properties * 
     }
 }
 
 # TODO: Combine Get-*Names functions into a single function
+# TODO: Ultimate goal is to collect info about each CA as a custom object
 function Get-CAFullNames {
     foreach ($item in (certutil | Select-String "^\s*Config:")) {
         ($item -Split "`"")[1]
@@ -181,14 +186,39 @@ function Get-CANamesLong {
     }
 }
 
-function Get-ADCSAuditing { # relies on Get-CAFullNameArray
-    foreach ($CA in $CAFullNameArray) {
-        certutil -config $CA -getreg CA\AuditFilter 
+function Get-ADCSAuditing { 
+    param (
+        # Created by Get-CAFullNames
+        [Parameter(Mandatory)]
+        [array]$CAFullNames
+    )
+    foreach ($CA in $CAFullNames) {
+        # TODO Add try/catch here
+        certutil -config $CA -getreg CA\AuditFilter
     }
 }
 
 function Find-ESC1 {
-
+    param(
+        [Parameter(Mandatory = $true)]
+        [array]$ADCSObjects,
+        [string]$SafeUsers,
+        [string]
+    )
+    $ADCSObjects | Where-Object {
+        ($_.ObjectClass -eq "pKICertificateTemplate") -and
+        ($_.pkiExtendedKeyUsage -match $ClientAuthEKUs) -and
+        ($_."msPKI-Certificate-Name-Flag" -eq 1) -and
+        ($_."msPKI-Enrollment-Flag" -ne 2) -and
+        ( ($_."msPKI-RA-Signature" -eq 0) -or ($null -eq $_."msPKI-RA-Signature") ) 
+    } | ForEach-Object {
+        for ($i = 0; $i -le $_.ACL.count; $i += 1) {
+            if (($_.ACL[$i] -notmatch $SafeUsers) -and #replace .ACL property with ntSecurityDesriptor stuff
+            ($_.ACL[$i] -match "ExtendedRight")) {
+                
+            }
+        }
+    }
 }
 
 function Find-ESC2 {
