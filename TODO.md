@@ -1,13 +1,12 @@
-## TODO
-# Short Term
+## Short Term
 Modes 0/1: Headers for Console Output
 Mode 4: Display snippet and get confirmation before running.
 
-# Medium Term
+## Medium Term
 ACL and Owner remediation snippets
 Improved Error Handling
 
-# Long Term
+## Long Term
 Multi-Forest support
 
 ## Comment-based Help pulled from original version
