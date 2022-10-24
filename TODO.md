@@ -1,10 +1,16 @@
-.TODO
-Headers for Console Output
-Mode 4:
-Confirmation 
+## TODO
+# Short Term
+Modes 0/1: Headers for Console Output
+Mode 4: Display snippet and get confirmation before running.
 
+# Medium Term
+ACL and Owner remediation snippets
 Improved Error Handling
 
+# Long Term
+Multi-Forest support
+
+````
 .PARAMETER Forest
 NOT YET IMPLEMENTED
 Specifies a single forest to be scanned by Invoke-Locksmith.ps1. Useful in large environments that may
@@ -62,3 +68,4 @@ Description
 Mode 3 is the "easy button." Running Locksmith in Mode 3 will identify all malconfigs and output them to CSV
 files located in E:\ADisCheeseSwiss. Then it will display the snippets it plans to run and waits for human
 interaction to confirm everything looks correct.
+````
