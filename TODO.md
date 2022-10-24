@@ -10,7 +10,8 @@ Improved Error Handling
 # Long Term
 Multi-Forest support
 
-````
+## Comment-based Help pulled from original version
+```` powershell
 .PARAMETER Forest
 NOT YET IMPLEMENTED
 Specifies a single forest to be scanned by Invoke-Locksmith.ps1. Useful in large environments that may
