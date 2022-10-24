@@ -1,29 +1,32 @@
 ## Short Term
-Modes 0/1: Headers for Console Output
-Mode 4: Display snippet and get confirmation before running.
+- Modes 0 & 1: Headers for Console Output
+- Mode 4: Display snippet and get confirmation before running.
+- Update README.md with Examples
 
 ## Medium Term
-ACL and Owner remediation snippets
-Improved Error Handling
+- Rename Modes to something that makes sense
+- Text-Based User Interface
+- Check for Auditing GPOS, Warn if none found
+- ACL and Owner remediation snippets
+- Improved Error Handling
 
 ## Long Term
+Check for Elevation before Fixing
 Multi-Forest support
 
 ## Comment-based Help pulled from original version
 ```` powershell
+<#
 .PARAMETER Forest
-NOT YET IMPLEMENTED
 Specifies a single forest to be scanned by Invoke-Locksmith.ps1. Useful in large environments that may
 take a while to enumerate.
 
 .PARAMETER InputPath
-NOT YET IMPLEMENTED
 Specifies an input file containing a list of forests to be checked. Input file should consist of
 a forest per line of the input file. If this parameter is not defined at runtime,
 Invoke-Locksmith.ps1 will attempt to scan every AD CS installation it can find in the forest.
 
 .PARAMETER OutputPath
-NOT YET IMPLEMENTED
 Specifies the name and path for the CSV-based output file. If this parameter is not defined at runtime,
 Invoke-Locksmith.ps1 will output its results to the console.
 
@@ -68,4 +71,5 @@ Description
 Mode 3 is the "easy button." Running Locksmith in Mode 3 will identify all malconfigs and output them to CSV
 files located in E:\ADisCheeseSwiss. Then it will display the snippets it plans to run and waits for human
 interaction to confirm everything looks correct.
+#>
 ````
