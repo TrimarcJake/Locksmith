@@ -18,27 +18,23 @@ Specifies sets of common configurations.
 Finds and displays any malconfiguration in the console.
 No attempt is made to fix identified issues.
 
--Mode 0
+-Mode 1
 Finds and displays any malconfiguration in the console.
 Displays example Powershell snippet that can be used to resolve the issue.
 No attempt is made to fix identified issues.
 
--Mode 1
-Finds any malconfigurations and writes them to a series of CSV files.
-No attempt is made to fix identified issues.
-If OutputPath is not defined, Invoke-Locksmith.ps1 will create its output in the local directory. 
-
 -Mode 2
 Finds any malconfigurations and writes them to a series of CSV files.
-Creates code snippets to fix each issue and writes them to an environment-specific custom .ps1 file.
 No attempt is made to fix identified issues.
-If OutputPath is not defined, Invoke-Locksmith.ps1 will create its output in the local directory. 
 
 -Mode 3
 Finds any malconfigurations and writes them to a series of CSV files.
 Creates code snippets to fix each issue and writes them to an environment-specific custom .ps1 file.
+No attempt is made to fix identified issues.
+
+-Mode 4
+Creates code snippets to fix each issue.
 Attempts to fix all identified issues. This mode may require high-privileged access.
-If OutputPath is not defined, Invoke-Locksmith.ps1 will create its output in the local directory. 
 
 .INPUTS
 None. You cannot pipe objects to Invoke-Locksmith.ps1.
@@ -49,8 +45,6 @@ Output types:
 2. Console display of identified issues and their fixes
 3. CSV containing all identified issues
 4. CSV containing all identified issues and their fixes
-
-
 #>
 
 [CmdletBinding()]
@@ -72,10 +66,6 @@ $Logo = "
 "
 $Logo
 
-<# TODO
-Convert $SafeOwners and $SafeUsers to SIDs
-Add Domain Controllers (and similar) and individual CA Hosts
-#>
 $SafeOwners = 'Domain Admins|Enterprise Admins|BUILTIN\\Administrators|NT AUTHORITY\\SYSTEM|\\Cert Publishers|\\Administrator'
 $SafeUsers = 'Domain Admins|Enterprise Admins|BUILTIN\\Administrators|NT AUTHORITY\\SYSTEM|\\Cert Publishers|\\Administrator'
 $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'

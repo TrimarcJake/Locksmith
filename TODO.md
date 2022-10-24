@@ -1,9 +1,12 @@
 ## Short Term
 - Modes 0 & 1: Headers for Console Output
 - Mode 4: Display snippet and get confirmation before running.
+- Add Domain Controllers group, ENTERPRISE DOMAIN CONTROLLERS group, and individual CA Hosts to $SafeUsers
+- Add Forest name to "Cert Publishers" and "Administrator" definitions in $SafeOwners and $SafeUsers
 - Update README.md with Examples
 
 ## Medium Term
+- Convert $SafeOwners and $SafeUsers to SIDs
 - Rename Modes to something that makes sense
 - Text-Based User Interface
 - Check for Auditing GPOS, Warn if none found
