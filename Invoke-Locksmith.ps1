@@ -141,7 +141,11 @@ function Set-AdditionalCAProperty {
                 $AuditFilter = 'CA Unavailable'
                 $SANFlag = 'CA Unavailable'
             }
-            if ($CertutilAudit) {
+            if ($CertutilAudit -match "FAILED") { 
+                $AuditFilter = "Not Configured" 
+            } elseif ($CertutilAudit -match "Auditfilter REG_DWORD = 0") {
+                $AuditFilter = "CA auditing enabled but no events logged" 
+            } else {
                 [string]$AuditFilter = $CertutilAudit | Select-String 'Auditfilter REG_DWORD ='
                 $AuditFilter = $AuditFilter.split('(')[1].split(')')[0]
             }
