@@ -1,11 +1,16 @@
 ## Short Term
 - Modes 0 & 1: Headers for Console Output
 - Mode 4: Display snippet and get confirmation before running.
+  - Include details about how changes could affect environment. 
 - Add Domain Controllers group, ENTERPRISE DOMAIN CONTROLLERS group, and individual CA Hosts to $SafeUsers
 - Add Forest name to "Cert Publishers" and "Administrator" definitions in $SafeOwners and $SafeUsers
 - Update README.md with Examples
+- Script to reset any fixed items
+- Testing of all modes
 
 ## Medium Term
+- ESC7 and ESC8 coverage
+- Backup before running Mode 4
 - Convert $SafeOwners and $SafeUsers to SIDs
 - Rename Modes to something that makes sense
 - Text-Based User Interface

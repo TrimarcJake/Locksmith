@@ -249,7 +249,7 @@ function Find-ESC2 {
     )
     $ADCSObjects | Where-Object {
         ($_.ObjectClass -eq 'pKICertificateTemplate') -and
-        (!$_.pkiExtendedKeyUsage) -and # Jared - what's the better way to do this? ( $null -eq $_.pkiExtendedKeyUsage ) did not return results
+        (!$_.pkiExtendedKeyUsage) -and 
         ($_.'msPKI-Certificate-Name-Flag' -eq 1) -and
         ($_.'msPKI-Enrollment-Flag' -ne 2) -and
         ( ($_.'msPKI-RA-Signature' -eq 0) -or ($null -eq $_.'msPKI-RA-Signature') ) 
