@@ -5,7 +5,7 @@
 - [x] Add Domain Controllers group, ENTERPRISE DOMAIN CONTROLLERS group, and individual CA Hosts to $SafeUsers
 - [x] Add Forest name to "Cert Publishers" and "Administrator" definitions in $SafeOwners and $SafeUsers
 - [x] Enumerate users in Domain Admins, Enterprise Admins, Administrators and add them to $SafeUsers
-- Update README.md with Examples
+- [x] Update README.md with Examples
 - Script to reset any fixed items
 - Testing of all modes
 
