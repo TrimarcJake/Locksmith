@@ -482,58 +482,73 @@ switch ($Mode) {
     }
     4 {
         Write-Host "Mode 4 - Attempting to fix all identified issues"
-        $WarningError = $true
-        Write-Warning "If you continue this script will attempt to fix all identified issues." -WarningAction Inquire -ErrorVariable WarningError
-        if (!$WarningError) { 
-
-            if ($AuditingIssues) {
-                $AuditingIssues | ForEach-Object {
-                    Write-Host "`nAttempting to fully enable AD CS auditing on $($_.Name)..."
-                    Write-Host "This should have little impact on your environment."
-                    Write-Host "Command(s) to be run:`n"
-                    Write-Host "PS> " -NoNewline
-                    Write-Host "$($_.Fix)" -ForegroundColor Cyan
-                    try {
+        if ($AuditingIssues) {
+            $AuditingIssues | ForEach-Object {
+                Write-Host "`nAttempting to fully enable AD CS auditing on $($_.Name)..."
+                Write-Host "This should have little impact on your environment."
+                Write-Host "Command(s) to be run:`n"
+                Write-Host "PS> " -NoNewline
+                Write-Host "$($_.Fix)" -ForegroundColor Cyan
+                try {
+                    $WarningError = $true
+                    " "
+                    Write-Warning "If you continue this script will attempt to fix this issues." -WarningAction Inquire -ErrorVariable WarningError
+                    if (!$WarningError) {
                         Invoke-Command $_.Fix
-                    } catch {
-                        Write-Error 'Could not modify AD CS auditing. Are you a local admin on this host?'
                     }
+                } catch {
+                    Write-Error 'Could not modify AD CS auditing. Are you a local admin on this host?'
                 }
-                $ESC1 | ForEach-Object {
-                    Write-Host "`nAttempting to enable Manager Approval on the $($_.Name) template..."
-                    Write-Host "This could cause some services to stop working until certificates are approved."
-                    Write-Host "Command(s) to be run:`n"
-                    Write-Host "PS> " -NoNewline
-                    Write-Host "$($_.Fix)" -ForegroundColor Cyan
-                    try {
+            }
+            $ESC1 | ForEach-Object {
+                Write-Host "`nAttempting to enable Manager Approval on the $($_.Name) template..."
+                Write-Host "This could cause some services to stop working until certificates are approved."
+                Write-Host "Command(s) to be run:`n"
+                Write-Host "PS> " -NoNewline
+                Write-Host "$($_.Fix)" -ForegroundColor Cyan
+                try {
+                    $WarningError = $true
+                    " "
+                    Write-Warning "If you continue this script will attempt to fix this issues." -WarningAction Inquire -ErrorVariable WarningError
+                    if (!$WarningError) {
                         Invoke-Command $_.Fix
-                    } catch {
-                        Write-Error 'Could not enable Manager Approval. Are you an Active Directory or AD CS admin?'
                     }
+                } catch {
+                    Write-Error 'Could not enable Manager Approval. Are you an Active Directory or AD CS admin?'
                 }
-                $ESC2 | ForEach-Object {
-                    Write-Host "`nAttempting to enable Manager Approval on the $($_.Name) template..."
-                    Write-Host "This could cause some services to stop working until certificates are approved."
-                    Write-Host "Command(s) to be run:`n"
-                    Write-Host "PS> " -NoNewline
-                    Write-Host "$($_.Fix)" -ForegroundColor Cyan
-                    try {
+            }
+            $ESC2 | ForEach-Object {
+                Write-Host "`nAttempting to enable Manager Approval on the $($_.Name) template..."
+                Write-Host "This could cause some services to stop working until certificates are approved."
+                Write-Host "Command(s) to be run:`n"
+                Write-Host "PS> " -NoNewline
+                Write-Host "$($_.Fix)" -ForegroundColor Cyan
+                try {
+                    $WarningError = $true
+                    " "
+                    Write-Warning "If you continue this script will attempt to fix this issues." -WarningAction Inquire -ErrorVariable WarningError
+                    if (!$WarningError) {
                         Invoke-Command $_.Fix
-                    } catch {
-                        Write-Error 'Could not enable Manager Approval. Are you an Active Directory or AD CS admin?'
                     }
+                } catch {
+                    Write-Error 'Could not enable Manager Approval. Are you an Active Directory or AD CS admin?'
                 }
-                $ESC6 | ForEach-Object {
-                    Write-Host "`nAttempting to disable the EDITF_ATTRIBUTESUBJECTALTNAME2 flag on $($_.Name)..."
-                    Write-Host "This should have little impact on your environment."
-                    Write-Host "Command(s) to be run:`n"
-                    Write-Host "PS> " -NoNewline
-                    Write-Host "$($_.Fix)" -ForegroundColor Cyan
-                    try {
+            }
+            $ESC6 | ForEach-Object {
+                Write-Host "`nAttempting to disable the EDITF_ATTRIBUTESUBJECTALTNAME2 flag on $($_.Name)..."
+                Write-Host "This should have little impact on your environment."
+                Write-Host "Command(s) to be run:`n"
+                Write-Host "PS> " -NoNewline
+                Write-Host "$($_.Fix)" -ForegroundColor Cyan
+                try {
+                    $WarningError = $true
+                    " "
+                    Write-Warning "If you continue this script will attempt to fix this issues." -WarningAction Inquire -ErrorVariable WarningError
+                    if (!$WarningError) {
                         Invoke-Command $_.Fix
-                    } catch {
-                        Write-Error 'Could not modify the flag. Are you a local admin on this host?'
                     }
+                } catch {
+                    Write-Error 'Could not modify the flag. Are you a local admin on this host?'
                 }
             }
         }
