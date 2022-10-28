@@ -1,9 +1,10 @@
 ## Short Term
-- Modes 0 & 1: Headers for Console Output
-- Mode 4: Display snippet and get confirmation before running.
-  - Include details about how changes could affect environment. 
-- Add Domain Controllers group, ENTERPRISE DOMAIN CONTROLLERS group, and individual CA Hosts to $SafeUsers
-- Add Forest name to "Cert Publishers" and "Administrator" definitions in $SafeOwners and $SafeUsers
+- [x] Modes 0 & 1: Headers for Console Output
+- [x] Mode 4: Display snippet and get confirmation before running.
+  - [x] Include details about how changes could affect environment. 
+- [x] Add Domain Controllers group, ENTERPRISE DOMAIN CONTROLLERS group, and individual CA Hosts to $SafeUsers
+- [x] Add Forest name to "Cert Publishers" and "Administrator" definitions in $SafeOwners and $SafeUsers
+- [x] Enumerate users in Domain Admins, Enterprise Admins, Administrators and add them to $SafeUsers
 - Update README.md with Examples
 - Script to reset any fixed items
 - Testing of all modes
