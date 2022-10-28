@@ -31,4 +31,4 @@ In Mode 3, Locksmith scans the current forest and outputs all discovered AD CS i
 ``` powerShell
 PS> .\Invoke-Locksmith.ps1 -Mode 4 
 ```
-Mode 4 is the "easy button." Running Locksmith in Mode 4 will identify all misconfigurations, display the snippets it plans to run, and wait for human interaction to confirm everything looks correct. After confirmation, Locksmith attempts to run each snippet and returns the results to the console.
+Mode 4 is the "easy button." Running Locksmith in Mode 4 will identify all misconfigurations and attempt to fix each issue. **NO CONFIRMATION IS CURRENTLY REQUIRED. USE IN PROD AT YOUR OWN RISK.**
