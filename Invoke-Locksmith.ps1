@@ -142,7 +142,7 @@ function Set-AdditionalCAProperty {
                 $SANFlag = 'CA Unavailable'
             }
             if ($CertutilAudit) {
-                [string]$AuditFilter = $CertutilAudit | Select-String 'Auditfilter REG_DWORD ='
+                [string]$AuditFilter = $CertutilAudit | Select-String 'AuditFilter REG_DWORD = '
                 $AuditFilter = $AuditFilter.split('(')[1].split(')')[0]
             }
             if ($CertutilFlag) {
@@ -195,10 +195,13 @@ function Find-AuditingIssue {
         if ($_.AuditFilter -match 'CA Unavailable') {
             $Issue | Add-Member -MemberType NoteProperty -Name Issue -Value $_.AuditFilter -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "N/A" -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value "N/A" -Force
         } else {
             $Issue | Add-Member -MemberType NoteProperty -Name Issue -Value "Auditing is not fully enabled. Current value is $($_.AuditFilter)" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Fix `
                 -Value "certutil -config $($_.CAFullname) -setreg CA\AuditFilter 127; Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Revert `
+                -Value "certutil -config $($_.CAFullname) -setreg CA\AuditFilter  $($_.AuditFilter); Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
         }
         $Issue
     }
@@ -232,6 +235,8 @@ function Find-ESC1 {
                     -Value "$($entry.IdentityReference) can enroll in this Client Authentication template using a SAN without Manager Approval"  -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Fix `
                     -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}" -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Revert `
+                    -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"  -Force
                 $Issue
             }
         }
@@ -266,6 +271,8 @@ function Find-ESC2 {
                     -Value "$($entry.IdentityReference) can request a SubCA certificate without Manager Approval" -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Fix `
                     -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}"  -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Revert `
+                    -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"  -Force
                 $Issue
             }
         }
@@ -296,6 +303,7 @@ function Find-ESC4 {
             $Issue | Add-Member -MemberType NoteProperty -Name Issue `
                 -Value "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value '[TODO]' -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
             $Issue
         }
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
@@ -311,6 +319,7 @@ function Find-ESC4 {
                 $Issue | Add-Member -MemberType NoteProperty -Name Issue `
                     -Value "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this template"  -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value '[TODO]'  -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
                 $Issue
             }
         }
@@ -341,6 +350,7 @@ function Find-ESC5 {
             $Issue | Add-Member -MemberType NoteProperty -Name Issue `
                 -Value "$($_.nTSecurityDescriptor.Owner) has Owner rights on this object" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value '[TODO]' -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
             $Issue
         }
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
@@ -356,6 +366,7 @@ function Find-ESC5 {
                     $Issue | Add-Member -MemberType NoteProperty -Name Issue `
                         -Value "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this object" -Force
                     $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value '[TODO]'  -Force
+                    $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
                     $Issue
             }
         }
@@ -383,9 +394,12 @@ function Find-ESC6 {
                 $Issue | Add-Member -MemberType NoteProperty -Name Issue -Value 'EDITF_ATTRIBUTESUBJECTALTNAME2 is enabled.' -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Fix `
                     -Value "certutil -config $CAFullname -setreg policy\EditFlags -EDITF_ATTRIBUTESUBJECTALTNAME2; Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Revert `
+                    -Value "certutil -config $CAFullname -setreg policy\EditFlags +EDITF_ATTRIBUTESUBJECTALTNAME2; Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
             } else {
                 $Issue | Add-Member -MemberType NoteProperty -Name Issue -Value $_.AuditFilter -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "N/A" -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value "N/A" -Force
             }
             $Issue
         }
@@ -393,8 +407,32 @@ function Find-ESC6 {
 }
 
 
+function Export-RevertScript {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [array]$AuditingIssues,
+        [Parameter(Mandatory = $true)]
+        [array]$ESC1,
+        [Parameter(Mandatory = $true)]
+        [array]$ESC2,
+        [Parameter(Mandatory = $true)]
+        [array]$ESC6
+    )
+    begin {
+        $Output = 'Invoke-RevertLocksmith.ps1'
+        Set-Content -Path $Output -Value "<#`nScript to revert changes performed by Locksmith`nCreated $(Get-Date)`n#>" -Force
+        $Objects = $AuditingIssues + $ESC1 + $ESC2 + $ESC6
+    }
+    process {
+        $Objects| ForEach-Object {
+            Add-Content -Path $Output -Value $_.Revert
+        }
+    }
+}
+
 $Targets = Get-Target
-New-OutputPath
+# New-OutputPath
 $ADCSObjects = Get-ADCSObject -Targets $Targets
 Set-AdditionalCAProperty -ADCSObjects $ADCSObjects
 $ADCSObjects += Get-CAHostObject -ADCSObjects $ADCSObjects
@@ -430,6 +468,8 @@ switch ($Mode) {
         $AllIssues | Select-Object Forest, Name, DistinguishedName, Issue, Fix | Export-Csv -NoTypeInformation ADCSRemediation.CSV
     }
     4 {
+        Write-Host "Creating a script to revert any changes made by Locksmith..."
+        Export-RevertScript -AuditingIssues $AuditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC6 $ESC6
         $AuditingIssues | ForEach-Object {
             Write-Host "Attempting to fully enable AD CS auditing on $($_.Name)..."
             try {
