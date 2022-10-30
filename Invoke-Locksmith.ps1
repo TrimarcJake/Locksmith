@@ -141,9 +141,23 @@ function Set-AdditionalCAProperty {
                 $AuditFilter = 'CA Unavailable'
                 $SANFlag = 'CA Unavailable'
             }
+            # if ($CertutilAudit) {
+            #     [string]$AuditFilter = $CertutilAudit | Select-String 'AuditFilter REG_DWORD = '
+            #     $AuditFilter = $AuditFilter.split('(')[1].split(')')[0]
+            # }
             if ($CertutilAudit) {
-                [string]$AuditFilter = $CertutilAudit | Select-String 'AuditFilter REG_DWORD = '
-                $AuditFilter = $AuditFilter.split('(')[1].split(')')[0]
+                try {
+                    [string]$AuditFilter = $CertutilAudit | Select-String 'AuditFilter REG_DWORD = ' | Select-String '\('
+                    $AuditFilter = $AuditFilter.split('(')[1].split(')')[0]
+                } catch {
+                    try {
+                        [string]$AuditFilter = $CertutilAudit | Select-String 'AuditFilter REG_DWORD = '
+                        $AuditFilter = $AuditFilter.split('=')[1].trim()
+                    } catch {
+                        $AuditFilter = 'Never Configured'
+                    }
+                }
+                $AuditFilter
             }
             if ($CertutilFlag) {
                 [string]$SANFlag = $CertutilFlag | Select-String ' EDITF_ATTRIBUTESUBJECTALTNAME2 -- 40000 \('
@@ -468,7 +482,7 @@ switch ($Mode) {
         $AllIssues | Select-Object Forest, Name, DistinguishedName, Issue, Fix | Export-Csv -NoTypeInformation ADCSRemediation.CSV
     }
     4 {
-        Write-Host "Creating a script to revert any changes made by Locksmith..."
+        Write-Host 'Creating a script to revert any changes made by Locksmith...'
         Export-RevertScript -AuditingIssues $AuditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC6 $ESC6
         $AuditingIssues | ForEach-Object {
             Write-Host "Attempting to fully enable AD CS auditing on $($_.Name)..."
