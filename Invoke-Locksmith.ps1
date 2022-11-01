@@ -49,7 +49,6 @@ Output types:
 
 # Windows PowerShell cmdlet Restart-Service requires RunAsAdministrator
 #Requires -Version 3.0
-#Requires -RunAsAdministrator
 
 [CmdletBinding()]
 param (
@@ -91,6 +90,7 @@ function Get-Target {
     return $Targets
 }
 
+
 function New-OutputPath {
     [CmdletBinding(SupportsShouldProcess)]
     param ()
@@ -100,6 +100,7 @@ function New-OutputPath {
         New-Item -Path $ForestPath -ItemType Directory -Force  | Out-Null
     }
 }
+
 
 function Get-ADCSObject {
     [CmdletBinding()]
@@ -194,6 +195,7 @@ function Get-CAHostObject {
     }
 }
 
+
 function Find-AuditingIssue {
     [CmdletBinding()]
     param(
@@ -258,6 +260,7 @@ function Find-ESC1 {
         }
     }
 }
+
 
 function Find-ESC2 {
     [CmdletBinding()]
@@ -450,10 +453,10 @@ $Targets = Get-Target
 # New-OutputPath
 
 # Check if ActiveDirectory PowerShell module is available, and attempt to install if not found
-If (-not(Get-Module -Name "ActiveDirectory" -ListAvailable)) { 
-    # Attempt to install ActiveDirectory PowerShell module for Windows Server OSEs, works with Windows Server 2012 R2 through Windows Server 2022
+if (-not(Get-Module -Name "ActiveDirectory" -ListAvailable)) { 
+    # Attempt to install ActiveDirectory PowerShell module for Windows Server OSes, works with Windows Server 2012 R2 through Windows Server 2022
     Install-WindowsFeature -Name RSAT-AD-PowerShell
-    #TODO: Check for Windows 10/11 OS (admin workstation, PAW) and install using add-WindowsCapability cmdlet instead
+    #TODO: Check for Windows 10/11 OS (admin workstation, PAW) and install using Add-WindowsCapability cmdlet instead
 }
 
 $ADCSObjects = Get-ADCSObject -Targets $Targets
