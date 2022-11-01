@@ -47,6 +47,9 @@ Output types:
 4. CSV containing all identified issues and their fixes
 #>
 
+# Windows PowerShell cmdlet Restart-Service requires RunAsAdministrator
+#Requires -Version 3.0
+
 [CmdletBinding()]
 param (
     [string]$Forest,
@@ -141,9 +144,23 @@ function Set-AdditionalCAProperty {
                 $AuditFilter = 'CA Unavailable'
                 $SANFlag = 'CA Unavailable'
             }
+            # if ($CertutilAudit) {
+            #     [string]$AuditFilter = $CertutilAudit | Select-String 'AuditFilter REG_DWORD = '
+            #     $AuditFilter = $AuditFilter.split('(')[1].split(')')[0]
+            # }
             if ($CertutilAudit) {
-                [string]$AuditFilter = $CertutilAudit | Select-String 'Auditfilter REG_DWORD ='
-                $AuditFilter = $AuditFilter.split('(')[1].split(')')[0]
+                try {
+                    [string]$AuditFilter = $CertutilAudit | Select-String 'AuditFilter REG_DWORD = ' | Select-String '\('
+                    $AuditFilter = $AuditFilter.split('(')[1].split(')')[0]
+                } catch {
+                    try {
+                        [string]$AuditFilter = $CertutilAudit | Select-String 'AuditFilter REG_DWORD = '
+                        $AuditFilter = $AuditFilter.split('=')[1].trim()
+                    } catch {
+                        $AuditFilter = 'Never Configured'
+                    }
+                }
+                $AuditFilter
             }
             if ($CertutilFlag) {
                 [string]$SANFlag = $CertutilFlag | Select-String ' EDITF_ATTRIBUTESUBJECTALTNAME2 -- 40000 \('
@@ -178,6 +195,7 @@ function Get-CAHostObject {
     }
 }
 
+
 function Find-AuditingIssue {
     [CmdletBinding()]
     param(
@@ -195,10 +213,13 @@ function Find-AuditingIssue {
         if ($_.AuditFilter -match 'CA Unavailable') {
             $Issue | Add-Member -MemberType NoteProperty -Name Issue -Value $_.AuditFilter -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "N/A" -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value "N/A" -Force
         } else {
             $Issue | Add-Member -MemberType NoteProperty -Name Issue -Value "Auditing is not fully enabled. Current value is $($_.AuditFilter)" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Fix `
                 -Value "certutil -config $($_.CAFullname) -setreg CA\AuditFilter 127; Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Revert `
+                -Value "certutil -config $($_.CAFullname) -setreg CA\AuditFilter  $($_.AuditFilter); Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
         }
         $Issue
     }
@@ -232,6 +253,8 @@ function Find-ESC1 {
                     -Value "$($entry.IdentityReference) can enroll in this Client Authentication template using a SAN without Manager Approval"  -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Fix `
                     -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}" -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Revert `
+                    -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"  -Force
                 $Issue
             }
         }
@@ -266,6 +289,8 @@ function Find-ESC2 {
                     -Value "$($entry.IdentityReference) can request a SubCA certificate without Manager Approval" -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Fix `
                     -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}"  -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Revert `
+                    -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"  -Force
                 $Issue
             }
         }
@@ -296,6 +321,7 @@ function Find-ESC4 {
             $Issue | Add-Member -MemberType NoteProperty -Name Issue `
                 -Value "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value '[TODO]' -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
             $Issue
         }
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
@@ -311,6 +337,7 @@ function Find-ESC4 {
                 $Issue | Add-Member -MemberType NoteProperty -Name Issue `
                     -Value "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this template"  -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value '[TODO]'  -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
                 $Issue
             }
         }
@@ -341,6 +368,7 @@ function Find-ESC5 {
             $Issue | Add-Member -MemberType NoteProperty -Name Issue `
                 -Value "$($_.nTSecurityDescriptor.Owner) has Owner rights on this object" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value '[TODO]' -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
             $Issue
         }
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
@@ -356,6 +384,7 @@ function Find-ESC5 {
                     $Issue | Add-Member -MemberType NoteProperty -Name Issue `
                         -Value "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this object" -Force
                     $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value '[TODO]'  -Force
+                    $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
                     $Issue
             }
         }
@@ -383,9 +412,12 @@ function Find-ESC6 {
                 $Issue | Add-Member -MemberType NoteProperty -Name Issue -Value 'EDITF_ATTRIBUTESUBJECTALTNAME2 is enabled.' -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Fix `
                     -Value "certutil -config $CAFullname -setreg policy\EditFlags -EDITF_ATTRIBUTESUBJECTALTNAME2; Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Revert `
+                    -Value "certutil -config $CAFullname -setreg policy\EditFlags +EDITF_ATTRIBUTESUBJECTALTNAME2; Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
             } else {
                 $Issue | Add-Member -MemberType NoteProperty -Name Issue -Value $_.AuditFilter -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "N/A" -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value "N/A" -Force
             }
             $Issue
         }
@@ -393,8 +425,40 @@ function Find-ESC6 {
 }
 
 
+function Export-RevertScript {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [array]$AuditingIssues,
+        [Parameter(Mandatory = $true)]
+        [array]$ESC1,
+        [Parameter(Mandatory = $true)]
+        [array]$ESC2,
+        [Parameter(Mandatory = $true)]
+        [array]$ESC6
+    )
+    begin {
+        $Output = 'Invoke-RevertLocksmith.ps1'
+        Set-Content -Path $Output -Value "<#`nScript to revert changes performed by Locksmith`nCreated $(Get-Date)`n#>" -Force
+        $Objects = $AuditingIssues + $ESC1 + $ESC2 + $ESC6
+    }
+    process {
+        $Objects| ForEach-Object {
+            Add-Content -Path $Output -Value $_.Revert
+        }
+    }
+}
+
 $Targets = Get-Target
-New-OutputPath
+# New-OutputPath
+
+# Check if ActiveDirectory PowerShell module is available, and attempt to install if not found
+if (-not(Get-Module -Name "ActiveDirectory" -ListAvailable)) { 
+    # Attempt to install ActiveDirectory PowerShell module for Windows Server OSes, works with Windows Server 2012 R2 through Windows Server 2022
+    Install-WindowsFeature -Name RSAT-AD-PowerShell
+    #TODO: Check for Windows 10/11 OS (admin workstation, PAW) and install using Add-WindowsCapability cmdlet instead
+}
+
 $ADCSObjects = Get-ADCSObject -Targets $Targets
 Set-AdditionalCAProperty -ADCSObjects $ADCSObjects
 $ADCSObjects += Get-CAHostObject -ADCSObjects $ADCSObjects
@@ -430,6 +494,8 @@ switch ($Mode) {
         $AllIssues | Select-Object Forest, Name, DistinguishedName, Issue, Fix | Export-Csv -NoTypeInformation ADCSRemediation.CSV
     }
     4 {
+        Write-Host 'Creating a script to revert any changes made by Locksmith...'
+        Export-RevertScript -AuditingIssues $AuditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC6 $ESC6
         $AuditingIssues | ForEach-Object {
             Write-Host "Attempting to fully enable AD CS auditing on $($_.Name)..."
             try {
