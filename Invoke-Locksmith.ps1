@@ -457,6 +457,39 @@ function Export-RevertScript {
     }
 }
 
+function Format-Results {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $false)]
+        $Issue,
+        [Parameter(Mandatory = $true)]
+        [int]$Mode
+    )
+
+    $IssueTable = @{
+        DETECT = "Auditing Issues"
+        ESC1 = "ESC1 - Misconfigured Certificate Template"
+        ESC2 = "ESC2 - Misconfigured Certificate Template"
+        ESC4 = "ESC4 - Vulnerable Certifcate Template Access Control"
+        ESC5 = "ESC5 - Vulnerable PKI Object Access Control"
+        ESC6 = "ESC6 - EDITF_ATTRIBUTESUBJECTALTNAME2"
+    }
+
+    if ($null -ne $Issue) {
+        $UniqueIssue = $Issue.Technique | Sort-Object -Unique
+        Write-Host "`n########## $($IssueTable[$UniqueIssue]) ##########`n"
+        switch ($Mode) {
+            0 {
+                $Issue | Format-Table Technique, Name, Issue -Wrap
+            }
+            1 {
+                $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix
+            }
+        }
+    }
+}
+
+
 $Targets = Get-Target
 # New-OutputPath
 
@@ -480,20 +513,20 @@ $ADCSObjects += Get-CAHostObject -ADCSObjects $ADCSObjects
 
 switch ($Mode) {
     0 { 
-        $AuditingIssues | Format-Table Name, Issue -Wrap
-        $ESC1 | Format-Table Name, Issue -Wrap
-        $ESC2 | Format-Table Name, Issue -Wrap
-        $ESC4 | Format-Table Name, Issue -Wrap
-        $ESC5 | Format-Table Name, Issue -Wrap
-        $ESC6 | Format-Table Name, Issue -Wrap
+        Format-Results $AuditingIssues "0" 
+        Format-Results $ESC1 "0"
+        Format-Results $ESC2 "0"
+        Format-Results $ESC4 "0"
+        Format-Results $ESC5 "0"
+        Format-Results $ESC6 "0"
     }
     1 {
-        $AuditingIssues | Format-List Name, DistinguishedName, Issue, Fix
-        $ESC1 | Format-List Name, DistinguishedName, Issue, Fix
-        $ESC2 | Format-List Name, DistinguishedName, Issue, Fix
-        $ESC4 | Format-List Name, DistinguishedName, Issue, Fix
-        $ESC5 | Format-List Name, DistinguishedName, Issue, Fix
-        $ESC6 | Format-List Name, DistinguishedName, Issue, Fix
+        Format-Results $AuditingIssues "1" 
+        Format-Results $ESC1 "1"
+        Format-Results $ESC2 "1"
+        Format-Results $ESC4 "1"
+        Format-Results $ESC5 "1"
+        Format-Results $ESC6 "1"
     }
     2 {
         $AllIssues | Select-Object Forest, Name, Issue | Export-Csv -NoTypeInformation ADCSIssues.CSV
