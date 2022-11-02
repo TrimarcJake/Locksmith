@@ -220,6 +220,7 @@ function Find-AuditingIssue {
                 -Value "certutil -config $($_.CAFullname) -setreg CA\AuditFilter 127; Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Revert `
                 -Value "certutil -config $($_.CAFullname) -setreg CA\AuditFilter  $($_.AuditFilter); Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value "DETECT"
         }
         $Issue
     }
@@ -255,6 +256,7 @@ function Find-ESC1 {
                     -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}" -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Revert `
                     -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"  -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value "ESC1"
                 $Issue
             }
         }
@@ -291,6 +293,7 @@ function Find-ESC2 {
                     -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}"  -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Revert `
                     -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"  -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value "ESC2"
                 $Issue
             }
         }
@@ -322,6 +325,7 @@ function Find-ESC4 {
                 -Value "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value '[TODO]' -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value "ESC4"
             $Issue
         }
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
@@ -338,6 +342,7 @@ function Find-ESC4 {
                     -Value "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this template"  -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value '[TODO]'  -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value "ESC4"
                 $Issue
             }
         }
@@ -369,6 +374,7 @@ function Find-ESC5 {
                 -Value "$($_.nTSecurityDescriptor.Owner) has Owner rights on this object" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value '[TODO]' -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value "ESC5"
             $Issue
         }
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
@@ -385,6 +391,7 @@ function Find-ESC5 {
                         -Value "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this object" -Force
                     $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value '[TODO]'  -Force
                     $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
+                    $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value "ESC5"
                     $Issue
             }
         }
@@ -419,6 +426,7 @@ function Find-ESC6 {
                 $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "N/A" -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value "N/A" -Force
             }
+            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value "ESC6"
             $Issue
         }
     }
