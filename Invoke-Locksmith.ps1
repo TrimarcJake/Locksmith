@@ -70,7 +70,10 @@ $Logo = "
 $Logo
 
 $SafeOwners = 'Domain Admins|Enterprise Admins|BUILTIN\\Administrators|NT AUTHORITY\\SYSTEM|\\Cert Publishers|\\Administrator'
-$SafeUsers = 'Domain Admins|Enterprise Admins|BUILTIN\\Administrators|NT AUTHORITY\\SYSTEM|\\Cert Publishers|\\Administrator'
+$SafeUsers = 'Domain Admins|Enterprise Admins|BUILTIN\\Administrators|NT AUTHORITY\\SYSTEM|\\Cert Publishers|\\Administrator|Domain Controllers|Enterprise Domain Controllers'
+$Admins = @('Domain Admins','Enterprise Admins','Administrators')
+$AdminUsers = $Admins | ForEach-Object { (Get-ADGroupMember $_ | Where-Object { $_.objectClass -eq "user"}).SamAccountName } | Select-Object -Unique
+$AdminUsers | ForEach-Object { $SafeUsers += "|" + $_ }
 $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
 $DangerousRights = 'GenericAll|WriteDacl|WriteOwner'
 
@@ -503,6 +506,9 @@ if (-not(Get-Module -Name "ActiveDirectory" -ListAvailable)) {
 $ADCSObjects = Get-ADCSObject -Targets $Targets
 Set-AdditionalCAProperty -ADCSObjects $ADCSObjects
 $ADCSObjects += Get-CAHostObject -ADCSObjects $ADCSObjects
+$CAHosts = Get-CAHostObject -ADCSObjects $ADCSObjects
+$CAHosts | ForEach-Object { $SafeUsers += "|" + $_.Name }
+$Targets | ForEach-Object { $SafeUsers += "|" + $_;$SafeOwners += "|" + $_  }
 [array]$AuditingIssues = Find-AuditingIssue -ADCSObjects $ADCSObjects 
 [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
 [array]$ESC2 = Find-ESC2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
