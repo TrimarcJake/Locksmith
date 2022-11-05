@@ -54,7 +54,7 @@ Output types:
 param (
     [string]$Forest,
     [string]$InputPath,
-    [int]$Mode = 0,
+    [int]$Mode = 4,
     [string]$OutputPath = (Get-Location).Path
 )
 
@@ -67,13 +67,13 @@ $Logo = "
     \'-' .--'--''-'-'     \'-' .--'--''-'-'     \'-' .--'--''-'-'
      '--'                  '--'                  '--'            
 "
-$Logo
 
-$SafeOwners = 'Domain Admins|Enterprise Admins|BUILTIN\\Administrators|NT AUTHORITY\\SYSTEM|\\Cert Publishers|\\Administrator'
-$SafeUsers = 'Domain Admins|Enterprise Admins|BUILTIN\\Administrators|NT AUTHORITY\\SYSTEM|\\Cert Publishers|\\Administrator|Domain Controllers|Enterprise Domain Controllers'
+
+$SafeOwners = "$env:USERDOMAIN\\Domain Admins|$env:USERDOMAIN\\Enterprise Admins|BUILTIN\\Administrators|NT AUTHORITY\\SYSTEM|$env:USERDOMAIN\\Cert Publishers|$env:USERDOMAIN\\Administrator"
+$SafeUsers = "$env:USERDOMAIN\\Domain Admins|$env:USERDOMAIN\\Enterprise Admins|BUILTIN\\Administrators|NT AUTHORITY\\SYSTEM|$env:USERDOMAIN\\Cert Publishers|$env:USERDOMAIN\\Administrator|$env:USERDOMAIN\\Domain Controllers|$env:USERDOMAIN\\Enterprise Domain Controllers"
 $Admins = @('Domain Admins','Enterprise Admins','Administrators')
-$AdminUsers = $Admins | ForEach-Object { (Get-ADGroupMember $_ | Where-Object { $_.objectClass -eq "user"}).SamAccountName } | Select-Object -Unique
-$AdminUsers | ForEach-Object { $SafeUsers += "|" + $_ }
+$AdminUsers = $Admins | ForEach-Object { (Get-ADGroupMember $_ | Where-Object { $_.objectClass -eq 'user'}).SamAccountName } | Select-Object -Unique
+$AdminUsers | ForEach-Object { $SafeUsers += "|$($env:USERDOMAIN)\\" + $_ }
 $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
 $DangerousRights = 'GenericAll|WriteDacl|WriteOwner'
 
@@ -147,10 +147,6 @@ function Set-AdditionalCAProperty {
                 $AuditFilter = 'CA Unavailable'
                 $SANFlag = 'CA Unavailable'
             }
-            # if ($CertutilAudit) {
-            #     [string]$AuditFilter = $CertutilAudit | Select-String 'AuditFilter REG_DWORD = '
-            #     $AuditFilter = $AuditFilter.split('(')[1].split(')')[0]
-            # }
             if ($CertutilAudit) {
                 try {
                     [string]$AuditFilter = $CertutilAudit | Select-String 'AuditFilter REG_DWORD = ' | Select-String '\('
@@ -163,7 +159,6 @@ function Set-AdditionalCAProperty {
                         $AuditFilter = 'Never Configured'
                     }
                 }
-                $AuditFilter
             }
             if ($CertutilFlag) {
                 [string]$SANFlag = $CertutilFlag | Select-String ' EDITF_ATTRIBUTESUBJECTALTNAME2 -- 40000 \('
@@ -215,15 +210,16 @@ function Find-AuditingIssue {
         $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
         if ($_.AuditFilter -match 'CA Unavailable') {
             $Issue | Add-Member -MemberType NoteProperty -Name Issue -Value $_.AuditFilter -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "N/A" -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value "N/A" -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value 'N/A' -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value 'N/A' -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'DETECT' -Force
         } else {
             $Issue | Add-Member -MemberType NoteProperty -Name Issue -Value "Auditing is not fully enabled. Current value is $($_.AuditFilter)" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Fix `
-                -Value "certutil -config $($_.CAFullname) -setreg CA\AuditFilter 127; Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
+                -Value "certutil -config `'$($_.CAFullname)`' -setreg `'CA\AuditFilter`' 127; Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Revert `
                 -Value "certutil -config $($_.CAFullname) -setreg CA\AuditFilter  $($_.AuditFilter); Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value "DETECT"
+            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'DETECT' -Force
         }
         $Issue
     }
@@ -259,7 +255,7 @@ function Find-ESC1 {
                     -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}" -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Revert `
                     -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"  -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value "ESC1"
+                $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC1'
                 $Issue
             }
         }
@@ -296,7 +292,7 @@ function Find-ESC2 {
                     -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}"  -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Revert `
                     -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"  -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value "ESC2"
+                $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC2'
                 $Issue
             }
         }
@@ -328,7 +324,7 @@ function Find-ESC4 {
                 -Value "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value '[TODO]' -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value "ESC4"
+            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC4'
             $Issue
         }
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
@@ -345,7 +341,7 @@ function Find-ESC4 {
                     -Value "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this template"  -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value '[TODO]'  -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value "ESC4"
+                $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC4'
                 $Issue
             }
         }
@@ -377,7 +373,7 @@ function Find-ESC5 {
                 -Value "$($_.nTSecurityDescriptor.Owner) has Owner rights on this object" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value '[TODO]' -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value "ESC5"
+            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC5'
             $Issue
         }
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
@@ -394,7 +390,7 @@ function Find-ESC5 {
                         -Value "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this object" -Force
                     $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value '[TODO]'  -Force
                     $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
-                    $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value "ESC5"
+                    $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC5'
                     $Issue
             }
         }
@@ -426,10 +422,10 @@ function Find-ESC6 {
                     -Value "certutil -config $CAFullname -setreg policy\EditFlags +EDITF_ATTRIBUTESUBJECTALTNAME2; Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
             } else {
                 $Issue | Add-Member -MemberType NoteProperty -Name Issue -Value $_.AuditFilter -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "N/A" -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value "N/A" -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value 'N/A' -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value 'N/A' -Force
             }
-            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value "ESC6"
+            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC6'
             $Issue
         }
     }
@@ -456,11 +452,12 @@ function Export-RevertScript {
     process {
         $Objects| ForEach-Object {
             Add-Content -Path $Output -Value $_.Revert
+            Start-Sleep -Seconds 5
         }
     }
 }
 
-function Format-Results {
+function Format-Result {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $false)]
@@ -470,12 +467,12 @@ function Format-Results {
     )
 
     $IssueTable = @{
-        DETECT = "Auditing Issues"
-        ESC1 = "ESC1 - Misconfigured Certificate Template"
-        ESC2 = "ESC2 - Misconfigured Certificate Template"
-        ESC4 = "ESC4 - Vulnerable Certifcate Template Access Control"
-        ESC5 = "ESC5 - Vulnerable PKI Object Access Control"
-        ESC6 = "ESC6 - EDITF_ATTRIBUTESUBJECTALTNAME2"
+        DETECT = 'Auditing Issues'
+        ESC1 = 'ESC1 - Misconfigured Certificate Template'
+        ESC2 = 'ESC2 - Misconfigured Certificate Template'
+        ESC4 = 'ESC4 - Vulnerable Certifcate Template Access Control'
+        ESC5 = 'ESC5 - Vulnerable PKI Object Access Control'
+        ESC6 = 'ESC6 - EDITF_ATTRIBUTESUBJECTALTNAME2'
     }
 
     if ($null -ne $Issue) {
@@ -493,25 +490,41 @@ function Format-Results {
 }
 
 
+Clear-Host
+$Logo
 $Targets = Get-Target
 # New-OutputPath
 
 # Check if ActiveDirectory PowerShell module is available, and attempt to install if not found
-if (-not(Get-Module -Name "ActiveDirectory" -ListAvailable)) { 
+if (-not(Get-Module -Name 'ActiveDirectory' -ListAvailable)) { 
     # Attempt to install ActiveDirectory PowerShell module for Windows Server OSes, works with Windows Server 2012 R2 through Windows Server 2022
     Install-WindowsFeature -Name RSAT-AD-PowerShell
     #TODO: Check for Windows 10/11 OS (admin workstation, PAW) and install using Add-WindowsCapability cmdlet instead
 }
 
+Clear-Host
+$Logo
+Write-Host 'Gathering AD CS Objects from $($Targets[0])...'
 $ADCSObjects = Get-ADCSObject -Targets $Targets
 Set-AdditionalCAProperty -ADCSObjects $ADCSObjects
 $ADCSObjects += Get-CAHostObject -ADCSObjects $ADCSObjects
 $CAHosts = Get-CAHostObject -ADCSObjects $ADCSObjects
-$CAHosts | ForEach-Object { $SafeUsers += "|" + $_.Name }
-$Targets | ForEach-Object { $SafeUsers += "|" + $_;$SafeOwners += "|" + $_  }
+$CAHosts | ForEach-Object { $SafeUsers += '|' + $_.Name }
+
+Clear-Host
+$Logo
+Write-Host 'Identifying auditing issues...'
 [array]$AuditingIssues = Find-AuditingIssue -ADCSObjects $ADCSObjects 
+
+Clear-Host
+$Logo
+Write-Host 'Identifying AD CS templates with dangerous configurations...'
 [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
 [array]$ESC2 = Find-ESC2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+
+Clear-Host
+$Logo
+Write-Host 'Identifying AD CS template and other objects with poor access control...'
 [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
 [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
 [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects
@@ -519,105 +532,152 @@ $Targets | ForEach-Object { $SafeUsers += "|" + $_;$SafeOwners += "|" + $_  }
 
 switch ($Mode) {
     0 { 
-        Format-Results $AuditingIssues "0" 
-        Format-Results $ESC1 "0"
-        Format-Results $ESC2 "0"
-        Format-Results $ESC4 "0"
-        Format-Results $ESC5 "0"
-        Format-Results $ESC6 "0"
+        Clear-Host
+        $Logo
+        Format-Result $AuditingIssues '0'  
+        Format-Result $ESC1 '0'
+        Format-Result $ESC2 '0'
+        Format-Result $ESC4 '0'
+        Format-Result $ESC5 '0'
+        Format-Result $ESC6 '0'
     }
     1 {
-        Format-Results $AuditingIssues "1" 
-        Format-Results $ESC1 "1"
-        Format-Results $ESC2 "1"
-        Format-Results $ESC4 "1"
-        Format-Results $ESC5 "1"
-        Format-Results $ESC6 "1"
+        Clear-Host
+        $Logo
+        Format-Result $AuditingIssues '1'  
+        Format-Result $ESC1 '1'
+        Format-Result $ESC2 '1'
+        Format-Result $ESC4 '1'
+        Format-Result $ESC5 '1'
+        Format-Result $ESC6 '1'
     }
     2 {
-        $AllIssues | Select-Object Forest, Name, Issue | Export-Csv -NoTypeInformation ADCSIssues.CSV
+        Clear-Host
+        $Logo
+        $Output = 'ADCSIssues.CSV'
+        Write-Host "Writing AD CS issues to $Output..."
+        try {
+            $AllIssues | Select-Object Forest, Name, Issue | Export-Csv -NoTypeInformation $Output
+            Write-Host "$Output created successfully!"
+        } catch {
+            Write-Host 'Ope! Something broke.'
+        } 
     }
     3 {
-        $AllIssues | Select-Object Forest, Name, DistinguishedName, Issue, Fix | Export-Csv -NoTypeInformation ADCSRemediation.CSV
+        Clear-Host
+        $Logo
+        $Output = 'ADCSRemediation.CSV'
+        Write-Host "Writing AD CS issues to $Output..."
+        try {
+            $AllIssues | Select-Object Forest, Name, DistinguishedName, Issue, Fix | Export-Csv -NoTypeInformation $Output
+            Write-Host "$Output created successfully!"
+        } catch {
+            Write-Host 'Ope! Something broke.'
+        }
     }
     4 {
         Write-Host 'Creating a script to revert any changes made by Locksmith...'
         Export-RevertScript -AuditingIssues $AuditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC6 $ESC6
-        Write-Host "Executing Mode 4 - Attempting to fix all identified issues!"
+        Write-Host 'Executing Mode 4 - Attempting to fix all identified issues!'
         if ($AuditingIssues) {
             $AuditingIssues | ForEach-Object {
-                Write-Host "`nAttempting to fully enable AD CS auditing on $($_.Name)..."
-                Write-Host "This should have little impact on your environment."
-                Write-Host "Command(s) to be run:`n"
-                Write-Host "PS> " -NoNewline
-                Write-Host "$($_.Fix)" -ForegroundColor Cyan
+                Clear-Host
+                Write-Host $Logo
+                $FixBlock = [scriptblock]::Create($_.Fix)
+                Write-Host "Attempting to fully enable AD CS auditing on $($_.Name)..."
+                Write-Host "This should have little impact on your environment.`n"
+                Write-Host 'Command(s) to be run:'
+                Write-Host 'PS> ' -NoNewline
+                Write-Host "$($_.Fix)`n" -ForegroundColor Cyan
                 try {
-                    $WarningError = $true
-                    " "
-                    Write-Warning "If you continue this script will attempt to fix this issues." -WarningAction Inquire -ErrorVariable WarningError
+                    $WarningError = $null
+                    Write-Warning 'If you continue, this script will attempt to fix this issue.' -WarningAction Inquire -ErrorVariable WarningError
                     if (!$WarningError) {
-                        Invoke-Command $_.Fix
+                        try {
+                            Invoke-Command -ScriptBlock $FixBlock
+                        } catch {
+                            Write-Error 'Could not modify AD CS auditing. Are you a local admin on this host?'
+                        }
                     }
                 } catch {
-                    Write-Error 'Could not modify AD CS auditing. Are you a local admin on this host?'
+                    Write-Host 'SKIPPED!' -ForegroundColor Yellow
                 }
+                $Pause = Read-Host -Prompt 'Press any key to continue...'
             }
         }
         if ($ESC1) {
             $ESC1 | ForEach-Object {
-                Write-Host "`nAttempting to enable Manager Approval on the $($_.Name) template..."
-                Write-Host "This could cause some services to stop working until certificates are approved."
-                Write-Host "Command(s) to be run:`n"
-                Write-Host "PS> " -NoNewline
-                Write-Host "$($_.Fix)" -ForegroundColor Cyan
+                Clear-Host
+                Write-Host $Logo
+                $FixBlock = [scriptblock]::Create($_.Fix)
+                Write-Host "Attempting to enable Manager Approval on the $($_.Name) template...`n"
+                Write-Host 'Command(s) to be run:'
+                Write-Host 'PS> ' -NoNewline
+                Write-Host "$($_.Fix)`n" -ForegroundColor Cyan
                 try {
-                    $WarningError = $true
-                    " "
-                    Write-Warning "If you continue this script will attempt to fix this issues." -WarningAction Inquire -ErrorVariable WarningError
+                    $WarningError = $null
+                    Write-Warning "This could cause some services to stop working until certificates are approved.`nIf you continue this script will attempt to fix this issues." -WarningAction Inquire -ErrorVariable WarningError
                     if (!$WarningError) {
-                        Invoke-Command $_.Fix
+                        try {
+                            Invoke-Command -ScriptBlock $FixBlock
+                        } catch {
+                            Write-Error 'Could not enable Manager Approval. Are you an Active Directory or AD CS admin?'
+                        }
                     }
                 } catch {
-                    Write-Error 'Could not enable Manager Approval. Are you an Active Directory or AD CS admin?'
+                        Write-Host 'SKIPPED!' -ForegroundColor Yellow
                 }
+                $Pause = Read-Host -Prompt 'Press any key to continue...'
             }
         }
         if ($ESC2) {
             $ESC2 | ForEach-Object {
-                Write-Host "`nAttempting to enable Manager Approval on the $($_.Name) template..."
-                Write-Host "This could cause some services to stop working until certificates are approved."
-                Write-Host "Command(s) to be run:`n"
-                Write-Host "PS> " -NoNewline
-                Write-Host "$($_.Fix)" -ForegroundColor Cyan
+                Clear-Host
+                Write-Host $Logo
+                $FixBlock = [scriptblock]::Create($_.Fix)
+                Write-Host "Attempting to enable Manager Approval on the $($_.Name) template...`n"
+                Write-Host 'Command(s) to be run:'
+                Write-Host 'PS> ' -NoNewline
+                Write-Host "$($_.Fix)`n" -ForegroundColor Cyan
                 try {
-                    $WarningError = $true
-                    " "
-                    Write-Warning "If you continue this script will attempt to fix this issues." -WarningAction Inquire -ErrorVariable WarningError
+                    $WarningError = $null
+                    Write-Warning "This could cause some services to stop working until certificates are approved.`nIf you continue, this script will attempt to fix this issue." -WarningAction Inquire -ErrorVariable WarningError
                     if (!$WarningError) {
-                        Invoke-Command $_.Fix
+                        try {
+                            Invoke-Command -ScriptBlock $FixBlock
+                        } catch {
+                            Write-Error 'Could not enable Manager Approval. Are you an Active Directory or AD CS admin?'
+                        }
                     }
                 } catch {
-                    Write-Error 'Could not enable Manager Approval. Are you an Active Directory or AD CS admin?'
+                    Write-Host 'SKIPPED!' -ForegroundColor Yellow
                 }
+                $Pause = Read-Host -Prompt 'Press any key to continue...'
             }
         }
         if ($ESC6) {
             $ESC6 | ForEach-Object {
-                Write-Host "`nAttempting to disable the EDITF_ATTRIBUTESUBJECTALTNAME2 flag on $($_.Name)..."
-                Write-Host "This should have little impact on your environment."
-                Write-Host "Command(s) to be run:`n"
-                Write-Host "PS> " -NoNewline
-                Write-Host "$($_.Fix)" -ForegroundColor Cyan
+                Clear-Host
+                Write-Host $Logo
+                $FixBlock = [scriptblock]::Create($_.Fix)
+                Write-Host "Attempting to disable the EDITF_ATTRIBUTESUBJECTALTNAME2 flag on $($_.Name)...`n"
+                Write-Host 'Command(s) to be run:'
+                Write-Host 'PS> ' -NoNewline
+                Write-Host "$($_.Fix)`n" -ForegroundColor Cyan
                 try {
-                    $WarningError = $true
-                    " "
-                    Write-Warning "If you continue this script will attempt to fix this issues." -WarningAction Inquire -ErrorVariable WarningError
+                    $WarningError = $null
+                    Write-Warning "This could cause some services to stop working.`nIf you continue this script will attempt to fix this issues." -WarningAction Inquire -ErrorVariable WarningError
                     if (!$WarningError) {
-                        Invoke-Command $_.Fix
+                        try {
+                            Invoke-Command -ScriptBlock $FixBlock
+                        } catch {
+                            Write-Error 'Could not enable Manager Approval. Are you an Active Directory or AD CS admin?'
+                        }
                     }
                 } catch {
-                    Write-Error 'Could not modify the flag. Are you a local admin on this host?'
+                    Write-Host 'SKIPPED!' -ForegroundColor Yellow
                 }
+                $Pause = Read-Host -Prompt 'Press any key to continue...'
             }
         }
     }
