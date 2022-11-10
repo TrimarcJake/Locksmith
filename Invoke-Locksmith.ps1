@@ -54,7 +54,7 @@ Output types:
 param (
     [string]$Forest,
     [string]$InputPath,
-    [int]$Mode = 4,
+    [int]$Mode = 0,
     [string]$OutputPath = (Get-Location).Path
 )
 
