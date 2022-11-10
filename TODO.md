@@ -1,17 +1,10 @@
 ## Short Term
-- [x] Modes 0 & 1: Headers for Console Output
-- [x] Mode 4: Display snippet and get confirmation before running.
-  - [x] Include details about how changes could affect environment. 
-- [x] Add Domain Controllers group, ENTERPRISE DOMAIN CONTROLLERS group, to $SafeUsers
-- [x] Add Forest name to "Cert Publishers" and "Administrator" definitions in $SafeOwners and $SafeUsers
 - [ ] Add individual CA Hosts to $SafeUsers
-- [x] Update README.md with Examples
-- [x] Script to reset any fixed items
-- [x] Testing of all modes
+- [ ] Strict Mode support
+- [ ] RDP Restricted Admin support
 
 ## Medium Term
 - [ ] ESC7 and ESC8 coverage
-- [x] Backup before running Mode 4
 - [ ] Convert $SafeOwners and $SafeUsers to SIDs
 - [ ] Rename Modes to something that makes sense
 - [ ] Text-Based User Interface
@@ -22,6 +15,17 @@
 ## Long Term
 - [ ] Check for Elevation before Fixing
 - [ ] Multi-Forest support
+
+## Recently Completed
+- [x] Modes 0 & 1: Headers for Console Output
+- [x] Mode 4: Display snippet and get confirmation before running.
+  - [x] Include details about how changes could affect environment. 
+- [x] Add Domain Controllers group, ENTERPRISE DOMAIN CONTROLLERS group, to $SafeUsers
+- [x] Add Forest name to "Cert Publishers" and "Administrator" definitions in $SafeOwners and $SafeUsers
+- [x] Update README.md with Examples
+- [x] Script to reset any fixed items
+- [x] Testing of all modes
+- [x] Backup before running Mode 4
 
 ## Comment-based Help pulled from original version
 ```` powershell
