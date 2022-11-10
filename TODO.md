@@ -2,11 +2,12 @@
 - [x] Modes 0 & 1: Headers for Console Output
 - [x] Mode 4: Display snippet and get confirmation before running.
   - [x] Include details about how changes could affect environment. 
-- [x] Add Domain Controllers group, ENTERPRISE DOMAIN CONTROLLERS group, and individual CA Hosts to $SafeUsers
+- [x] Add Domain Controllers group, ENTERPRISE DOMAIN CONTROLLERS group, to $SafeUsers
 - [x] Add Forest name to "Cert Publishers" and "Administrator" definitions in $SafeOwners and $SafeUsers
-- Update README.md with Examples
-- Script to reset any fixed items
-- Testing of all modes
+- [ ] Add individual CA Hosts to $SafeUsers
+- [x]Update README.md with Examples
+- [x]Script to reset any fixed items
+- [x]Testing of all modes
 
 ## Medium Term
 - ESC7 and ESC8 coverage
