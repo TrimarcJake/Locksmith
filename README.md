@@ -8,7 +8,6 @@
      '--'                  '--'                  '--'  
 ```
 
-# Locksmith
 A tiny tool to identify and remediate common misconfigurations in Active Directory Certificate Services
 
 # Examples
