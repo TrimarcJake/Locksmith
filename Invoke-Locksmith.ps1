@@ -58,6 +58,8 @@ param (
     [string]$OutputPath = (Get-Location).Path
 )
 
+Set-StrictMode -Version Latest
+
 $Logo = "
  _       _____  _______ _     _ _______ _______ _____ _______ _     _
  |      |     | |       |____/  |______ |  |  |   |      |    |_____|
@@ -69,11 +71,11 @@ $Logo = "
 "
 
 
-$SafeOwners = "$env:USERDOMAIN\\Domain Admins|$env:USERDOMAIN\\Enterprise Admins|BUILTIN\\Administrators|NT AUTHORITY\\SYSTEM|$env:USERDOMAIN\\Cert Publishers|$env:USERDOMAIN\\Administrator"
-$SafeUsers = "$env:USERDOMAIN\\Domain Admins|$env:USERDOMAIN\\Enterprise Admins|BUILTIN\\Administrators|NT AUTHORITY\\SYSTEM|$env:USERDOMAIN\\Cert Publishers|$env:USERDOMAIN\\Administrator|$env:USERDOMAIN\\Domain Controllers|$env:USERDOMAIN\\Enterprise Domain Controllers"
-$Admins = @('Domain Admins','Enterprise Admins','Administrators')
-$AdminUsers = $Admins | ForEach-Object { (Get-ADGroupMember $_ | Where-Object { $_.objectClass -eq 'user'}).SamAccountName } | Select-Object -Unique
-$AdminUsers | ForEach-Object { $SafeUsers += "|$($env:USERDOMAIN)\\" + $_ }
+$SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$'
+$SafeUsers = "-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$"
+# $Admins = @('Domain Admins','Enterprise Admins','Administrators')
+# $AdminUsers = $Admins | ForEach-Object { (Get-ADGroupMember $_ | Where-Object { $_.objectClass -eq 'user'}).SamAccountName } | Select-Object -Unique
+# $AdminUsers | ForEach-Object { $SafeUsers += "|$($env:USERDOMAIN)\\" + $_ }
 $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
 $DangerousRights = 'GenericAll|WriteDacl|WriteOwner'
 
@@ -242,7 +244,9 @@ function Find-ESC1 {
         ( ($_.'msPKI-RA-Signature' -eq 0) -or ($null -eq $_.'msPKI-RA-Signature') )
     } | ForEach-Object {
         foreach($entry in $_.nTSecurityDescriptor.Access) {
-            if ( ($entry.IdentityReference -notmatch $SafeUsers) -and ($entry.ActiveDirectoryRights -match 'ExtendedRight') ) {
+            $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
+            $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+            if ( ($SID -notmatch $SafeUsers) -and ($entry.ActiveDirectoryRights -match 'ExtendedRight') ) {
                 $Issue = New-Object -TypeName pscustomobject
                 $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
@@ -279,7 +283,9 @@ function Find-ESC2 {
         ( ($_.'msPKI-RA-Signature' -eq 0) -or ($null -eq $_.'msPKI-RA-Signature') ) 
     } | ForEach-Object {
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
-            if ( ($entry.IdentityReference -notmatch $SafeUsers) -and ($entry.ActiveDirectoryRights -match 'ExtendedRight') ) {
+            $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
+            $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+            if ( ($SID -notmatch $SafeUsers) -and ($entry.ActiveDirectoryRights -match 'ExtendedRight') ) {
                 $Issue = New-Object -TypeName pscustomobject
                 $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
@@ -313,7 +319,9 @@ function Find-ESC4 {
         $SafeUsers
     )
     $ADCSObjects | ForEach-Object {
-        if ( ($_.objectClass -eq 'pKICertificateTemplate') -and ($_.nTSecurityDescriptor.Owner -notmatch $SafeOwners) ) {
+        $Principal = New-Object System.Security.Principal.NTAccount($_.nTSecurityDescriptor.Owner)
+        $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+        if ( ($_.objectClass -eq 'pKICertificateTemplate') -and ($SID -notmatch $SafeOwners) ) {
             $Issue = New-Object -TypeName pscustomobject
             $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
@@ -328,8 +336,10 @@ function Find-ESC4 {
             $Issue
         }
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
+            $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
+            $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
             if ( ($_.objectClass -eq 'pKICertificateTemplate') -and
-                ($entry.IdentityReference -notmatch $SafeUsers) -and
+                ($SID -notmatch $SafeUsers) -and
                 ($entry.ActiveDirectoryRights -match $DangerousRights) ) {
                 $Issue = New-Object -TypeName pscustomobject
                 $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
@@ -362,7 +372,9 @@ function Find-ESC5 {
         $SafeUsers
     )
     $ADCSObjects | ForEach-Object {
-        if ( ($_.objectClass -ne 'pKICertificateTemplate') -and ($_.nTSecurityDescriptor.Owner -notmatch $SafeOwners) ) {
+        $Principal = New-Object System.Security.Principal.NTAccount($_.nTSecurityDescriptor.Owner)
+        $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+        if ( ($_.objectClass -ne 'pKICertificateTemplate') -and ($SID -notmatch $SafeOwners) ) {
             $Issue = New-Object -TypeName pscustomobject
             $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
@@ -377,8 +389,10 @@ function Find-ESC5 {
             $Issue
         }
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
+            $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
+            $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
             if ( ($_.objectClass -ne 'pKICertificateTemplate') -and
-                ($entry.IdentityReference -notmatch $SafeUsers) -and
+                ($SID -notmatch $SafeUsers) -and
                 ($entry.ActiveDirectoryRights -match $DangerousRights) ) {
                     $Issue = New-Object -TypeName pscustomobject
                     $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
@@ -602,7 +616,7 @@ switch ($Mode) {
                 } catch {
                     Write-Host 'SKIPPED!' -ForegroundColor Yellow
                 }
-                $Pause = Read-Host -Prompt 'Press any key to continue...'
+                Read-Host -Prompt 'Press any key to continue...'
             }
         }
         if ($ESC1) {
@@ -627,7 +641,7 @@ switch ($Mode) {
                 } catch {
                         Write-Host 'SKIPPED!' -ForegroundColor Yellow
                 }
-                $Pause = Read-Host -Prompt 'Press any key to continue...'
+                Read-Host -Prompt 'Press any key to continue...'
             }
         }
         if ($ESC2) {
@@ -652,7 +666,7 @@ switch ($Mode) {
                 } catch {
                     Write-Host 'SKIPPED!' -ForegroundColor Yellow
                 }
-                $Pause = Read-Host -Prompt 'Press any key to continue...'
+                Read-Host -Prompt 'Press any key to continue...'
             }
         }
         if ($ESC6) {
@@ -677,7 +691,7 @@ switch ($Mode) {
                 } catch {
                     Write-Host 'SKIPPED!' -ForegroundColor Yellow
                 }
-                $Pause = Read-Host -Prompt 'Press any key to continue...'
+                Read-Host -Prompt 'Press any key to continue...'
             }
         }
     }
