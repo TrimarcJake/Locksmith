@@ -88,7 +88,7 @@ function Get-RestrictedAdminModeSetting {
     try {
         $RAM = Get-ItemProperty -Path $Path | Select-Object $RAMMode -ErrorAction Stop
         $Creds = Get-ItemProperty -Path $Path | Select-Object $OutboundCreds -ErrorAction Stop
-        if ($RAM.DisableRestrictedAdminMode -and $Creds.DisableRestrictedAdminOutboundCreds){
+        if ($RAM.DisableRestrictedAdminMode -eq '0' -and $Creds.DisableRestrictedAdminOutboundCreds -eq '1'){
             return $true
         } else {
             return $false
