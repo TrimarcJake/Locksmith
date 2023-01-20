@@ -55,7 +55,8 @@ param (
     [string]$Forest,
     [string]$InputPath,
     [int]$Mode = 0,
-    [string]$OutputPath = (Get-Location).Path
+    [string]$OutputPath = (Get-Location).Path,
+    [System.Management.Automation.PSCredential]$Credential   
 )
 
 Set-StrictMode -Version Latest
@@ -79,10 +80,29 @@ $SafeUsers = "-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$"
 $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
 $DangerousRights = 'GenericAll|WriteDacl|WriteOwner'
 
+function Get-RestrictedAdminModeSetting {
+    $Path = 'HKLM:SYSTEM\CurrentControlSet\Control\Lsa'
+    $RAMMode = 'DisableRestrictedAdminMode'
+    $OutboundCreds = 'DisableRestrictedAdminOutboundCreds'
+
+    try {
+        $RAM = Get-ItemProperty -Path $Path | Select-Object $RAMMode -ErrorAction Stop
+        $Creds = Get-ItemProperty -Path $Path | Select-Object $OutboundCreds -ErrorAction Stop
+        if ($RAM.DisableRestrictedAdminMode -and $Creds.DisableRestrictedAdminOutboundCreds){
+            return $true
+        } else {
+            return $false
+        }
+    } catch {
+        return $false
+    }
+}
+
 function Get-Target {
     param (
         [string]$Forest,
-        [string]$InputPath
+        [string]$InputPath,
+        [System.Management.Automation.PSCredential]$Credential
     )
 
     if ($Forest) {
@@ -90,7 +110,11 @@ function Get-Target {
     } elseif ($InputPath) {
         $Targets = Get-Content $InputPath
     } else {
-        $Targets = (Get-ADForest).Name
+        if ($Credential){
+            $Targets = (Get-ADForest -Credential $Credential).Name
+        } else {
+            $Targets = (Get-ADForest).Name
+        }
     }
     return $Targets
 }
@@ -111,11 +135,17 @@ function Get-ADCSObject {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        [array]$Targets
+        [array]$Targets,
+        [System.Management.Automation.PSCredential]$Credential
     )
     foreach ( $forest in $Targets ) {
-        $ADRoot = (Get-ADRootDSE -Server $forest).defaultNamingContext
-        Get-ADObject -Filter * -SearchBase "CN=Public Key Services,CN=Services,CN=Configuration,$ADRoot" -SearchScope 2 -Properties * 
+        if ($Credential){
+            $ADRoot = (Get-ADRootDSE -Credential $Credential -Server $forest).defaultNamingContext
+            Get-ADObject -Filter * -SearchBase "CN=Public Key Services,CN=Services,CN=Configuration,$ADRoot" -SearchScope 2 -Properties * -Credential $Credential
+        } else {
+            $ADRoot = (Get-ADRootDSE -Server $forest).defaultNamingContext
+            Get-ADObject -Filter * -SearchBase "CN=Public Key Services,CN=Services,CN=Configuration,$ADRoot" -SearchScope 2 -Properties *
+        }
     }
 }
 
@@ -126,22 +156,41 @@ function Set-AdditionalCAProperty {
         [parameter(
             Mandatory = $true,
             ValueFromPipeline = $true)]
-        [array]$ADCSObjects
+        [array]$ADCSObjects,
+        [System.Management.Automation.PSCredential]$Credential
     )
     process {
         $ADCSObjects | Where-Object objectClass -Match 'pKIEnrollmentService' | ForEach-Object {
             [string]$CAFullName = "$($_.dNSHostName)\$($_.Name)"
             $CAHostname = $_.dNSHostName.split('.')[0]
-            $CAHostDistinguishedName = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') }).DistinguishedName
-            certutil.exe -config $CAFullName -ping | Out-Null
-            if ($LASTEXITCODE -eq 0) {
+            $CAName = $CAFullName.split('\')[1]
+            if ($Credential){
+                $CAHostDistinguishedName = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -Credential $Credential).DistinguishedName
+            } else {
+                $CAHostDistinguishedName = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') }).DistinguishedName
+            }
+            $ping = Test-Connection -ComputerName $CAHostname -Quiet
+            if ($ping) {
                 try {
-                    $CertutilAudit = certutil -config $CAFullName -getreg CA\AuditFilter
+                    $AuditFilterPath = "HKLM:\SYSTEM\CurrentControlSet\Services\CertSvc\Configuration\$CAName"
+                    if ($Credential) {
+                        $AuditFilterReg = Invoke-Command -ComputerName $CAHostname -Credential $Credential -ScriptBlock {param($AuditFilterPath);Get-ItemProperty -Path $AuditFilterPath} -ArgumentList $AuditFilterPath
+                        $AuditFilter = $AuditFilterReg.AuditFilter
+                    } else {  
+                        $AuditFilterReg = Invoke-Command -ComputerName $CAHostname -ScriptBlock {param($AuditFilterPath);Get-ItemProperty -Path $AuditFilterPath} -ArgumentList $AuditFilterPath
+                        $AuditFilter = $AuditFilterReg.AuditFilter
+                    }
                 } catch {
                     $AuditFilter = 'Failure'
                 }
                 try {
-                    $CertutilFlag = certutil -config $CAFullName -getreg policy\EditFlags
+                    $EditFlagsPath = "HKLM:SYSTEM\CurrentControlSet\Services\CertSvc\Configuration\$CAName\PolicyModules\CertificateAuthority_MicrosoftDefault.Policy"
+                    if ($Credential) {
+                        $EditFlagsReg = Invoke-Command -ComputerName $CAHostname -Credential $Credential -ScriptBlock {param($EditFlagsPath);Get-ItemProperty -Path $EditFlagsPath} -ArgumentList $EditFlagsPath
+                    } else {
+                        $EditFlagsReg = Invoke-Command -ComputerName $CAHostname -ScriptBlock {param($EditFlagsPath);Get-ItemProperty -Path $EditFlagsPath} -ArgumentList $EditFlagsPath
+                    }
+                    $CertutilFlag = $EditFlagsReg.EditFlags
                 } catch {
                     $AuditFilter = 'Failure'
                 }
@@ -149,21 +198,9 @@ function Set-AdditionalCAProperty {
                 $AuditFilter = 'CA Unavailable'
                 $SANFlag = 'CA Unavailable'
             }
-            if ($CertutilAudit) {
-                try {
-                    [string]$AuditFilter = $CertutilAudit | Select-String 'AuditFilter REG_DWORD = ' | Select-String '\('
-                    $AuditFilter = $AuditFilter.split('(')[1].split(')')[0]
-                } catch {
-                    try {
-                        [string]$AuditFilter = $CertutilAudit | Select-String 'AuditFilter REG_DWORD = '
-                        $AuditFilter = $AuditFilter.split('=')[1].trim()
-                    } catch {
-                        $AuditFilter = 'Never Configured'
-                    }
-                }
-            }
             if ($CertutilFlag) {
-                [string]$SANFlag = $CertutilFlag | Select-String ' EDITF_ATTRIBUTESUBJECTALTNAME2 -- 40000 \('
+                [string]$SANFlag = $CertutilFlag -eq '1376590' # EDITF_ATTRIBUTESUBJECTALTNAME2 IS present
+
                 if ($SANFlag) {
                     $SANFlag = 'Yes'
                 } else {
@@ -186,11 +223,18 @@ function Get-CAHostObject {
         [parameter(
             Mandatory = $true,
             ValueFromPipeline = $true)]
-        [array]$ADCSObjects
+        [array]$ADCSObjects,
+        [System.Management.Automation.PSCredential]$Credential
     )
     process {
-        $ADCSObjects | Where-Object objectClass -Match 'pKIEnrollmentService' | ForEach-Object {
-            Get-ADObject $_.CAHostDistinguishedName -Properties *
+        if ($Credential) {
+            $ADCSObjects | Where-Object objectClass -Match 'pKIEnrollmentService' | ForEach-Object {
+                Get-ADObject $_.CAHostDistinguishedName -Properties * -Credential $Credential
+            }
+        } else {
+            $ADCSObjects | Where-Object objectClass -Match 'pKIEnrollmentService' | ForEach-Object {
+                Get-ADObject $_.CAHostDistinguishedName -Properties *
+            }
         }
     }
 }
@@ -503,11 +547,18 @@ function Format-Result {
     }
 }
 
+if (!$Credential -and (Get-RestrictedAdminModeSetting)) {
+    Write-Warning "Restricted Admin Mode appears to be in place, re-run with the '-Credential domain\user' option"
+    break;
+}
 
 Clear-Host
 $Logo
-$Targets = Get-Target
-# New-OutputPath
+if ($Credential) {
+    $Targets = Get-Target -Credential $Credential
+} else {
+    $Targets = Get-Target
+}
 
 # Check if ActiveDirectory PowerShell module is available, and attempt to install if not found
 if (-not(Get-Module -Name 'ActiveDirectory' -ListAvailable)) { 
@@ -518,12 +569,20 @@ if (-not(Get-Module -Name 'ActiveDirectory' -ListAvailable)) {
 
 Clear-Host
 $Logo
-Write-Host 'Gathering AD CS Objects from $($Targets[0])...'
-$ADCSObjects = Get-ADCSObject -Targets $Targets
-Set-AdditionalCAProperty -ADCSObjects $ADCSObjects
-$ADCSObjects += Get-CAHostObject -ADCSObjects $ADCSObjects
-$CAHosts = Get-CAHostObject -ADCSObjects $ADCSObjects
-$CAHosts | ForEach-Object { $SafeUsers += '|' + $_.Name }
+Write-Host "Gathering AD CS Objects from $($Targets)..."
+if ($Credential) {
+    $ADCSObjects = Get-ADCSObject -Targets $Targets -Credential $Credential
+    Set-AdditionalCAProperty -ADCSObjects $ADCSObjects -Credential $Credential
+    $ADCSObjects += Get-CAHostObject -ADCSObjects $ADCSObjects -Credential $Credential
+    $CAHosts = Get-CAHostObject -ADCSObjects $ADCSObjects  -Credential $Credential
+    $CAHosts | ForEach-Object { $SafeUsers += '|' + $_.Name }
+} else {
+    $ADCSObjects = Get-ADCSObject -Targets $Targets
+    Set-AdditionalCAProperty -ADCSObjects $ADCSObjects
+    $ADCSObjects += Get-CAHostObject -ADCSObjects $ADCSObjects
+    $CAHosts = Get-CAHostObject -ADCSObjects $ADCSObjects
+    $CAHosts | ForEach-Object { $SafeUsers += '|' + $_.Name }
+}
 
 Clear-Host
 $Logo
@@ -695,4 +754,8 @@ switch ($Mode) {
             }
         }
     }
+}
+
+if(Get-RestrictedAdminModeSetting){
+    Write-Warning "Restricted Admin Mode appears to be configured. Certutil.exe may not work from this host, therefore you may need to execute the 'Fix' commands on the CA server itself"
 }
