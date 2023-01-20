@@ -289,7 +289,11 @@ function Find-ESC1 {
     } | ForEach-Object {
         foreach($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
-            $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+            if ($Principal -match '^S-1') {
+                $SID = $Principal
+            } else {
+                $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+            }
             if ( ($SID -notmatch $SafeUsers) -and ($entry.ActiveDirectoryRights -match 'ExtendedRight') ) {
                 $Issue = New-Object -TypeName pscustomobject
                 $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
@@ -328,7 +332,11 @@ function Find-ESC2 {
     } | ForEach-Object {
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
-            $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+            if ($Principal -match '^S-1') {
+                $SID = $Principal
+            } else {
+                $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+            }
             if ( ($SID -notmatch $SafeUsers) -and ($entry.ActiveDirectoryRights -match 'ExtendedRight') ) {
                 $Issue = New-Object -TypeName pscustomobject
                 $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
@@ -364,7 +372,11 @@ function Find-ESC4 {
     )
     $ADCSObjects | ForEach-Object {
         $Principal = New-Object System.Security.Principal.NTAccount($_.nTSecurityDescriptor.Owner)
-        $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+        if ($Principal -match '^S-1') {
+            $SID = $Principal
+        } else {
+            $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+        }
         if ( ($_.objectClass -eq 'pKICertificateTemplate') -and ($SID -notmatch $SafeOwners) ) {
             $Issue = New-Object -TypeName pscustomobject
             $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
@@ -381,7 +393,11 @@ function Find-ESC4 {
         }
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
-            $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+            if ($Principal -match '^S-1') {
+                $SID = $Principal
+            } else {
+                $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+            }
             if ( ($_.objectClass -eq 'pKICertificateTemplate') -and
                 ($SID -notmatch $SafeUsers) -and
                 ($entry.ActiveDirectoryRights -match $DangerousRights) ) {
@@ -417,7 +433,11 @@ function Find-ESC5 {
     )
     $ADCSObjects | ForEach-Object {
         $Principal = New-Object System.Security.Principal.NTAccount($_.nTSecurityDescriptor.Owner)
-        $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+        if ($Principal -match '^S-1') {
+            $SID = $Principal
+        } else {
+            $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+        }
         if ( ($_.objectClass -ne 'pKICertificateTemplate') -and ($SID -notmatch $SafeOwners) ) {
             $Issue = New-Object -TypeName pscustomobject
             $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
@@ -434,7 +454,11 @@ function Find-ESC5 {
         }
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
-            $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+            if ($Principal -match '^S-1') {
+                $SID = $Principal
+            } else {
+                $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+            }
             if ( ($_.objectClass -ne 'pKICertificateTemplate') -and
                 ($SID -notmatch $SafeUsers) -and
                 ($entry.ActiveDirectoryRights -match $DangerousRights) ) {
