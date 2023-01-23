@@ -82,13 +82,10 @@ $DangerousRights = 'GenericAll|WriteDacl|WriteOwner'
 
 function Get-RestrictedAdminModeSetting {
     $Path = 'HKLM:SYSTEM\CurrentControlSet\Control\Lsa'
-    $RAMMode = 'DisableRestrictedAdminMode'
-    $OutboundCreds = 'DisableRestrictedAdminOutboundCreds'
-
     try {
-        $RAM = Get-ItemProperty -Path $Path | Select-Object $RAMMode -ErrorAction Stop
-        $Creds = Get-ItemProperty -Path $Path | Select-Object $OutboundCreds -ErrorAction Stop
-        if ($RAM.DisableRestrictedAdminMode -eq '0' -and $Creds.DisableRestrictedAdminOutboundCreds -eq '1'){
+        $RAM = (Get-ItemProperty -Path $Path).DisableRestrictedAdmin
+        $Creds = (Get-ItemProperty -Path $Path).DisableRestrictedAdminOutboundCreds
+        if ($RAM -eq '0' -and $Creds -eq '1'){
             return $true
         } else {
             return $false
@@ -172,25 +169,20 @@ function Set-AdditionalCAProperty {
             $ping = Test-Connection -ComputerName $CAHostname -Quiet
             if ($ping) {
                 try {
-                    $AuditFilterPath = "HKLM:\SYSTEM\CurrentControlSet\Services\CertSvc\Configuration\$CAName"
                     if ($Credential) {
-                        $AuditFilterReg = Invoke-Command -ComputerName $CAHostname -Credential $Credential -ScriptBlock {param($AuditFilterPath);Get-ItemProperty -Path $AuditFilterPath} -ArgumentList $AuditFilterPath
-                        $AuditFilter = $AuditFilterReg.AuditFilter
+                        $CertutilAudit = Invoke-Command -ComputerName $CAHostname -Credential $Credential -ScriptBlock {param($CAFullName);certutil -config $CAFullName -getreg CA\AuditFilter} -ArgumentList $CAFullName
                     } else {  
-                        $AuditFilterReg = Invoke-Command -ComputerName $CAHostname -ScriptBlock {param($AuditFilterPath);Get-ItemProperty -Path $AuditFilterPath} -ArgumentList $AuditFilterPath
-                        $AuditFilter = $AuditFilterReg.AuditFilter
+                        $CertutilAudit = certutil -config $CAFullName -getreg CA\AuditFilter
                     }
                 } catch {
                     $AuditFilter = 'Failure'
                 }
                 try {
-                    $EditFlagsPath = "HKLM:SYSTEM\CurrentControlSet\Services\CertSvc\Configuration\$CAName\PolicyModules\CertificateAuthority_MicrosoftDefault.Policy"
                     if ($Credential) {
-                        $EditFlagsReg = Invoke-Command -ComputerName $CAHostname -Credential $Credential -ScriptBlock {param($EditFlagsPath);Get-ItemProperty -Path $EditFlagsPath} -ArgumentList $EditFlagsPath
+                        $CertutilFlag = Invoke-Command -ComputerName $CAHostname -Credential $Credential -ScriptBlock {param($CAFullName);certutil -config $CAFullName -getreg policy\EditFlags} -ArgumentList $CAFullName
                     } else {
-                        $EditFlagsReg = Invoke-Command -ComputerName $CAHostname -ScriptBlock {param($EditFlagsPath);Get-ItemProperty -Path $EditFlagsPath} -ArgumentList $EditFlagsPath
+                        $CertutilFlag = certutil -config $CAFullName -getreg policy\EditFlags
                     }
-                    $CertutilFlag = $EditFlagsReg.EditFlags
                 } catch {
                     $AuditFilter = 'Failure'
                 }
@@ -198,12 +190,27 @@ function Set-AdditionalCAProperty {
                 $AuditFilter = 'CA Unavailable'
                 $SANFlag = 'CA Unavailable'
             }
+            if ($CertutilAudit) {
+                try {
+                    [string]$AuditFilter = $CertutilAudit | Select-String 'AuditFilter REG_DWORD = ' | Select-String '\('
+                    $AuditFilter = $AuditFilter.split('(')[1].split(')')[0]
+                }
+                catch {
+                    try {
+                        [string]$AuditFilter = $CertutilAudit | Select-String 'AuditFilter REG_DWORD = '
+                        $AuditFilter = $AuditFilter.split('=')[1].trim()
+                    }
+                    catch {
+                        $AuditFilter = 'Never Configured'
+                    }
+                }
+            }
             if ($CertutilFlag) {
-                [string]$SANFlag = $CertutilFlag -eq '1376590' # EDITF_ATTRIBUTESUBJECTALTNAME2 IS present
-
+                [string]$SANFlag = $CertutilFlag | Select-String ' EDITF_ATTRIBUTESUBJECTALTNAME2 -- 40000 \('
                 if ($SANFlag) {
                     $SANFlag = 'Yes'
-                } else {
+                }
+                else {
                     $SANFlag = 'No'
                 }
             }
@@ -566,6 +573,9 @@ function Format-Result {
             }
             1 {
                 $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix
+                if(($Issue.Technique -eq "DETECT" -or $Issue.Technique -eq "ESC6") -and (Get-RestrictedAdminModeSetting)){
+                    Write-Warning "Restricted Admin Mode appears to be configured. Certutil.exe may not work from this host, therefore you may need to execute the 'Fix' commands on the CA server itself"
+                }
             }
         }
     }
@@ -778,8 +788,4 @@ switch ($Mode) {
             }
         }
     }
-}
-
-if(Get-RestrictedAdminModeSetting){
-    Write-Warning "Restricted Admin Mode appears to be configured. Certutil.exe may not work from this host, therefore you may need to execute the 'Fix' commands on the CA server itself"
 }
