@@ -1,20 +1,23 @@
 ## Short Term
 - [ ] Add individual CA Hosts to $SafeUsers
-- [ ] Strict Mode support
-- [ ] RDP Restricted Admin support
+- [ ] Rename Modes to something that makes sense
+- [ ] Multi-Forest support
+- [ ] Improved Output: Email, PS Object
+- [ ] Check for Elevation before Fixing
+- [ ] Check for installed Modules on Win 10/11
 
 ## Medium Term
 - [ ] ESC7 and ESC8 coverage
-- [ ] Convert $SafeOwners and $SafeUsers to SIDs
-- [ ] Rename Modes to something that makes sense
 - [ ] Text-Based User Interface
 - [ ] Check for Auditing GPOS, Warn if none found
 - [ ] ACL and Owner remediation snippets
 - [ ] Improved Error Handling
+- [ ] Include Reference Material
 
 ## Long Term
-- [ ] Check for Elevation before Fixing
 - [ ] Multi-Forest support
+- [ ] Improved Output: Email, PS Object
+- [ ] Convert from PS Modules/cmdlets to ADSI calls
 
 ## Recently Completed
 - [x] Modes 0 & 1: Headers for Console Output
@@ -26,6 +29,9 @@
 - [x] Script to reset any fixed items
 - [x] Testing of all modes
 - [x] Backup before running Mode 4
+- [x] Strict Mode support
+- [x] RDP Restricted Admin support
+- [x] Convert $SafeOwners and $SafeUsers to SIDs
 
 ## Comment-based Help pulled from original version
 ```` powershell
