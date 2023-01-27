@@ -71,14 +71,22 @@ $Logo = "
      '--'                  '--'                  '--'            
 "
 
-
+# Static variables
 $SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$'
-$SafeUsers = "-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$"
+$SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$'
+$UnsafeOwners = 'S-1-1-0|-11$|-513$|-515$'
+$UnsafeUsers = 'S-1-1-0|-11$|-513$|-515$'
+$ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
+$DangerousRights = 'GenericAll|WriteDacl|WriteOwner|WriteProperty'
+
+# Generated variables
+$DNSRoot = [string]((Get-ADForest).RootDomain | Get-ADDomain).DNSRoot
+$EnterpriseAdminsSID = ([string]((Get-ADForest).RootDomain | Get-ADDomain).DomainSID) + '-519'
+$PreferredOwner = New-Object System.Security.Principal.SecurityIdentifier($EnterpriseAdminsSID)
 # $Admins = @('Domain Admins','Enterprise Admins','Administrators')
 # $AdminUsers = $Admins | ForEach-Object { (Get-ADGroupMember $_ | Where-Object { $_.objectClass -eq 'user'}).SamAccountName } | Select-Object -Unique
 # $AdminUsers | ForEach-Object { $SafeUsers += "|$($env:USERDOMAIN)\\" + $_ }
-$ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
-$DangerousRights = 'GenericAll|WriteDacl|WriteOwner'
+
 
 function Get-RestrictedAdminModeSetting {
     $Path = 'HKLM:SYSTEM\CurrentControlSet\Control\Lsa'
@@ -104,7 +112,8 @@ function Get-Target {
 
     if ($Forest) {
         $Targets = $Forest
-    } elseif ($InputPath) {
+    }
+    elseif ($InputPath) {
         $Targets = Get-Content $InputPath
     } else {
         if ($Credential){
@@ -186,7 +195,8 @@ function Set-AdditionalCAProperty {
                 } catch {
                     $AuditFilter = 'Failure'
                 }
-            } else {
+            }
+            else {
                 $AuditFilter = 'CA Unavailable'
                 $SANFlag = 'CA Unavailable'
             }
@@ -266,7 +276,8 @@ function Find-AuditingIssue {
             $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value 'N/A' -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value 'N/A' -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'DETECT' -Force
-        } else {
+        }
+        else {
             $Issue | Add-Member -MemberType NoteProperty -Name Issue -Value "Auditing is not fully enabled. Current value is $($_.AuditFilter)" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Fix `
                 -Value "certutil -config `'$($_.CAFullname)`' -setreg `'CA\AuditFilter`' 127; Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
@@ -294,7 +305,7 @@ function Find-ESC1 {
         ($_.'msPKI-Enrollment-Flag' -ne 2) -and
         ( ($_.'msPKI-RA-Signature' -eq 0) -or ($null -eq $_.'msPKI-RA-Signature') )
     } | ForEach-Object {
-        foreach($entry in $_.nTSecurityDescriptor.Access) {
+        foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
             if ($Principal -match '^S-1') {
                 $SID = $Principal
@@ -398,6 +409,20 @@ function Find-ESC4 {
             $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC4'
             $Issue
         }
+        if ( ($_.objectClass -eq 'pKICertificateTemplate') -and ($SID -match $UnsafeOwners) ) {
+            $Issue = New-Object -TypeName pscustomobject
+            $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name IdentityReference -Value $entry.IdentityReference -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name ActiveDirectoryRights -Value $entry.ActiveDirectoryRights -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Issue `
+                -Value "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template" -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL" -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL" -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC4'
+            $Issue
+        }
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
             if ($Principal -match '^S-1') {
@@ -459,6 +484,20 @@ function Find-ESC5 {
             $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC5'
             $Issue
         }
+        if ( ($_.objectClass -ne 'pKICertificateTemplate') -and ($SID -match $UnsafeOwners) ) {
+            $Issue = New-Object -TypeName pscustomobject
+            $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name IdentityReference -Value $entry.IdentityReference -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name ActiveDirectoryRights -Value $entry.ActiveDirectoryRights -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Issue `
+                -Value "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template" -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL" -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL" -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC4'
+            $Issue
+        }
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
             if ($Principal -match '^S-1') {
@@ -469,18 +508,18 @@ function Find-ESC5 {
             if ( ($_.objectClass -ne 'pKICertificateTemplate') -and
                 ($SID -notmatch $SafeUsers) -and
                 ($entry.ActiveDirectoryRights -match $DangerousRights) ) {
-                    $Issue = New-Object -TypeName pscustomobject
-                    $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
-                    $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
-                    $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
-                    $Issue | Add-Member -MemberType NoteProperty -Name IdentityReference -Value $entry.IdentityReference -Force
-                    $Issue | Add-Member -MemberType NoteProperty -Name ActiveDirectoryRights -Value $entry.ActiveDirectoryRights -Force
-                    $Issue | Add-Member -MemberType NoteProperty -Name Issue `
-                        -Value "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this object" -Force
-                    $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value '[TODO]'  -Force
-                    $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
-                    $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC5'
-                    $Issue
+                $Issue = New-Object -TypeName pscustomobject
+                $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name IdentityReference -Value $entry.IdentityReference -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name ActiveDirectoryRights -Value $entry.ActiveDirectoryRights -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Issue `
+                    -Value "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this object" -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value '[TODO]'  -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC5'
+                $Issue
             }
         }
     }
@@ -509,7 +548,8 @@ function Find-ESC6 {
                     -Value "certutil -config $CAFullname -setreg policy\EditFlags -EDITF_ATTRIBUTESUBJECTALTNAME2; Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Revert `
                     -Value "certutil -config $CAFullname -setreg policy\EditFlags +EDITF_ATTRIBUTESUBJECTALTNAME2; Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
-            } else {
+            }
+            else {
                 $Issue | Add-Member -MemberType NoteProperty -Name Issue -Value $_.AuditFilter -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value 'N/A' -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value 'N/A' -Force
@@ -539,7 +579,7 @@ function Export-RevertScript {
         $Objects = $AuditingIssues + $ESC1 + $ESC2 + $ESC6
     }
     process {
-        $Objects| ForEach-Object {
+        $Objects | ForEach-Object {
             Add-Content -Path $Output -Value $_.Revert
             Start-Sleep -Seconds 5
         }
@@ -557,11 +597,11 @@ function Format-Result {
 
     $IssueTable = @{
         DETECT = 'Auditing Issues'
-        ESC1 = 'ESC1 - Misconfigured Certificate Template'
-        ESC2 = 'ESC2 - Misconfigured Certificate Template'
-        ESC4 = 'ESC4 - Vulnerable Certifcate Template Access Control'
-        ESC5 = 'ESC5 - Vulnerable PKI Object Access Control'
-        ESC6 = 'ESC6 - EDITF_ATTRIBUTESUBJECTALTNAME2'
+        ESC1   = 'ESC1 - Misconfigured Certificate Template'
+        ESC2   = 'ESC2 - Misconfigured Certificate Template'
+        ESC4   = 'ESC4 - Vulnerable Certifcate Template Access Control'
+        ESC5   = 'ESC5 - Vulnerable PKI Object Access Control'
+        ESC6   = 'ESC6 - EDITF_ATTRIBUTESUBJECTALTNAME2'
     }
 
     if ($null -ne $Issue) {
@@ -666,7 +706,8 @@ switch ($Mode) {
         try {
             $AllIssues | Select-Object Forest, Name, Issue | Export-Csv -NoTypeInformation $Output
             Write-Host "$Output created successfully!"
-        } catch {
+        }
+        catch {
             Write-Host 'Ope! Something broke.'
         } 
     }
@@ -678,7 +719,8 @@ switch ($Mode) {
         try {
             $AllIssues | Select-Object Forest, Name, DistinguishedName, Issue, Fix | Export-Csv -NoTypeInformation $Output
             Write-Host "$Output created successfully!"
-        } catch {
+        }
+        catch {
             Write-Host 'Ope! Something broke.'
         }
     }
@@ -702,11 +744,13 @@ switch ($Mode) {
                     if (!$WarningError) {
                         try {
                             Invoke-Command -ScriptBlock $FixBlock
-                        } catch {
+                        }
+                        catch {
                             Write-Error 'Could not modify AD CS auditing. Are you a local admin on this host?'
                         }
                     }
-                } catch {
+                }
+                catch {
                     Write-Host 'SKIPPED!' -ForegroundColor Yellow
                 }
                 Read-Host -Prompt 'Press any key to continue...'
@@ -727,12 +771,14 @@ switch ($Mode) {
                     if (!$WarningError) {
                         try {
                             Invoke-Command -ScriptBlock $FixBlock
-                        } catch {
+                        }
+                        catch {
                             Write-Error 'Could not enable Manager Approval. Are you an Active Directory or AD CS admin?'
                         }
                     }
-                } catch {
-                        Write-Host 'SKIPPED!' -ForegroundColor Yellow
+                }
+                catch {
+                    Write-Host 'SKIPPED!' -ForegroundColor Yellow
                 }
                 Read-Host -Prompt 'Press any key to continue...'
             }
@@ -752,11 +798,13 @@ switch ($Mode) {
                     if (!$WarningError) {
                         try {
                             Invoke-Command -ScriptBlock $FixBlock
-                        } catch {
+                        }
+                        catch {
                             Write-Error 'Could not enable Manager Approval. Are you an Active Directory or AD CS admin?'
                         }
                     }
-                } catch {
+                }
+                catch {
                     Write-Host 'SKIPPED!' -ForegroundColor Yellow
                 }
                 Read-Host -Prompt 'Press any key to continue...'
@@ -777,11 +825,13 @@ switch ($Mode) {
                     if (!$WarningError) {
                         try {
                             Invoke-Command -ScriptBlock $FixBlock
-                        } catch {
+                        }
+                        catch {
                             Write-Error 'Could not enable Manager Approval. Are you an Active Directory or AD CS admin?'
                         }
                     }
-                } catch {
+                }
+                catch {
                     Write-Host 'SKIPPED!' -ForegroundColor Yellow
                 }
                 Read-Host -Prompt 'Press any key to continue...'
