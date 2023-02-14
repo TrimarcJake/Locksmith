@@ -87,6 +87,54 @@ $PreferredOwner = New-Object System.Security.Principal.SecurityIdentifier($Enter
 # $AdminUsers = $Admins | ForEach-Object { (Get-ADGroupMember $_ | Where-Object { $_.objectClass -eq 'user'}).SamAccountName } | Select-Object -Unique
 # $AdminUsers | ForEach-Object { $SafeUsers += "|$($env:USERDOMAIN)\\" + $_ }
 
+function Test-IsElevated {
+    <#
+    .SYNOPSIS
+        Tests if PowerShell is running with elevated privileges (run as Administrator).
+    .DESCRIPTION
+        This function returns True if the script is being run as an administrator or False if not.
+    .EXAMPLE
+        Test-IsElevated
+    .EXAMPLE
+        if (!(Test-IsElevated)) { Write-Host "You are not running with elevated privileges and will not be able to make any changes." -ForeGroundColor Yellow }
+    #>
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = New-Object Security.Principal.WindowsPrincipal $identity
+    $principal.IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
+
+    <# Optional: Prompt to launch elevated if not already running as administrator:
+    if (-not ( [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator") ) {
+        $arguments = "& '" + $myinvocation.mycommand.definition + "'" Start-Process powershell -Verb runAs -ArgumentList $arguments Break
+    }
+    #>
+}
+
+
+function Test-IsDomainAdmin {
+    <#
+    .SYNOPSIS
+        Tests if the current user has Domain Admin rights (or a comparable role).
+    .DESCRIPTION
+        This function returns True if the current user is a Domain Admin or False if not.
+    .EXAMPLE
+        Test-IsDomainAdmin
+    .EXAMPLE
+        if (!(Test-IsDomainAdmin)) { Write-Host "You are not running with Domain Admin rights and will not be able to make certain changes." -ForeGroundColor Yellow }
+    #>
+    if (-not (
+        # Need to test to make sure this checks domain groups and not local groups, particularly for 'Administrators' (reference SID instead of name?).
+         ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole("Domain Admin") -or
+         ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole("Administrators") -or
+         ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole("Enterprise Admins")
+        ) ) {
+        Write-Host "You do not have Domain Admin rights and will not be able to make certain changes." -ForegroundColor Yellow
+        Return $false
+    }
+    else {
+        Return $true
+    }
+}
+
 
 function Get-RestrictedAdminModeSetting {
     $Path = 'HKLM:SYSTEM\CurrentControlSet\Control\Lsa'
