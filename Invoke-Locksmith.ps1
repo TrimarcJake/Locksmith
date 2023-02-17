@@ -110,28 +110,27 @@ function Test-IsElevated {
 }
 
 
-function Test-IsDomainAdmin {
+function Test-IsADAdmin {
     <#
     .SYNOPSIS
-        Tests if the current user has Domain Admin rights (or a comparable role).
+        Tests if the current user has administrative rights in Active Directory.
     .DESCRIPTION
-        This function returns True if the current user is a Domain Admin or False if not.
+        This function returns True if the current user is a Domain Admin (or equivalent) or False if not.
     .EXAMPLE
-        Test-IsDomainAdmin
+        Test-IsADAdmin
     .EXAMPLE
-        if (!(Test-IsDomainAdmin)) { Write-Host "You are not running with Domain Admin rights and will not be able to make certain changes." -ForeGroundColor Yellow }
+        if (!(Test-IsADAdmin)) { Write-Host "You are not running with Domain Admin rights and will not be able to make certain changes." -ForeGroundColor Yellow }
     #>
-    if (-not (
+    if (
         # Need to test to make sure this checks domain groups and not local groups, particularly for 'Administrators' (reference SID instead of name?).
          ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole("Domain Admin") -or
          ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole("Administrators") -or
          ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole("Enterprise Admins")
-        ) ) {
-        Write-Host "You do not have Domain Admin rights and will not be able to make certain changes." -ForegroundColor Yellow
-        Return $false
+       ) {
+        Return $true
     }
     else {
-        Return $true
+        Return $false
     }
 }
 
