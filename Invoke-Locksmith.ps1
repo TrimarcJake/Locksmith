@@ -87,6 +87,74 @@ $PreferredOwner = New-Object System.Security.Principal.SecurityIdentifier($Enter
 # $AdminUsers = $Admins | ForEach-Object { (Get-ADGroupMember $_ | Where-Object { $_.objectClass -eq 'user'}).SamAccountName } | Select-Object -Unique
 # $AdminUsers | ForEach-Object { $SafeUsers += "|$($env:USERDOMAIN)\\" + $_ }
 
+function Test-IsElevated {
+    <#
+    .SYNOPSIS
+        Tests if PowerShell is running with elevated privileges (run as Administrator).
+    .DESCRIPTION
+        This function returns True if the script is being run as an administrator or False if not.
+    .EXAMPLE
+        Test-IsElevated
+    .EXAMPLE
+        if (!(Test-IsElevated)) { Write-Host "You are not running with elevated privileges and will not be able to make any changes." -ForeGroundColor Yellow }
+    #>
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = New-Object Security.Principal.WindowsPrincipal $identity
+    $principal.IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
+
+    <# Optional: Prompt to launch elevated if not already running as administrator:
+    if (-not ( [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator") ) {
+        $arguments = "& '" + $myinvocation.mycommand.definition + "'" Start-Process powershell -Verb runAs -ArgumentList $arguments Break
+    }
+    #>
+}
+
+
+function Test-IsADAdmin {
+    <#
+    .SYNOPSIS
+        Tests if the current user has administrative rights in Active Directory.
+    .DESCRIPTION
+        This function returns True if the current user is a Domain Admin (or equivalent) or False if not.
+    .EXAMPLE
+        Test-IsADAdmin
+    .EXAMPLE
+        if (!(Test-IsADAdmin)) { Write-Host "You are not running with Domain Admin rights and will not be able to make certain changes." -ForeGroundColor Yellow }
+    #>
+    if (
+        # Need to test to make sure this checks domain groups and not local groups, particularly for 'Administrators' (reference SID instead of name?).
+         ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole("Domain Admin") -or
+         ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole("Administrators") -or
+         ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole("Enterprise Admins")
+       ) {
+        Return $true
+    }
+    else {
+        Return $false
+    }
+}
+
+
+function Test-IsLocalAccountSession {
+    <#
+    .SYNOPSIS
+        Tests if the current session is running under a local user account or a domain account.
+    .DESCRIPTION
+        This function returns True if the current session is a local user or False if it is a domain user.
+    .EXAMPLE
+        Test-IsLocalAccountSession
+    .EXAMPLE
+        if ( (Test-IsLocalAccountSession) ) { Write-Host "You are running this script under a local account." -ForeGroundColor Yellow }
+    #>
+        [CmdletBinding()]
+    
+        $CurrentSID = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+        $LocalSIDs = (Get-LocalUser).SID.Value
+        if ($CurrentSID -in $LocalSIDs) {
+            Return $true
+        }
+    }
+
 
 function Get-RestrictedAdminModeSetting {
     $Path = 'HKLM:SYSTEM\CurrentControlSet\Control\Lsa'
