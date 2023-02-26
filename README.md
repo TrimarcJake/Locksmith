@@ -1,4 +1,13 @@
-# Locksmith
+```
+ _       _____  _______ _     _ _______ _______ _____ _______ _     _
+ |      |     | |       |____/  |______ |  |  |   |      |    |_____|
+ |_____ |_____| |_____  |    \_ ______| |  |  | __|__    |    |     |
+     .--.                  .--.                  .--.            
+    /.-. '----------.     /.-. '----------.     /.-. '----------.
+    \'-' .--'--''-'-'     \'-' .--'--''-'-'     \'-' .--'--''-'-'
+     '--'                  '--'                  '--'  
+```
+
 A tiny tool to identify and remediate common misconfigurations in Active Directory Certificate Services
 
 # Examples
@@ -31,4 +40,4 @@ In Mode 3, Locksmith scans the current forest and outputs all discovered AD CS i
 ``` powerShell
 PS> .\Invoke-Locksmith.ps1 -Mode 4 
 ```
-Mode 4 is the "easy button." Running Locksmith in Mode 4 will identify all misconfigurations and attempt to fix each issue. **NO CONFIRMATION IS CURRENTLY REQUIRED. USE IN PROD AT YOUR OWN RISK.**
+Mode 4 is the "easy button." Running Locksmith in Mode 4 will identify all misconfigurations and attempt to fix each issue.
