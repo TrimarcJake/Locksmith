@@ -1,22 +1,21 @@
+## Continuous
+- [ ] Improved Error Handling
+
 ## Short Term
 - [ ] Add individual CA Hosts to $SafeUsers
 - [ ] Rename Modes to something that makes sense
 - [ ] Multi-Forest support
 - [ ] Improved Output: Email, PS Object
 - [ ] Check for Elevation before Fixing
-- [ ] Check for installed Modules on Win 10/11
 
 ## Medium Term
 - [ ] ESC7 and ESC8 coverage
 - [ ] Text-Based User Interface
 - [ ] Check for Auditing GPOS, Warn if none found
-- [ ] ACL and Owner remediation snippets
-- [ ] Improved Error Handling
+- [ ] ACL remediation snippets
 - [ ] Include Reference Material
 
 ## Long Term
-- [ ] Multi-Forest support
-- [ ] Improved Output: Email, PS Object
 - [ ] Convert from PS Modules/cmdlets to ADSI calls
 - [ ] Unit testing (for [Jared](https://github.com/trimarcjared))
 
@@ -33,3 +32,5 @@
 - [x] Strict Mode support
 - [x] RDP Restricted Admin support
 - [x] Convert $SafeOwners and $SafeUsers to SIDs
+- [x] Check for installed Modules on Win 10/11
+- [x] Owner remediation snippets
