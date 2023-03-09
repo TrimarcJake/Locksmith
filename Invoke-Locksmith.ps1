@@ -375,7 +375,7 @@ function Find-ESC1 {
     } | ForEach-Object {
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
-            if ($Principal -match '^S-1') {
+            if ($Principal -match '^S-1|^O:') {
                 $SID = $Principal
             } else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
@@ -418,7 +418,7 @@ function Find-ESC2 {
     } | ForEach-Object {
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
-            if ($Principal -match '^S-1') {
+            if ($Principal -match '^S-1|^O:') {
                 $SID = $Principal
             } else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
@@ -458,7 +458,7 @@ function Find-ESC4 {
     )
     $ADCSObjects | ForEach-Object {
         $Principal = New-Object System.Security.Principal.NTAccount($_.nTSecurityDescriptor.Owner)
-        if ($Principal -match '^S-1') {
+        if ($Principal -match '^S-1|^O:') {
             $SID = $Principal
         } else {
             $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
@@ -493,7 +493,7 @@ function Find-ESC4 {
         }
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
-            if ($Principal -match '^S-1') {
+            if ($Principal -match '^S-1|^O:') {
                 $SID = $Principal
             } else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
@@ -533,7 +533,7 @@ function Find-ESC5 {
     )
     $ADCSObjects | ForEach-Object {
         $Principal = New-Object System.Security.Principal.NTAccount($_.nTSecurityDescriptor.Owner)
-        if ($Principal -match '^S-1') {
+        if ($Principal -match '^S-1|^O:') {
             $SID = $Principal
         } else {
             $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
@@ -568,7 +568,7 @@ function Find-ESC5 {
         }
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
-            if ($Principal -match '^S-1') {
+            if ($Principal -match '^S-1|^O:') {
                 $SID = $Principal
             } else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
