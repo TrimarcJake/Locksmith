@@ -97,18 +97,18 @@ function Test-IsElevated {
         Test-IsElevated
     .EXAMPLE
         if (!(Test-IsElevated)) { Write-Host "You are not running with elevated privileges and will not be able to make any changes." -ForeGroundColor Yellow }
+    .EXAMPLE
+        # Prompt to launch elevated if not already running as administrator:
+        if (!(Test-IsElevated)) {
+            $arguments = "& '" + $myinvocation.mycommand.definition + "'"
+            Start-Process powershell -Verb runAs -ArgumentList $arguments
+            Break
+        }
     #>
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
     $principal = New-Object Security.Principal.WindowsPrincipal $identity
     $principal.IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
-
-    <# Optional: Prompt to launch elevated if not already running as administrator:
-    if (-not ( [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator") ) {
-        $arguments = "& '" + $myinvocation.mycommand.definition + "'" Start-Process powershell -Verb runAs -ArgumentList $arguments Break
-    }
-    #>
 }
-
 
 function Test-IsADAdmin {
     <#
