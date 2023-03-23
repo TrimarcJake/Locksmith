@@ -236,6 +236,19 @@ function Set-AdditionalCAProperty {
         [System.Management.Automation.PSCredential]$Credential
     )
     process {
+add-type @"
+    using System.Net;
+    using System.Security.Cryptography.X509Certificates;
+    public class TrustAllCertsPolicy : ICertificatePolicy {
+        public bool CheckValidationResult(
+            ServicePoint srvPoint, X509Certificate certificate,
+            WebRequest request, int certificateProblem) {
+            return true;
+        }
+    }
+"@
+        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Ssl3, [Net.SecurityProtocolType]::Tls, [Net.SecurityProtocolType]::Tls11, [Net.SecurityProtocolType]::Tls12
         $CAEnrollmentEndpoints = @()
         $ADCSObjects | Where-Object objectClass -Match 'pKIEnrollmentService' | ForEach-Object {
             [string]$CAFullName = "$($_.dNSHostName)\$($_.Name)"
@@ -669,12 +682,11 @@ function Find-ESC8 {
             $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
             $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
-            if ($_.EnrollmentEndpoints -like 'http://*') {
+            if ($_.EnrollmentEndpoints -like 'http*') {
                 $Issue | Add-Member -MemberType NoteProperty -Name Issue -Value 'HTTP enrollment is enabled.' -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name EnrollmentEndpoints -Value $_.EnrollmentEndpoints -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "TBD" -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "TBD - Remediate by doing 1, 2, and 3" -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value "TBD" -Force
-
             }
             $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC8'
             $Issue
