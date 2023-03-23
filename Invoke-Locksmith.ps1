@@ -78,6 +78,8 @@ $UnsafeOwners = 'S-1-1-0|-11$|-513$|-515$'
 $UnsafeUsers = 'S-1-1-0|-11$|-513$|-515$'
 $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
 $DangerousRights = 'GenericAll|WriteDacl|WriteOwner|WriteProperty'
+$EnrollmentEndpoints = @("/certsrv/","/<CANAME>_CES_Kerberos/service.svc","/<CANAME>_CES_Kerberos/service.svc/CES","/ADPolicyProvider_CEP_Kerberos/service.svc","/certsrv/mscep/")
+$Protocols = @('http://','https://')
 
 # Generated variables
 $DNSRoot = [string]((Get-ADForest).RootDomain | Get-ADDomain).DNSRoot
@@ -234,10 +236,33 @@ function Set-AdditionalCAProperty {
         [System.Management.Automation.PSCredential]$Credential
     )
     process {
+        $CAEnrollmentEndpoints = @()
         $ADCSObjects | Where-Object objectClass -Match 'pKIEnrollmentService' | ForEach-Object {
             [string]$CAFullName = "$($_.dNSHostName)\$($_.Name)"
             $CAHostname = $_.dNSHostName.split('.')[0]
             $CAName = $CAFullName.split('\')[1]
+            foreach ($Endpoint in $EnrollmentEndpoints) {
+                foreach ($Protocol in $Protocols) {
+                    $URL = $Protocol + $_.dNSHostName + $Endpoint -replace '<CANAME>', $_.Name
+                    $Response = $null
+                    if ($Credential) {
+                        try { 
+                            $Response = Invoke-WebRequest -Method GET -Uri $URL -Credential $Credential -TimeoutSec 3 -UseBasicParsing
+                            if ($Response.StatusCode -eq '200') {
+                                $CAEnrollmentEndpoints += $URL  
+                            }
+                        } catch {}
+                    } else {
+                        try { 
+                            $Response = Invoke-WebRequest -Method GET -Uri $URL -UseDefaultCredentials -TimeoutSec 3 -UseBasicParsing
+                            if ($Response.StatusCode -eq '200') {
+                                $CAEnrollmentEndpoints += $URL  
+                            }
+                        } catch {}
+                    }
+
+                }
+            }
             if ($Credential){
                 $CAHostDistinguishedName = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -Credential $Credential).DistinguishedName
             } else {
@@ -297,6 +322,7 @@ function Set-AdditionalCAProperty {
             Add-Member -InputObject $_ -MemberType NoteProperty -Name CAHostname -Value $CAHostname -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name CAHostDistinguishedName -Value $CAHostDistinguishedName -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name SANFlag -Value $SANFlag -Force
+            Add-Member -InputObject $_ -MemberType NoteProperty -Name EnrollmentEndpoints -Value $CAEnrollmentEndpoints -Force
         }
     }
 }
@@ -629,6 +655,35 @@ function Find-ESC6 {
 }
 
 
+function Find-ESC8 {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        $ADCSObjects
+    )
+    process {
+        $ADCSObjects | Where-Object { 
+            $_.EnrollmentEndpoints -ne ''
+        } | ForEach-Object {
+            $Issue = New-Object -TypeName pscustomobject
+            $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
+            if ($_.EnrollmentEndpoints -like 'http://*') {
+                $Issue | Add-Member -MemberType NoteProperty -Name Issue -Value 'HTTP enrollment is enabled.' -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name EnrollmentEndpoints -Value $_.EnrollmentEndpoints -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "TBD" -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value "TBD" -Force
+
+            }
+            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC8'
+            $Issue
+        }
+    }
+
+}
+
+
 function Export-RevertScript {
     [CmdletBinding()]
     param(
@@ -670,6 +725,7 @@ function Format-Result {
         ESC4   = 'ESC4 - Vulnerable Certifcate Template Access Control'
         ESC5   = 'ESC5 - Vulnerable PKI Object Access Control'
         ESC6   = 'ESC6 - EDITF_ATTRIBUTESUBJECTALTNAME2'
+        ESC8   = 'ESC8 - HTTP Enrollment Enabled'
     }
 
     if ($null -ne $Issue) {
@@ -680,9 +736,13 @@ function Format-Result {
                 $Issue | Format-Table Technique, Name, Issue -Wrap
             }
             1 {
-                $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix
-                if(($Issue.Technique -eq "DETECT" -or $Issue.Technique -eq "ESC6") -and (Get-RestrictedAdminModeSetting)){
-                    Write-Warning "Restricted Admin Mode appears to be configured. Certutil.exe may not work from this host, therefore you may need to execute the 'Fix' commands on the CA server itself"
+                if ($Issue.Technique -eq 'ESC8') {
+                    $Issue | Format-List Technique, Name, DistinguishedName, EnrollmentEndpoints, Issue, Fix
+                } else {
+                    $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix
+                    if(($Issue.Technique -eq "DETECT" -or $Issue.Technique -eq "ESC6") -and (Get-RestrictedAdminModeSetting)){
+                        Write-Warning "Restricted Admin Mode appears to be configured. Certutil.exe may not work from this host, therefore you may need to execute the 'Fix' commands on the CA server itself"
+                    }
                 }
             }
         }
@@ -750,7 +810,15 @@ Write-Host 'Identifying AD CS template and other objects with poor access contro
 [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
 [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
 [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects
-[array]$AllIssues = $AuditingIssues + $ESC1 + $ESC2 + $ESC4 + $ESC5 + $ESC6
+
+Clear-Host
+$Logo
+Write-Host 'Identifying HTTP-based certificate enrollment interfaces...'
+[array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects 
+
+[array]$AllIssues = $AuditingIssues + $ESC1 + $ESC2 + $ESC4 + $ESC5 + $ESC6 + $ESC8
+
+
 
 switch ($Mode) {
     0 { 
@@ -762,6 +830,7 @@ switch ($Mode) {
         Format-Result $ESC4 '0'
         Format-Result $ESC5 '0'
         Format-Result $ESC6 '0'
+        Format-Result $ESC8 '0'
     }
     1 {
         Clear-Host
@@ -772,6 +841,7 @@ switch ($Mode) {
         Format-Result $ESC4 '1'
         Format-Result $ESC5 '1'
         Format-Result $ESC6 '1'
+        Format-Result $ESC8 '1'
     }
     2 {
         Clear-Host
