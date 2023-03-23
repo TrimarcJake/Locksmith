@@ -3,13 +3,14 @@
 
 ## Short Term
 - [ ] Add individual CA Hosts to $SafeUsers
+- [ ] ESC8 coverage
 - [ ] Rename Modes to something that makes sense
 - [ ] Multi-Forest support
 - [ ] Improved Output: Email, PS Object
 - [ ] Check for Elevation before Fixing
 
 ## Medium Term
-- [ ] ESC7 and ESC8 coverage
+- [ ] ESC7 coverage
 - [ ] Text-Based User Interface
 - [ ] Check for Auditing GPOS, Warn if none found
 - [ ] ACL remediation snippets
@@ -17,6 +18,7 @@
 
 ## Long Term
 - [ ] Convert from PS Modules/cmdlets to ADSI calls
+- [ ] Fixes for ESC8
 - [ ] Unit testing (for [Jared](https://github.com/trimarcjared))
 
 ## Recently Completed
