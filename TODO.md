@@ -11,6 +11,7 @@
 - [ ] Add sample output to README.md
 
 ## Medium Term
+- [ ] ESC3 coverage
 - [ ] ESC7 coverage
 - [ ] Text-Based User Interface
 - [ ] Check for Auditing GPOS, Warn if none found
