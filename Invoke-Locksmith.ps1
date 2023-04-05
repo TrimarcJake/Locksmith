@@ -3,7 +3,7 @@
 Finds the most common malconfigurations of Active Directory Certificate Services (AD CS).
 
 .DESCRIPTION
-Locksmith uses the Active Directory (DA) Powershell (PS) module to identify 6 misconfigurations
+Locksmith uses the Active Directory (AD) Powershell (PS) module to identify 6 misconfigurations
 commonly found in Enterprise mode AD CS installations.
 
 .COMPONENT
@@ -13,13 +13,14 @@ install the module. If module installation does not complete successfully,
 Locksmith will fail.
 
 .PARAMETER Mode
-Specifies sets of common configurations.
+Specifies sets of common script execution modes.
+
 -Mode 0
-Finds and displays any malconfiguration in the console.
+Finds any malconfigurations and displays them in the console.
 No attempt is made to fix identified issues.
 
 -Mode 1
-Finds and displays any malconfiguration in the console.
+Finds any malconfigurations and displays them in the console.
 Displays example Powershell snippet that can be used to resolve the issue.
 No attempt is made to fix identified issues.
 
@@ -29,11 +30,11 @@ No attempt is made to fix identified issues.
 
 -Mode 3
 Finds any malconfigurations and writes them to a series of CSV files.
-Creates code snippets to fix each issue and writes them to an environment-specific custom .ps1 file.
+Creates code snippets to fix each issue and writes them to an environment-specific custom .PS1 file.
 No attempt is made to fix identified issues.
 
 -Mode 4
-Creates code snippets to fix each issue.
+Finds any malconfigurations and creates code snippets to fix each issue.
 Attempts to fix all identified issues. This mode may require high-privileged access.
 
 .INPUTS
@@ -78,6 +79,8 @@ $UnsafeOwners = 'S-1-1-0|-11$|-513$|-515$'
 $UnsafeUsers = 'S-1-1-0|-11$|-513$|-515$'
 $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
 $DangerousRights = 'GenericAll|WriteDacl|WriteOwner|WriteProperty'
+$EnrollmentEndpoints = @("/certsrv/","/<CANAME>_CES_Kerberos/service.svc","/<CANAME>_CES_Kerberos/service.svc/CES","/ADPolicyProvider_CEP_Kerberos/service.svc","/certsrv/mscep/")
+$Protocols = @('http://','https://')
 
 # Generated variables
 $DNSRoot = [string]((Get-ADForest).RootDomain | Get-ADDomain).DNSRoot
@@ -86,6 +89,7 @@ $PreferredOwner = New-Object System.Security.Principal.SecurityIdentifier($Enter
 # $Admins = @('Domain Admins','Enterprise Admins','Administrators')
 # $AdminUsers = $Admins | ForEach-Object { (Get-ADGroupMember $_ | Where-Object { $_.objectClass -eq 'user'}).SamAccountName } | Select-Object -Unique
 # $AdminUsers | ForEach-Object { $SafeUsers += "|$($env:USERDOMAIN)\\" + $_ }
+
 
 function Test-IsElevated {
     <#
@@ -97,16 +101,17 @@ function Test-IsElevated {
         Test-IsElevated
     .EXAMPLE
         if (!(Test-IsElevated)) { Write-Host "You are not running with elevated privileges and will not be able to make any changes." -ForeGroundColor Yellow }
+    .EXAMPLE
+        # Prompt to launch elevated if not already running as administrator:
+        if (!(Test-IsElevated)) {
+            $arguments = "& '" + $myinvocation.mycommand.definition + "'"
+            Start-Process powershell -Verb runAs -ArgumentList $arguments
+            Break
+        }
     #>
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
     $principal = New-Object Security.Principal.WindowsPrincipal $identity
     $principal.IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
-
-    <# Optional: Prompt to launch elevated if not already running as administrator:
-    if (-not ( [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator") ) {
-        $arguments = "& '" + $myinvocation.mycommand.definition + "'" Start-Process powershell -Verb runAs -ArgumentList $arguments Break
-    }
-    #>
 }
 
 
@@ -146,14 +151,14 @@ function Test-IsLocalAccountSession {
     .EXAMPLE
         if ( (Test-IsLocalAccountSession) ) { Write-Host "You are running this script under a local account." -ForeGroundColor Yellow }
     #>
-        [CmdletBinding()]
-    
-        $CurrentSID = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-        $LocalSIDs = (Get-LocalUser).SID.Value
-        if ($CurrentSID -in $LocalSIDs) {
-            Return $true
-        }
+    [CmdletBinding()]
+
+    $CurrentSID = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+    $LocalSIDs = (Get-LocalUser).SID.Value
+    if ($CurrentSID -in $LocalSIDs) {
+        Return $true
     }
+}
 
 
 function Get-RestrictedAdminModeSetting {
@@ -170,6 +175,7 @@ function Get-RestrictedAdminModeSetting {
         return $false
     }
 }
+
 
 function Get-Target {
     param (
@@ -234,10 +240,46 @@ function Set-AdditionalCAProperty {
         [System.Management.Automation.PSCredential]$Credential
     )
     process {
+add-type @"
+    using System.Net;
+    using System.Security.Cryptography.X509Certificates;
+    public class TrustAllCertsPolicy : ICertificatePolicy {
+        public bool CheckValidationResult(
+            ServicePoint srvPoint, X509Certificate certificate,
+            WebRequest request, int certificateProblem) {
+            return true;
+        }
+    }
+"@
+        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Ssl3, [Net.SecurityProtocolType]::Tls, [Net.SecurityProtocolType]::Tls11, [Net.SecurityProtocolType]::Tls12
+        $CAEnrollmentEndpoints = @()
         $ADCSObjects | Where-Object objectClass -Match 'pKIEnrollmentService' | ForEach-Object {
             [string]$CAFullName = "$($_.dNSHostName)\$($_.Name)"
             $CAHostname = $_.dNSHostName.split('.')[0]
             $CAName = $CAFullName.split('\')[1]
+            foreach ($Endpoint in $EnrollmentEndpoints) {
+                foreach ($Protocol in $Protocols) {
+                    $URL = $Protocol + $_.dNSHostName + $Endpoint -replace '<CANAME>', $_.Name
+                    $Response = $null
+                    if ($Credential) {
+                        try { 
+                            $Response = Invoke-WebRequest -Method GET -Uri $URL -Credential $Credential -TimeoutSec 3 -UseBasicParsing
+                            if ($Response.StatusCode -eq '200') {
+                                $CAEnrollmentEndpoints += $URL  
+                            }
+                        } catch {}
+                    } else {
+                        try { 
+                            $Response = Invoke-WebRequest -Method GET -Uri $URL -UseDefaultCredentials -TimeoutSec 3 -UseBasicParsing
+                            if ($Response.StatusCode -eq '200') {
+                                $CAEnrollmentEndpoints += $URL  
+                            }
+                        } catch {}
+                    }
+
+                }
+            }
             if ($Credential){
                 $CAHostDistinguishedName = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -Credential $Credential).DistinguishedName
             } else {
@@ -297,6 +339,7 @@ function Set-AdditionalCAProperty {
             Add-Member -InputObject $_ -MemberType NoteProperty -Name CAHostname -Value $CAHostname -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name CAHostDistinguishedName -Value $CAHostDistinguishedName -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name SANFlag -Value $SANFlag -Force
+            Add-Member -InputObject $_ -MemberType NoteProperty -Name EnrollmentEndpoints -Value $CAEnrollmentEndpoints -Force
         }
     }
 }
@@ -375,7 +418,7 @@ function Find-ESC1 {
     } | ForEach-Object {
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
-            if ($Principal -match '^S-1|^O:') {
+            if ($Principal -match '^(S-1|O:)') {
                 $SID = $Principal
             } else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
@@ -418,7 +461,7 @@ function Find-ESC2 {
     } | ForEach-Object {
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
-            if ($Principal -match '^S-1|^O:') {
+            if ($Principal -match '^(S-1|O:)') {
                 $SID = $Principal
             } else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
@@ -458,7 +501,7 @@ function Find-ESC4 {
     )
     $ADCSObjects | ForEach-Object {
         $Principal = New-Object System.Security.Principal.NTAccount($_.nTSecurityDescriptor.Owner)
-        if ($Principal -match '^S-1|^O:') {
+        if ($Principal -match '^(S-1|O:)') {
             $SID = $Principal
         } else {
             $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
@@ -493,7 +536,7 @@ function Find-ESC4 {
         }
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
-            if ($Principal -match '^S-1|^O:') {
+            if ($Principal -match '^(S-1|O:)') {
                 $SID = $Principal
             } else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
@@ -533,7 +576,7 @@ function Find-ESC5 {
     )
     $ADCSObjects | ForEach-Object {
         $Principal = New-Object System.Security.Principal.NTAccount($_.nTSecurityDescriptor.Owner)
-        if ($Principal -match '^S-1|^O:') {
+        if ($Principal -match '^(S-1|O:)') {
             $SID = $Principal
         } else {
             $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
@@ -568,7 +611,7 @@ function Find-ESC5 {
         }
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
-            if ($Principal -match '^S-1|^O:') {
+            if ($Principal -match '^(S-1|O:)') {
                 $SID = $Principal
             } else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
@@ -629,6 +672,34 @@ function Find-ESC6 {
 }
 
 
+function Find-ESC8 {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        $ADCSObjects
+    )
+    process {
+        $ADCSObjects | Where-Object { 
+            $_.EnrollmentEndpoints -ne ''
+        } | ForEach-Object {
+            $Issue = New-Object -TypeName pscustomobject
+            $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
+            if ($_.EnrollmentEndpoints -like 'http*') {
+                $Issue | Add-Member -MemberType NoteProperty -Name Issue -Value 'HTTP enrollment is enabled.' -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name EnrollmentEndpoints -Value $_.EnrollmentEndpoints -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "TBD - Remediate by doing 1, 2, and 3" -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value "TBD" -Force
+            }
+            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC8'
+            $Issue
+        }
+    }
+
+}
+
+
 function Export-RevertScript {
     [CmdletBinding()]
     param(
@@ -670,6 +741,7 @@ function Format-Result {
         ESC4   = 'ESC4 - Vulnerable Certifcate Template Access Control'
         ESC5   = 'ESC5 - Vulnerable PKI Object Access Control'
         ESC6   = 'ESC6 - EDITF_ATTRIBUTESUBJECTALTNAME2'
+        ESC8   = 'ESC8 - HTTP Enrollment Enabled'
     }
 
     if ($null -ne $Issue) {
@@ -680,9 +752,13 @@ function Format-Result {
                 $Issue | Format-Table Technique, Name, Issue -Wrap
             }
             1 {
-                $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix
-                if(($Issue.Technique -eq "DETECT" -or $Issue.Technique -eq "ESC6") -and (Get-RestrictedAdminModeSetting)){
-                    Write-Warning "Restricted Admin Mode appears to be configured. Certutil.exe may not work from this host, therefore you may need to execute the 'Fix' commands on the CA server itself"
+                if ($Issue.Technique -eq 'ESC8') {
+                    $Issue | Format-List Technique, Name, DistinguishedName, EnrollmentEndpoints, Issue, Fix
+                } else {
+                    $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix
+                    if(($Issue.Technique -eq "DETECT" -or $Issue.Technique -eq "ESC6") -and (Get-RestrictedAdminModeSetting)){
+                        Write-Warning "Restricted Admin Mode appears to be configured. Certutil.exe may not work from this host, therefore you may need to execute the 'Fix' commands on the CA server itself"
+                    }
                 }
             }
         }
@@ -750,7 +826,15 @@ Write-Host 'Identifying AD CS template and other objects with poor access contro
 [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
 [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
 [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects
-[array]$AllIssues = $AuditingIssues + $ESC1 + $ESC2 + $ESC4 + $ESC5 + $ESC6
+
+Clear-Host
+$Logo
+Write-Host 'Identifying HTTP-based certificate enrollment interfaces...'
+[array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects 
+
+[array]$AllIssues = $AuditingIssues + $ESC1 + $ESC2 + $ESC4 + $ESC5 + $ESC6 + $ESC8
+
+
 
 switch ($Mode) {
     0 { 
@@ -762,6 +846,7 @@ switch ($Mode) {
         Format-Result $ESC4 '0'
         Format-Result $ESC5 '0'
         Format-Result $ESC6 '0'
+        Format-Result $ESC8 '0'
     }
     1 {
         Clear-Host
@@ -772,6 +857,7 @@ switch ($Mode) {
         Format-Result $ESC4 '1'
         Format-Result $ESC5 '1'
         Format-Result $ESC6 '1'
+        Format-Result $ESC8 '1'
     }
     2 {
         Clear-Host
