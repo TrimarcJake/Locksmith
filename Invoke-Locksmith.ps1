@@ -3,7 +3,7 @@
 Finds the most common malconfigurations of Active Directory Certificate Services (AD CS).
 
 .DESCRIPTION
-Locksmith uses the Active Directory (DA) Powershell (PS) module to identify 6 misconfigurations
+Locksmith uses the Active Directory (AD) Powershell (PS) module to identify 6 misconfigurations
 commonly found in Enterprise mode AD CS installations.
 
 .COMPONENT
@@ -13,13 +13,14 @@ install the module. If module installation does not complete successfully,
 Locksmith will fail.
 
 .PARAMETER Mode
-Specifies sets of common configurations.
+Specifies sets of common script execution modes.
+
 -Mode 0
-Finds and displays any malconfiguration in the console.
+Finds any malconfigurations and displays them in the console.
 No attempt is made to fix identified issues.
 
 -Mode 1
-Finds and displays any malconfiguration in the console.
+Finds any malconfigurations and displays them in the console.
 Displays example Powershell snippet that can be used to resolve the issue.
 No attempt is made to fix identified issues.
 
@@ -29,11 +30,11 @@ No attempt is made to fix identified issues.
 
 -Mode 3
 Finds any malconfigurations and writes them to a series of CSV files.
-Creates code snippets to fix each issue and writes them to an environment-specific custom .ps1 file.
+Creates code snippets to fix each issue and writes them to an environment-specific custom .PS1 file.
 No attempt is made to fix identified issues.
 
 -Mode 4
-Creates code snippets to fix each issue.
+Finds any malconfigurations and creates code snippets to fix each issue.
 Attempts to fix all identified issues. This mode may require high-privileged access.
 
 .INPUTS
@@ -87,6 +88,7 @@ $PreferredOwner = New-Object System.Security.Principal.SecurityIdentifier($Enter
 # $AdminUsers = $Admins | ForEach-Object { (Get-ADGroupMember $_ | Where-Object { $_.objectClass -eq 'user'}).SamAccountName } | Select-Object -Unique
 # $AdminUsers | ForEach-Object { $SafeUsers += "|$($env:USERDOMAIN)\\" + $_ }
 
+
 function Test-IsElevated {
     <#
     .SYNOPSIS
@@ -97,16 +99,17 @@ function Test-IsElevated {
         Test-IsElevated
     .EXAMPLE
         if (!(Test-IsElevated)) { Write-Host "You are not running with elevated privileges and will not be able to make any changes." -ForeGroundColor Yellow }
+    .EXAMPLE
+        # Prompt to launch elevated if not already running as administrator:
+        if (!(Test-IsElevated)) {
+            $arguments = "& '" + $myinvocation.mycommand.definition + "'"
+            Start-Process powershell -Verb runAs -ArgumentList $arguments
+            Break
+        }
     #>
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
     $principal = New-Object Security.Principal.WindowsPrincipal $identity
     $principal.IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
-
-    <# Optional: Prompt to launch elevated if not already running as administrator:
-    if (-not ( [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator") ) {
-        $arguments = "& '" + $myinvocation.mycommand.definition + "'" Start-Process powershell -Verb runAs -ArgumentList $arguments Break
-    }
-    #>
 }
 
 
@@ -146,14 +149,14 @@ function Test-IsLocalAccountSession {
     .EXAMPLE
         if ( (Test-IsLocalAccountSession) ) { Write-Host "You are running this script under a local account." -ForeGroundColor Yellow }
     #>
-        [CmdletBinding()]
-    
-        $CurrentSID = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-        $LocalSIDs = (Get-LocalUser).SID.Value
-        if ($CurrentSID -in $LocalSIDs) {
-            Return $true
-        }
+    [CmdletBinding()]
+
+    $CurrentSID = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+    $LocalSIDs = (Get-LocalUser).SID.Value
+    if ($CurrentSID -in $LocalSIDs) {
+        Return $true
     }
+}
 
 
 function Get-RestrictedAdminModeSetting {
@@ -170,6 +173,7 @@ function Get-RestrictedAdminModeSetting {
         return $false
     }
 }
+
 
 function Get-Target {
     param (
@@ -375,7 +379,7 @@ function Find-ESC1 {
     } | ForEach-Object {
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
-            if ($Principal -match '^S-1') {
+            if ($Principal -match '^(S-1|O:)') {
                 $SID = $Principal
             } else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
@@ -418,7 +422,7 @@ function Find-ESC2 {
     } | ForEach-Object {
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
-            if ($Principal -match '^S-1') {
+            if ($Principal -match '^(S-1|O:)') {
                 $SID = $Principal
             } else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
@@ -458,7 +462,7 @@ function Find-ESC4 {
     )
     $ADCSObjects | ForEach-Object {
         $Principal = New-Object System.Security.Principal.NTAccount($_.nTSecurityDescriptor.Owner)
-        if ($Principal -match '^S-1') {
+        if ($Principal -match '^(S-1|O:)') {
             $SID = $Principal
         } else {
             $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
@@ -493,7 +497,7 @@ function Find-ESC4 {
         }
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
-            if ($Principal -match '^S-1') {
+            if ($Principal -match '^(S-1|O:)') {
                 $SID = $Principal
             } else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
@@ -533,7 +537,7 @@ function Find-ESC5 {
     )
     $ADCSObjects | ForEach-Object {
         $Principal = New-Object System.Security.Principal.NTAccount($_.nTSecurityDescriptor.Owner)
-        if ($Principal -match '^S-1') {
+        if ($Principal -match '^(S-1|O:)') {
             $SID = $Principal
         } else {
             $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
@@ -568,7 +572,7 @@ function Find-ESC5 {
         }
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
-            if ($Principal -match '^S-1') {
+            if ($Principal -match '^(S-1|O:)') {
                 $SID = $Principal
             } else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
