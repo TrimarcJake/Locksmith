@@ -718,9 +718,11 @@ function Export-RevertScript {
         $Objects = $AuditingIssues + $ESC1 + $ESC2 + $ESC6
     }
     process {
-        $Objects | ForEach-Object {
-            Add-Content -Path $Output -Value $_.Revert
-            Start-Sleep -Seconds 5
+        if ($Objects) {
+            $Objects | ForEach-Object {
+                Add-Content -Path $Output -Value $_.Revert
+                Start-Sleep -Seconds 5
+            }
         }
     }
 }
