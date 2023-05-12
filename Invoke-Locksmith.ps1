@@ -704,24 +704,16 @@ function Export-RevertScript {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
-        [array]$AuditingIssues,
-        [Parameter(Mandatory = $true)]
-        [array]$ESC1,
-        [Parameter(Mandatory = $true)]
-        [array]$ESC2,
-        [Parameter(Mandatory = $true)]
-        [array]$ESC6
+        [array]$Issue
     )
     begin {
         $Output = 'Invoke-RevertLocksmith.ps1'
-        Set-Content -Path $Output -Value "<#`nScript to revert changes performed by Locksmith`nCreated $(Get-Date)`n#>" -Force
-        $Objects = $AuditingIssues + $ESC1 + $ESC2 + $ESC6
+        if (!(Get-ChildItem -Path $Output -ErrorAction SilentlyContinue)) {
+            Set-Content -Path $Output -Value "<#`nScript to revert changes performed by Locksmith`nCreated $(Get-Date)`n#>" -Force
+        }
     }
     process {
-        $Objects | ForEach-Object {
-            Add-Content -Path $Output -Value $_.Revert
-            Start-Sleep -Seconds 5
-        }
+        Add-Content -Path $Output -Value $Issue.Revert
     }
 }
 
@@ -893,6 +885,8 @@ switch ($Mode) {
             $AuditingIssues | ForEach-Object {
                 Clear-Host
                 Write-Host $Logo
+                Write-Host 'Creating a script to revert auditing changes made by Locksmith...'
+                Export-RevertScript -Issue $AuditingIssues
                 $FixBlock = [scriptblock]::Create($_.Fix)
                 Write-Host "Attempting to fully enable AD CS auditing on $($_.Name)..."
                 Write-Host "This should have little impact on your environment.`n"
@@ -921,6 +915,8 @@ switch ($Mode) {
             $ESC1 | ForEach-Object {
                 Clear-Host
                 Write-Host $Logo
+                Write-Host 'Creating a script to revert ESC1 changes made by Locksmith...'
+                Export-RevertScript -Issue $ESC1
                 $FixBlock = [scriptblock]::Create($_.Fix)
                 Write-Host "Attempting to enable Manager Approval on the $($_.Name) template...`n"
                 Write-Host 'Command(s) to be run:'
@@ -948,6 +944,8 @@ switch ($Mode) {
             $ESC2 | ForEach-Object {
                 Clear-Host
                 Write-Host $Logo
+                Write-Host 'Creating a script to revert ESC2 changes made by Locksmith...'
+                Export-RevertScript -Issue $ESC2
                 $FixBlock = [scriptblock]::Create($_.Fix)
                 Write-Host "Attempting to enable Manager Approval on the $($_.Name) template...`n"
                 Write-Host 'Command(s) to be run:'
@@ -975,6 +973,8 @@ switch ($Mode) {
             $ESC6 | ForEach-Object {
                 Clear-Host
                 Write-Host $Logo
+                Write-Host 'Creating a script to revert ESC6 changes made by Locksmith...'
+                Export-RevertScript -Issue $ESC6
                 $FixBlock = [scriptblock]::Create($_.Fix)
                 Write-Host "Attempting to disable the EDITF_ATTRIBUTESUBJECTALTNAME2 flag on $($_.Name)...`n"
                 Write-Host 'Command(s) to be run:'
