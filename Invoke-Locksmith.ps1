@@ -552,7 +552,7 @@ function Find-ESC4 {
                 $Issue | Add-Member -MemberType NoteProperty -Name ActiveDirectoryRights -Value $entry.ActiveDirectoryRights -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Issue `
                     -Value "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this template"  -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "`$ACL = Get-Acl AD:'$DN' ; foreach ( `$ace in `$ACL.access ) { if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) { `$ACL.RemoveAccessRule(`$ace) | Out-Null ; Set-Acl -Path AD:'$DN' -AclObject `$ACL } }" -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; foreach ( `$ace in `$ACL.access ) { if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) { `$ACL.RemoveAccessRule(`$ace) | Out-Null ; Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL } }" -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC4'
                 $Issue
@@ -627,7 +627,7 @@ function Find-ESC5 {
                 $Issue | Add-Member -MemberType NoteProperty -Name ActiveDirectoryRights -Value $entry.ActiveDirectoryRights -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Issue `
                     -Value "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this object" -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "`$ACL = Get-Acl AD:'$DN' ; foreach ( `$ace in `$ACL.access ) { if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) { `$ACL.RemoveAccessRule(`$ace) | Out-Null ; Set-Acl -Path AD:'$DN' -AclObject `$ACL } }" -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; foreach ( `$ace in `$ACL.access ) { if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) { `$ACL.RemoveAccessRule(`$ace) | Out-Null ; Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL } }" -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC5'
                 $Issue
