@@ -1,3 +1,5 @@
+### Locksmith will prompt you to confirm each remediation action.
+
 ```
 
  _       _____  _______ _     _ _______ _______ _____ _______ _     _
@@ -20,7 +22,7 @@ Confirm
 Continue with this operation?
 [Y] Yes  [A] Yes to All  [H] Halt Command  [S] Suspend  [?] Help (default is "Y"):
 ```
-
+### Locksmith will warn you if there are possible operational impacts.
 ```
 
  _       _____  _______ _     _ _______ _______ _____ _______ _     _
@@ -44,7 +46,7 @@ Continue with this operation?
 [Y] Yes  [A] Yes to All  [H] Halt Command  [S] Suspend  [?] Help (default is "Y"):
 ```
 
-##Example Revert Script for the two examples shown above:
+### Example Revert Script for the two examples shown above:
 ``` powershell
 <#
 Script to revert changes performed by Locksmith
