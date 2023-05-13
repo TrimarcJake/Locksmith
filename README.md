@@ -18,6 +18,8 @@ PS> .\Invoke-Locksmith.ps1
 ```
 Running `Invoke-Locksmith.ps1` with no parameters or `-Mode 0` will scan the current forest and output all discovered AD CS issues to the console in **Table** format.
 
+Example Output for Mode 0: https://github.com/TrimarcJake/Locksmith/blob/main/examples/Mode0.md
+
 ## Mode 1 - Identify Issues + Fixes and Output to Console
 ``` powershell
 PS> .\Invoke-Locksmith.ps1 -Mode 1
