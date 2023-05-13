@@ -71,13 +71,13 @@ DistinguishedName : CN=horse-DC1-CA,CN=Enrollment Services,CN=Public Key
                     Services,CN=Services,CN=Configuration,DC=horse,DC=local
 Issue             : HORSE\kari has CreateChild, DeleteChild, Self, WriteProperty, DeleteTree, Delete, GenericRead,
                     WriteDacl, WriteOwner rights on this object
-Fix               : [TODO]
+Fix               : [Available in experimental branch]
 
 Technique         : ESC5
 Name              : DC1
 DistinguishedName : CN=DC1,CN=AIA,CN=Public Key Services,CN=Services,CN=Configuration,DC=horse,DC=local
 Issue             : HORSE\kari has GenericAll rights on this object
-Fix               : [TODO]
+Fix               : [Available in experimental branch]
 
 
 ########## ESC6 - EDITF_ATTRIBUTESUBJECTALTNAME2 ##########
