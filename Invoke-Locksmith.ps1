@@ -85,10 +85,26 @@ $Protocols = @('http://','https://')
 # Generated variables
 $DNSRoot = [string]((Get-ADForest).RootDomain | Get-ADDomain).DNSRoot
 $EnterpriseAdminsSID = ([string]((Get-ADForest).RootDomain | Get-ADDomain).DomainSID) + '-519'
+$RootDomainCertPublishersSID = ([string]((Get-ADForest).RootDomain | Get-ADDomain).DomainSID) + '-517'
+$RootDomainDomainAdminsSID = ([string]((Get-ADForest).RootDomain | Get-ADDomain).DomainSID) + '-512'
 $PreferredOwner = New-Object System.Security.Principal.SecurityIdentifier($EnterpriseAdminsSID)
-# $Admins = @('Domain Admins','Enterprise Admins','Administrators')
-# $AdminUsers = $Admins | ForEach-Object { (Get-ADGroupMember $_ | Where-Object { $_.objectClass -eq 'user'}).SamAccountName } | Select-Object -Unique
-# $AdminUsers | ForEach-Object { $SafeUsers += "|$($env:USERDOMAIN)\\" + $_ }
+
+# Add SIDs of (probably) Safe Users to $SafeUsers
+Get-ADGroupMember $EnterpriseAdminsSID | ForEach-Object {
+    $SafeUsers += '|' + $_.SID
+}
+
+Get-ADGroupMember $RootDomainCertPublishersSID | ForEach-Object {
+    $SafeUsers += '|' + $_.SID
+}
+
+Get-ADGroupMember $RootDomainDomainAdminsSID | ForEach-Object {
+    $SafeUsers += '|' + $_.SID
+}
+
+Get-ADGroupMember S-1-5-32-544 | ForEach-Object {
+    $SafeUsers += '|' + $_.SID
+}
 
 
 function Test-IsElevated {
