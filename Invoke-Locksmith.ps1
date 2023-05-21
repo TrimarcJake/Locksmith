@@ -552,7 +552,7 @@ function Find-ESC4 {
                 $Issue | Add-Member -MemberType NoteProperty -Name ActiveDirectoryRights -Value $entry.ActiveDirectoryRights -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Issue `
                     -Value "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this template"  -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value '[TODO]'  -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; foreach ( `$ace in `$ACL.access ) { if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) { `$ACL.RemoveAccessRule(`$ace) | Out-Null ; Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL } }" -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC4'
                 $Issue
@@ -627,7 +627,7 @@ function Find-ESC5 {
                 $Issue | Add-Member -MemberType NoteProperty -Name ActiveDirectoryRights -Value $entry.ActiveDirectoryRights -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Issue `
                     -Value "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this object" -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value '[TODO]'  -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; foreach ( `$ace in `$ACL.access ) { if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) { `$ACL.RemoveAccessRule(`$ace) | Out-Null ; Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL } }" -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC5'
                 $Issue
@@ -836,7 +836,11 @@ Write-Host 'Identifying HTTP-based certificate enrollment interfaces...'
 
 [array]$AllIssues = $AuditingIssues + $ESC1 + $ESC2 + $ESC4 + $ESC5 + $ESC6 + $ESC8
 
-
+# If these are all empty = no issues found, exit
+if ((!$AuditingIssues) -and (!$ESC1) -and (!$ESC2) -and (!$ESC4) -and (!$ESC5) -and (!$ESC6) -and (!$ESC8) ) {
+    Write-Host "`n$(Get-Date) : No ADCS issues were found." -ForegroundColor Green
+    break
+}
 
 switch ($Mode) {
     0 { 
