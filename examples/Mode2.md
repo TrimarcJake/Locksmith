@@ -1,0 +1,11 @@
+```
+"Forest","Name","Issue"
+"horse.local","horse-DC1-CA","Auditing is not fully enabled. Current value is 0"
+"horse.local","ESC1-Vulnerable","HORSE\kari can enroll in this Client Authentication template using a SAN without Manager Approval"
+"horse.local","ESC2-Vulnerable","NT AUTHORITY\Authenticated Users can request a SubCA certificate without Manager Approval"
+"horse.local","User","NT AUTHORITY\Authenticated Users has GenericAll rights on this template"
+"horse.local","User","HORSE\Domain Users has GenericAll rights on this template"
+"horse.local","horse-DC1-CA","HORSE\kari has CreateChild, DeleteChild, Self, WriteProperty, DeleteTree, Delete, GenericRead, WriteDacl, WriteOwner rights on this object"
+"horse.local","DC1","HORSE\kari has GenericAll rights on this object"
+"horse.local","horse-DC1-CA","EDITF_ATTRIBUTESUBJECTALTNAME2 is enabled."
+"horse.local","horse-DC1-CA","HTTP enrollment is enabled."
