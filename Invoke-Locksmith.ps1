@@ -891,7 +891,7 @@ switch ($Mode) {
     }
     4 {
         Write-Host 'Creating a script to revert any changes made by Locksmith...'
-        Export-RevertScript -AuditingIssues $AuditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC6 $ESC6
+        try { Export-RevertScript -AuditingIssues $AuditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC6 $ESC6 } catch {}
         Write-Host 'Executing Mode 4 - Attempting to fix all identified issues!'
         if ($AuditingIssues) {
             $AuditingIssues | ForEach-Object {
