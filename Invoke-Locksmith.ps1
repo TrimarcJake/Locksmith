@@ -703,13 +703,13 @@ function Find-ESC8 {
 function Export-RevertScript {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $false)]
         [array]$AuditingIssues,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $false)]
         [array]$ESC1,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $false)]
         [array]$ESC2,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $false)]
         [array]$ESC6
     )
     begin {
