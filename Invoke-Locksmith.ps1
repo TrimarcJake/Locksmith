@@ -110,6 +110,7 @@ foreach($domainadminsSID in $AllDomainsDomainAdminsSIDs) {
     }
 }
 
+# This only collects Administrators from originating domain.
 Get-ADGroupMember S-1-5-32-544 | ForEach-Object {
     $SafeUsers += '|' + $_.SID
 }
