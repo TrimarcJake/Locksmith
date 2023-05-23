@@ -622,7 +622,7 @@ function Find-ESC5 {
                 -Value "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL" -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC4'
+            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC5'
             $Issue
         }
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
@@ -887,7 +887,7 @@ switch ($Mode) {
         $Output = 'ADCSIssues.CSV'
         Write-Host "Writing AD CS issues to $Output..."
         try {
-            $AllIssues | Select-Object Forest, Name, Issue, Technique | Export-Csv -NoTypeInformation $Output
+            $AllIssues | Select-Object Forest, Technique, Name, Issue | Export-Csv -NoTypeInformation $Output
             Write-Host "$Output created successfully!"
         }
         catch {
@@ -900,7 +900,7 @@ switch ($Mode) {
         $Output = 'ADCSRemediation.CSV'
         Write-Host "Writing AD CS issues to $Output..."
         try {
-            $AllIssues | Select-Object Forest, Name, DistinguishedName, Issue, Technique, Fix | Export-Csv -NoTypeInformation $Output
+            $AllIssues | Select-Object Forest, Technique, Name, DistinguishedName, Issue, Fix | Export-Csv -NoTypeInformation $Output
             Write-Host "$Output created successfully!"
         }
         catch {
