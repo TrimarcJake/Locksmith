@@ -936,7 +936,8 @@ switch ($Mode) {
                 catch {
                     Write-Host 'SKIPPED!' -ForegroundColor Yellow
                 }
-                Read-Host -Prompt 'Press any key to continue...'
+                Write-Host "Press any key to continue..."
+                $null = [System.Console]::ReadKey()
             }
         }
         if ($ESC1) {
@@ -963,7 +964,8 @@ switch ($Mode) {
                 catch {
                     Write-Host 'SKIPPED!' -ForegroundColor Yellow
                 }
-                Read-Host -Prompt 'Press any key to continue...'
+                Write-Host "Press any key to continue..."
+                $null = [System.Console]::ReadKey()
             }
         }
         if ($ESC2) {
@@ -990,7 +992,8 @@ switch ($Mode) {
                 catch {
                     Write-Host 'SKIPPED!' -ForegroundColor Yellow
                 }
-                Read-Host -Prompt 'Press any key to continue...'
+                Write-Host "Press any key to continue..."
+                $null = [System.Console]::ReadKey()
             }
         }
         if ($ESC6) {
@@ -1017,7 +1020,8 @@ switch ($Mode) {
                 catch {
                     Write-Host 'SKIPPED!' -ForegroundColor Yellow
                 }
-                Read-Host -Prompt 'Press any key to continue...'
+                Write-Host "Press any key to continue..."
+                $null = [System.Console]::ReadKey()
             }
         }
     }
