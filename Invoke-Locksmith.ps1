@@ -85,21 +85,29 @@ $Protocols = @('http://','https://')
 # Generated variables
 $DNSRoot = [string]((Get-ADForest).RootDomain | Get-ADDomain).DNSRoot
 $EnterpriseAdminsSID = ([string]((Get-ADForest).RootDomain | Get-ADDomain).DomainSID) + '-519'
-$RootDomainCertPublishersSID = ([string]((Get-ADForest).RootDomain | Get-ADDomain).DomainSID) + '-517'
-$RootDomainDomainAdminsSID = ([string]((Get-ADForest).RootDomain | Get-ADDomain).DomainSID) + '-512'
 $PreferredOwner = New-Object System.Security.Principal.SecurityIdentifier($EnterpriseAdminsSID)
+
+$DomainSIDs = (Get-ADForest).Domains | ForEach-Object { (Get-ADDomain).DomainSID.Value }
+$DomainSIDs | ForEach-Object {
+    $AllDomainsCertPublishersSIDs += $_ + '-517'
+    $AllDomainsDomainAdminSIDs += $_ + '-512'
+}
 
 # Add SIDs of (probably) Safe Users to $SafeUsers
 Get-ADGroupMember $EnterpriseAdminsSID | ForEach-Object {
     $SafeUsers += '|' + $_.SID
 }
 
-Get-ADGroupMember $RootDomainCertPublishersSID | ForEach-Object {
-    $SafeUsers += '|' + $_.SID
+foreach($certpublishersSID in $AllDomainsCertPublishersSIDs) {
+    Get-ADGroupMember $certpublishersSID | ForEach-Object {
+        $SafeUsers += '|' + $_.SID
+    }
 }
 
-Get-ADGroupMember $RootDomainDomainAdminsSID | ForEach-Object {
-    $SafeUsers += '|' + $_.SID
+foreach($domainadminsSID in $AllDomainsDomainAdminsSIDs) {
+    Get-ADGroupMember $domainadminsSID | ForEach-Object {
+        $SafeUsers += '|' + $_.SID
+    }
 }
 
 Get-ADGroupMember S-1-5-32-544 | ForEach-Object {
