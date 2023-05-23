@@ -622,7 +622,7 @@ function Find-ESC5 {
                 -Value "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL" -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC4'
+            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC5'
             $Issue
         }
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
