@@ -887,7 +887,7 @@ switch ($Mode) {
         $Output = 'ADCSIssues.CSV'
         Write-Host "Writing AD CS issues to $Output..."
         try {
-            $AllIssues | Select-Object Forest, Name, Issue | Export-Csv -NoTypeInformation $Output
+            $AllIssues | Select-Object Forest, Name, Issue, Technique | Export-Csv -NoTypeInformation $Output
             Write-Host "$Output created successfully!"
         }
         catch {
@@ -900,7 +900,7 @@ switch ($Mode) {
         $Output = 'ADCSRemediation.CSV'
         Write-Host "Writing AD CS issues to $Output..."
         try {
-            $AllIssues | Select-Object Forest, Name, DistinguishedName, Issue, Fix | Export-Csv -NoTypeInformation $Output
+            $AllIssues | Select-Object Forest, Name, DistinguishedName, Issue, Technique, Fix | Export-Csv -NoTypeInformation $Output
             Write-Host "$Output created successfully!"
         }
         catch {
