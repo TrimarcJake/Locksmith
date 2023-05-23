@@ -719,13 +719,13 @@ function Find-ESC8 {
 function Export-RevertScript {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $false)]
         [array]$AuditingIssues,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $false)]
         [array]$ESC1,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $false)]
         [array]$ESC2,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $false)]
         [array]$ESC6
     )
     begin {
@@ -909,7 +909,7 @@ switch ($Mode) {
     }
     4 {
         Write-Host 'Creating a script to revert any changes made by Locksmith...'
-        Export-RevertScript -AuditingIssues $AuditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC6 $ESC6
+        try { Export-RevertScript -AuditingIssues $AuditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC6 $ESC6 } catch {}
         Write-Host 'Executing Mode 4 - Attempting to fix all identified issues!'
         if ($AuditingIssues) {
             $AuditingIssues | ForEach-Object {
