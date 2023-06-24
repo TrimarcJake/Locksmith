@@ -2,8 +2,6 @@
 - Improved Error Handling
 
 ## Short Term
-- [ ] Add individual CA Hosts to $SafeUsers
-- [ ] Add sample output to README.md
 - [ ] Rename Modes to something that makes sense
 - [ ] Improved Output: Email, PS Object
 - [ ] Check for Elevation before Fixing
@@ -25,6 +23,8 @@
 - [ ] Multi-Forest support
 
 ## Recently Completed
+- [x] Add individual CA Hosts to $SafeUsers
+- [x] Add sample output to README.md
 - [x] ESC8 coverage
 - [x] Modes 0 & 1: Headers for Console Output
 - [x] Mode 4: Display snippet and get confirmation before running.
