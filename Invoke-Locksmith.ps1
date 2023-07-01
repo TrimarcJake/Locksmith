@@ -62,7 +62,7 @@ param (
 
 Set-StrictMode -Version Latest
 
-$Logo = "
+$Logo = @"
  _       _____  _______ _     _ _______ _______ _____ _______ _     _
  |      |     | |       |____/  |______ |  |  |   |      |    |_____|
  |_____ |_____| |_____  |    \_ ______| |  |  | __|__    |    |     |
@@ -70,25 +70,48 @@ $Logo = "
     /.-. '----------.     /.-. '----------.     /.-. '----------.
     \'-' .--'--''-'-'     \'-' .--'--''-'-'     \'-' .--'--''-'-'
      '--'                  '--'                  '--'            
-"
+"@
 
-# Static variables
+# Initial variables
+$AllDomainsCertPublishersSIDs = @()
+$AllDomainsDomainAdminSIDs = @()
+$ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
+$DangerousRights = 'GenericAll|WriteDacl|WriteOwner|WriteProperty'
+$EnrollmentAgentEKU = '1\.3\.6\.1\.4\.1\.311\.20\.2\.1'
+$ForestGC = $(Get-ADDomainController -Discover -Service GlobalCatalog -ForceDiscover | Select-Object -ExpandProperty Hostname) + ":3268"
 $SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$'
 $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$'
 $UnsafeOwners = 'S-1-1-0|-11$|-513$|-515$'
 $UnsafeUsers = 'S-1-1-0|-11$|-513$|-515$'
-$ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
-$DangerousRights = 'GenericAll|WriteDacl|WriteOwner|WriteProperty'
-$EnrollmentEndpoints = @("/certsrv/","/<CANAME>_CES_Kerberos/service.svc","/<CANAME>_CES_Kerberos/service.svc/CES","/ADPolicyProvider_CEP_Kerberos/service.svc","/certsrv/mscep/")
-$Protocols = @('http://','https://')
 
 # Generated variables
 $DNSRoot = [string]((Get-ADForest).RootDomain | Get-ADDomain).DNSRoot
 $EnterpriseAdminsSID = ([string]((Get-ADForest).RootDomain | Get-ADDomain).DomainSID) + '-519'
 $PreferredOwner = New-Object System.Security.Principal.SecurityIdentifier($EnterpriseAdminsSID)
-# $Admins = @('Domain Admins','Enterprise Admins','Administrators')
-# $AdminUsers = $Admins | ForEach-Object { (Get-ADGroupMember $_ | Where-Object { $_.objectClass -eq 'user'}).SamAccountName } | Select-Object -Unique
-# $AdminUsers | ForEach-Object { $SafeUsers += "|$($env:USERDOMAIN)\\" + $_ }
+$DomainSIDs = (Get-ADForest).Domains | ForEach-Object { (Get-ADDomain $_).DomainSID.Value }
+$DomainSIDs | ForEach-Object {
+    $AllDomainsCertPublishersSIDs += $_ + '-517'
+    $AllDomainsDomainAdminSIDs += $_ + '-512'
+}
+
+# Add SIDs of (probably) Safe Users to $SafeUsers
+# This only collects users from originating domain
+Get-ADGroupMember $EnterpriseAdminsSID | ForEach-Object {
+    $SafeUsers += '|' + $_.SID
+}
+foreach($certpublishersSID in $AllDomainsCertPublishersSIDs) {
+    Get-ADGroupMember $certpublishersSID | ForEach-Object {
+        $SafeUsers += '|' + $_.SID
+    }
+}
+foreach($domainadminsSID in $AllDomainsDomainAdminsSIDs) {
+    Get-ADGroupMember $domainadminsSID | ForEach-Object {
+        $SafeUsers += '|' + $_.SID
+    }
+}
+Get-ADGroupMember S-1-5-32-544 | ForEach-Object {
+    $SafeUsers += '|' + $_.SID
+}
 
 
 function Test-IsElevated {
@@ -240,52 +263,19 @@ function Set-AdditionalCAProperty {
         [System.Management.Automation.PSCredential]$Credential
     )
     process {
-add-type @"
-    using System.Net;
-    using System.Security.Cryptography.X509Certificates;
-    public class TrustAllCertsPolicy : ICertificatePolicy {
-        public bool CheckValidationResult(
-            ServicePoint srvPoint, X509Certificate certificate,
-            WebRequest request, int certificateProblem) {
-            return true;
-        }
-    }
-"@
-        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Ssl3, [Net.SecurityProtocolType]::Tls, [Net.SecurityProtocolType]::Tls11, [Net.SecurityProtocolType]::Tls12
-        $CAEnrollmentEndpoints = @()
         $ADCSObjects | Where-Object objectClass -Match 'pKIEnrollmentService' | ForEach-Object {
+            [string]$CAEnrollmentEndpoint = $_.'msPKI-Enrollment-Servers' | Select-String 'http.*' | ForEach-Object { $_.Matches[0].Value }
             [string]$CAFullName = "$($_.dNSHostName)\$($_.Name)"
             $CAHostname = $_.dNSHostName.split('.')[0]
-            $CAName = $CAFullName.split('\')[1]
-            foreach ($Endpoint in $EnrollmentEndpoints) {
-                foreach ($Protocol in $Protocols) {
-                    $URL = $Protocol + $_.dNSHostName + $Endpoint -replace '<CANAME>', $_.Name
-                    $Response = $null
-                    if ($Credential) {
-                        try { 
-                            $Response = Invoke-WebRequest -Method GET -Uri $URL -Credential $Credential -TimeoutSec 3 -UseBasicParsing
-                            if ($Response.StatusCode -eq '200') {
-                                $CAEnrollmentEndpoints += $URL  
-                            }
-                        } catch {}
-                    } else {
-                        try { 
-                            $Response = Invoke-WebRequest -Method GET -Uri $URL -UseDefaultCredentials -TimeoutSec 3 -UseBasicParsing
-                            if ($Response.StatusCode -eq '200') {
-                                $CAEnrollmentEndpoints += $URL  
-                            }
-                        } catch {}
-                    }
-
-                }
-            }
+            # $CAName = $_.Name
             if ($Credential){
-                $CAHostDistinguishedName = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -Credential $Credential).DistinguishedName
+                $CAHostDistinguishedName = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -Server $ForestGC -Credential $Credential).DistinguishedName
+                $CAHostFQDN = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -properties DnsHostname -Server $ForestGC -Credential $Credential).DnsHostname
             } else {
-                $CAHostDistinguishedName = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') }).DistinguishedName
+                $CAHostDistinguishedName = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -Server $ForestGC ).DistinguishedName
+                $CAHostFQDN = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -properties DnsHostname -Server $ForestGC).DnsHostname
             }
-            $ping = Test-Connection -ComputerName $CAHostname -Quiet
+            $ping = Test-Connection -ComputerName $CAHostFQDN -Quiet
             if ($ping) {
                 try {
                     if ($Credential) {
@@ -335,11 +325,11 @@ add-type @"
                 }
             }
             Add-Member -InputObject $_ -MemberType NoteProperty -Name AuditFilter -Value $AuditFilter -Force
+            Add-Member -InputObject $_ -MemberType NoteProperty -Name CAEnrollmentEndpoint -Value $CAEnrollmentEndpoint -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name CAFullName -Value $CAFullName -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name CAHostname -Value $CAHostname -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name CAHostDistinguishedName -Value $CAHostDistinguishedName -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name SANFlag -Value $SANFlag -Force
-            Add-Member -InputObject $_ -MemberType NoteProperty -Name EnrollmentEndpoints -Value $CAEnrollmentEndpoints -Force
         }
     }
 }
@@ -357,11 +347,11 @@ function Get-CAHostObject {
     process {
         if ($Credential) {
             $ADCSObjects | Where-Object objectClass -Match 'pKIEnrollmentService' | ForEach-Object {
-                Get-ADObject $_.CAHostDistinguishedName -Properties * -Credential $Credential
+                Get-ADObject $_.CAHostDistinguishedName -Properties * -Server $ForestGC -Credential $Credential
             }
         } else {
             $ADCSObjects | Where-Object objectClass -Match 'pKIEnrollmentService' | ForEach-Object {
-                Get-ADObject $_.CAHostDistinguishedName -Properties *
+                Get-ADObject $_.CAHostDistinguishedName -Properties * -Server $ForestGC 
             }
         }
     }
@@ -454,7 +444,7 @@ function Find-ESC2 {
     )
     $ADCSObjects | Where-Object {
         ($_.ObjectClass -eq 'pKICertificateTemplate') -and
-        (!$_.pkiExtendedKeyUsage) -and 
+        ( (!$_.pkiExtendedKeyUsage) -or ($_.pkiExtendedKeyUsage -match '2.5.29.37.0') )-and 
         ($_.'msPKI-Certificate-Name-Flag' -eq 1) -and
         ($_.'msPKI-Enrollment-Flag' -ne 2) -and
         ( ($_.'msPKI-RA-Signature' -eq 0) -or ($null -eq $_.'msPKI-RA-Signature') ) 
@@ -480,6 +470,49 @@ function Find-ESC2 {
                 $Issue | Add-Member -MemberType NoteProperty -Name Revert `
                     -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"  -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC2'
+                $Issue
+            }
+        }
+    }
+}
+
+
+function Find-ESC3Condition1 {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [array]$ADCSObjects,
+        [Parameter(Mandatory = $true)]
+        [array]$SafeUsers
+    )
+    $ADCSObjects | Where-Object {
+        ($_.objectClass -eq 'pKICertificateTemplate') -and
+        ($_.pkiExtendedKeyUsage -match $EnrollmentAgentEKU) -and
+        ($_.'msPKI-Certificate-Name-Flag' -eq 1) -and
+        ($_.'msPKI-Enrollment-Flag' -ne 2) -and
+        ( ($_.'msPKI-RA-Signature' -eq 0) -or ($null -eq $_.'msPKI-RA-Signature') )
+    } | ForEach-Object {
+        foreach ($entry in $_.nTSecurityDescriptor.Access) {
+            $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
+            if ($Principal -match '^(S-1|O:)') {
+                $SID = $Principal
+            } else {
+                $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+            }
+            if ( ($SID -notmatch $SafeUsers) -and ($entry.ActiveDirectoryRights -match 'ExtendedRight') ) {
+                $Issue = New-Object -TypeName pscustomobject
+                $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name IdentityReference -Value $entry.IdentityReference -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name ActiveDirectoryRights -Value $entry.ActiveDirectoryRights -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Issue `
+                    -Value "$($entry.IdentityReference) can enroll in this Client Authentication template using a SAN without Manager Approval"  -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Fix `
+                    -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}" -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Revert `
+                    -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"  -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC1'
                 $Issue
             }
         }
@@ -606,7 +639,7 @@ function Find-ESC5 {
                 -Value "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL" -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC4'
+            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC5'
             $Issue
         }
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
@@ -680,15 +713,20 @@ function Find-ESC8 {
     )
     process {
         $ADCSObjects | Where-Object { 
-            $_.EnrollmentEndpoints -ne ''
+            $_.CAEnrollmentEndpoint
         } | ForEach-Object {
             $Issue = New-Object -TypeName pscustomobject
             $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
             $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
-            if ($_.EnrollmentEndpoints -like 'http*') {
+            if ($_.CAEnrollmentEndpoint -like '^http*') {
                 $Issue | Add-Member -MemberType NoteProperty -Name Issue -Value 'HTTP enrollment is enabled.' -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name EnrollmentEndpoints -Value $_.EnrollmentEndpoints -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name CAEnrollmentEndpoint -Value $_.CAEnrollmentEndpoint -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "TBD - Remediate by doing 1, 2, and 3" -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value "TBD" -Force
+            } else {
+                $Issue | Add-Member -MemberType NoteProperty -Name Issue -Value 'HTTPS enrollment is enabled.' -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name CAEnrollmentEndpoint -Value $_.CAEnrollmentEndpoint -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "TBD - Remediate by doing 1, 2, and 3" -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value "TBD" -Force
             }
@@ -696,20 +734,19 @@ function Find-ESC8 {
             $Issue
         }
     }
-
 }
 
 
 function Export-RevertScript {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $false)]
         [array]$AuditingIssues,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $false)]
         [array]$ESC1,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $false)]
         [array]$ESC2,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $false)]
         [array]$ESC6
     )
     begin {
@@ -755,7 +792,7 @@ function Format-Result {
             }
             1 {
                 if ($Issue.Technique -eq 'ESC8') {
-                    $Issue | Format-List Technique, Name, DistinguishedName, EnrollmentEndpoints, Issue, Fix
+                    $Issue | Format-List Technique, Name, DistinguishedName, CAEnrollmentEndpoint, Issue, Fix
                 } else {
                     $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix
                     if(($Issue.Technique -eq "DETECT" -or $Issue.Technique -eq "ESC6") -and (Get-RestrictedAdminModeSetting)){
@@ -871,7 +908,7 @@ switch ($Mode) {
         $Output = 'ADCSIssues.CSV'
         Write-Host "Writing AD CS issues to $Output..."
         try {
-            $AllIssues | Select-Object Forest, Name, Issue | Export-Csv -NoTypeInformation $Output
+            $AllIssues | Select-Object Forest, Technique, Name, Issue | Export-Csv -NoTypeInformation $Output
             Write-Host "$Output created successfully!"
         }
         catch {
@@ -884,7 +921,7 @@ switch ($Mode) {
         $Output = 'ADCSRemediation.CSV'
         Write-Host "Writing AD CS issues to $Output..."
         try {
-            $AllIssues | Select-Object Forest, Name, DistinguishedName, Issue, Fix | Export-Csv -NoTypeInformation $Output
+            $AllIssues | Select-Object Forest, Technique, Name, DistinguishedName, Issue, Fix | Export-Csv -NoTypeInformation $Output
             Write-Host "$Output created successfully!"
         }
         catch {
@@ -893,7 +930,7 @@ switch ($Mode) {
     }
     4 {
         Write-Host 'Creating a script to revert any changes made by Locksmith...'
-        Export-RevertScript -AuditingIssues $AuditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC6 $ESC6
+        try { Export-RevertScript -AuditingIssues $AuditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC6 $ESC6 } catch {}
         Write-Host 'Executing Mode 4 - Attempting to fix all identified issues!'
         if ($AuditingIssues) {
             $AuditingIssues | ForEach-Object {
@@ -920,7 +957,7 @@ switch ($Mode) {
                 catch {
                     Write-Host 'SKIPPED!' -ForegroundColor Yellow
                 }
-                Read-Host -Prompt 'Press any key to continue...'
+                Read-Host -Prompt 'Press enter to continue...'
             }
         }
         if ($ESC1) {
@@ -947,7 +984,7 @@ switch ($Mode) {
                 catch {
                     Write-Host 'SKIPPED!' -ForegroundColor Yellow
                 }
-                Read-Host -Prompt 'Press any key to continue...'
+                Read-Host -Prompt 'Press enter to continue...'
             }
         }
         if ($ESC2) {
@@ -974,7 +1011,7 @@ switch ($Mode) {
                 catch {
                     Write-Host 'SKIPPED!' -ForegroundColor Yellow
                 }
-                Read-Host -Prompt 'Press any key to continue...'
+                Read-Host -Prompt 'Press enter to continue...'
             }
         }
         if ($ESC6) {
@@ -994,14 +1031,14 @@ switch ($Mode) {
                             Invoke-Command -ScriptBlock $FixBlock
                         }
                         catch {
-                            Write-Error 'Could not enable Manager Approval. Are you an Active Directory or AD CS admin?'
+                            Write-Error 'Could not disable the EDITF_ATTRIBUTESUBJECTALTNAME2 flag. Are you an Active Directory or AD CS admin?'
                         }
                     }
                 }
                 catch {
                     Write-Host 'SKIPPED!' -ForegroundColor Yellow
                 }
-                Read-Host -Prompt 'Press any key to continue...'
+                Read-Host -Prompt 'Press enter to continue...'
             }
         }
     }
