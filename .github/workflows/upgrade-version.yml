@@ -12,4 +12,4 @@ jobs:
         with:
           files: 'Invoke-Locksmith.ps1'
           version-regexp: '\d+.\d+.\d+'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }} THIS LOOKS BAD
