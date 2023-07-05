@@ -106,7 +106,7 @@ foreach($certpublishersSID in $AllDomainsCertPublishersSIDs) {
         $SafeUsers += '|' + $_.SID
     }
 }
-foreach($domainadminsSID in $AllDomainsDomainAdminsSIDs) {
+foreach($domainadminsSID in $AllDomainsDomainAdminSIDs) {
     Get-ADGroupMember $domainadminsSID | ForEach-Object {
         $SafeUsers += '|' + $_.SID
     }
