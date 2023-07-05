@@ -65,7 +65,7 @@ Set-StrictMode -Version Latest
 # Initial variables
 $Version = '2023.07'
 $AllDomainsCertPublishersSIDs = @()
-$AllDomainsDomainAdminSIDs = @()
+$AllDomainsDomainAdminsSIDs = @()
 $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
 $DangerousRights = 'GenericAll|WriteDacl|WriteOwner|WriteProperty'
 $EnrollmentAgentEKU = '1\.3\.6\.1\.4\.1\.311\.20\.2\.1'
@@ -93,7 +93,7 @@ $PreferredOwner = New-Object System.Security.Principal.SecurityIdentifier($Enter
 $DomainSIDs = (Get-ADForest).Domains | ForEach-Object { (Get-ADDomain $_).DomainSID.Value }
 $DomainSIDs | ForEach-Object {
     $AllDomainsCertPublishersSIDs += $_ + '-517'
-    $AllDomainsDomainAdminSIDs += $_ + '-512'
+    $AllDomainsDomainAdminsSIDs += $_ + '-512'
 }
 
 # Add SIDs of (probably) Safe Users to $SafeUsers
