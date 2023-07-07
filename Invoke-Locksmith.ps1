@@ -290,9 +290,9 @@ function Set-AdditionalCAProperty {
                 }
                 try {
                     if ($Credential) {
-                        $CertutilFlag = Invoke-Command -ComputerName $CAHostname -Credential $Credential -ScriptBlock {param($CAFullName);certutil -v -config $CAFullName -getreg policy\EditFlags} -ArgumentList $CAFullName
+                        $CertutilFlag = Invoke-Command -ComputerName $CAHostname -Credential $Credential -ScriptBlock {param($CAFullName);certutil -config $CAFullName -getreg policy\EditFlags} -ArgumentList $CAFullName
                     } else {
-                        $CertutilFlag = certutil -v -config $CAFullName -getreg policy\EditFlags
+                        $CertutilFlag = certutil -config $CAFullName -getreg policy\EditFlags
                     }
                 } catch {
                     $AuditFilter = 'Failure'
