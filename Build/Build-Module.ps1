@@ -1,4 +1,17 @@
-﻿Import-Module PSPublishModule -Force
+﻿if (Get-Module -Name 'PSPublishModule' -ListAvailable) { 
+    Write-Information 'PSPublishModule is installed.'
+} else {
+    Write-Information 'PSPublishModule is not installed. Attempting installation.'
+    try {
+        Install-Module -Name Pester -AllowClobber -Scope CurrentUser -SkipPublisherCheck -Force
+        Install-Module -Name PSPublishModule -AllowClobber -Scope CurrentUser -Force
+    }
+    catch {
+        Write-Error 'PSPublishModule installation failed.'
+    }
+}
+
+Import-Module -Name PSPublishModule -Force
 
 Build-Module -ModuleName 'Locksmith' {
     # Usual defaults as per standard module
@@ -7,8 +20,8 @@ Build-Module -ModuleName 'Locksmith' {
         CompatiblePSEditions = @('Desktop', 'Core')
         GUID                 = 'b1325b42-8dc4-4f17-aa1f-dcb5984ca14a'
         Author               = 'Jake Hildreth'
-        CompanyName          = 'Trimarc'
-        Copyright            = "(c) 2022 - $((Get-Date).Year) Author @ Trimarc. All rights reserved."
+        # CompanyName          = 'Trimarc'
+        Copyright            = "(c) 2022 - $((Get-Date).Year). All rights reserved."
         Description          = 'A tiny tool to identify and remediate common misconfigurations in Active Directory Certificate Services.'
         PowerShellVersion    = '5.1'
         Tags                 = @('Windows', 'Locksmith', 'CA', 'PKI', 'Active Directory', 'Certificate Services','AD CS')
