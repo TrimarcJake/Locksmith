@@ -1,6 +1,4 @@
-﻿#requires -modules PSPublishModule
-
-#Import-Module PSPublishModule -Force
+﻿Import-Module PSPublishModule -Force
 
 Build-Module -ModuleName 'Locksmith' {
     # Usual defaults as per standard module
