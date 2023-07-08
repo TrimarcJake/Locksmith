@@ -120,7 +120,6 @@
         break;
     }
 
-    #Clear-Host
     $Logo
     if ($Credential) {
         $Targets = Get-Target -Credential $Credential
@@ -141,9 +140,6 @@
         }
     }
 
-
-    #Clear-Host
-    #$Logo
     Write-Host "Gathering AD CS Objects from $($Targets)..."
     if ($Credential) {
         $ADCSObjects = Get-ADCSObject -Targets $Targets -Credential $Credential
@@ -159,26 +155,18 @@
         $CAHosts | ForEach-Object { $SafeUsers += '|' + $_.Name }
     }
 
-    #Clear-Host
-    #$Logo
     Write-Host 'Identifying auditing issues...'
     [array]$AuditingIssues = Find-AuditingIssue -ADCSObjects $ADCSObjects
 
-    #Clear-Host
-    #$Logo
     Write-Host 'Identifying AD CS templates with dangerous configurations...'
     [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
     [array]$ESC2 = Find-ESC2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
 
-    #Clear-Host
-    #$Logo
     Write-Host 'Identifying AD CS template and other objects with poor access control...'
     [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
     [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
     [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects
 
-    #Clear-Host
-    #$Logo
     Write-Host 'Identifying HTTP-based certificate enrollment interfaces...'
     [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects
 
@@ -192,8 +180,6 @@
 
     switch ($Mode) {
         0 {
-            #Clear-Host
-            #$Logo
             Format-Result $AuditingIssues '0'
             Format-Result $ESC1 '0'
             Format-Result $ESC2 '0'
@@ -203,8 +189,6 @@
             Format-Result $ESC8 '0'
         }
         1 {
-            #Clear-Host
-            #$Logo
             Format-Result $AuditingIssues '1'
             Format-Result $ESC1 '1'
             Format-Result $ESC2 '1'
@@ -214,8 +198,6 @@
             Format-Result $ESC8 '1'
         }
         2 {
-            #Clear-Host
-            #$Logo
             $Output = 'ADCSIssues.CSV'
             Write-Host "Writing AD CS issues to $Output..."
             try {
@@ -226,8 +208,6 @@
             }
         }
         3 {
-            #Clear-Host
-            #$Logo
             $Output = 'ADCSRemediation.CSV'
             Write-Host "Writing AD CS issues to $Output..."
             try {
@@ -243,8 +223,6 @@
             Write-Host 'Executing Mode 4 - Attempting to fix all identified issues!'
             if ($AuditingIssues) {
                 $AuditingIssues | ForEach-Object {
-                    Clear-Host
-                    Write-Host $Logo
                     $FixBlock = [scriptblock]::Create($_.Fix)
                     Write-Host "Attempting to fully enable AD CS auditing on $($_.Name)..."
                     Write-Host "This should have little impact on your environment.`n"
@@ -269,8 +247,6 @@
             }
             if ($ESC1) {
                 $ESC1 | ForEach-Object {
-                    Clear-Host
-                    Write-Host $Logo
                     $FixBlock = [scriptblock]::Create($_.Fix)
                     Write-Host "Attempting to enable Manager Approval on the $($_.Name) template...`n"
                     Write-Host 'Command(s) to be run:'
@@ -294,8 +270,6 @@
             }
             if ($ESC2) {
                 $ESC2 | ForEach-Object {
-                    Clear-Host
-                    Write-Host $Logo
                     $FixBlock = [scriptblock]::Create($_.Fix)
                     Write-Host "Attempting to enable Manager Approval on the $($_.Name) template...`n"
                     Write-Host 'Command(s) to be run:'
@@ -319,8 +293,6 @@
             }
             if ($ESC6) {
                 $ESC6 | ForEach-Object {
-                    Clear-Host
-                    Write-Host $Logo
                     $FixBlock = [scriptblock]::Create($_.Fix)
                     Write-Host "Attempting to disable the EDITF_ATTRIBUTESUBJECTALTNAME2 flag on $($_.Name)...`n"
                     Write-Host 'Command(s) to be run:'
