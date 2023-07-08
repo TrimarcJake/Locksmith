@@ -3,15 +3,15 @@
 Build-Module -ModuleName 'Locksmith' {
     # Usual defaults as per standard module
     $Manifest = [ordered] @{
-        ModuleVersion        = '1.0.0'
+        ModuleVersion        = '2023.08'
         CompatiblePSEditions = @('Desktop', 'Core')
         GUID                 = 'b1325b42-8dc4-4f17-aa1f-dcb5984ca14a'
-        Author               = 'TrimarcJake'
+        Author               = 'Jake Hildreth'
         CompanyName          = 'Trimarc'
-        Copyright            = "(c) 2011 - $((Get-Date).Year) Author @ Trimarc. All rights reserved."
-        Description          = 'A tiny tool to identify and remediate common misconfigurations in Active Directory Certificate Services'
+        Copyright            = "(c) 2022 - $((Get-Date).Year) Author @ Trimarc. All rights reserved."
+        Description          = 'A tiny tool to identify and remediate common misconfigurations in Active Directory Certificate Services.'
         PowerShellVersion    = '5.1'
-        Tags                 = @('Windows', 'Locksmith', 'CA', 'PKI')
+        Tags                 = @('Windows', 'Locksmith', 'CA', 'PKI', 'Active Directory', 'Certificate Services','AD CS')
     }
     New-ConfigurationManifest @Manifest
 
