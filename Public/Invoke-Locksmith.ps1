@@ -68,8 +68,9 @@
     $DangerousRights = 'GenericAll|WriteDacl|WriteOwner|WriteProperty'
     $EnrollmentAgentEKU = '1\.3\.6\.1\.4\.1\.311\.20\.2\.1'
     $ForestGC = $(Get-ADDomainController -Discover -Service GlobalCatalog -ForceDiscover | Select-Object -ExpandProperty Hostname) + ":3268"
+    $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
     $SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$'
-    $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$'
+    $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
     $UnsafeOwners = 'S-1-1-0|-11$|-513$|-515$'
     $UnsafeUsers = 'S-1-1-0|-11$|-513$|-515$'
     $Logo = @"
@@ -95,25 +96,24 @@
     }
 
     # Add SIDs of (probably) Safe Users to $SafeUsers
-    # This only collects users from originating domain
     Get-ADGroupMember $EnterpriseAdminsSID | ForEach-Object {
-        $SafeUsers += '|' + $_.SID
-    }
-    foreach ($certpublishersSID in $AllDomainsCertPublishersSIDs) {
-        Get-ADGroupMember $certpublishersSID | ForEach-Object {
-            $SafeUsers += '|' + $_.SID
-        }
-    }
-    foreach ($domainadminsSID in $AllDomainsDomainAdminsSIDs) {
-        Get-ADGroupMember $domainadminsSID | ForEach-Object {
-            $SafeUsers += '|' + $_.SID
-        }
-    }
-    Get-ADGroupMember S-1-5-32-544 | ForEach-Object {
-        $SafeUsers += '|' + $_.SID
+        $SafeUsers += '|' + $_.SID.Value
     }
 
-
+    (Get-ADForest).Domains | ForEach-Object {
+        $DomainSID = (Get-ADDomain $_).DomainSID.Value
+        $SafeGroupRIDs = @('-517','-512')
+        $SafeGroupSIDs = @('S-1-5-32-544')
+        foreach ($rid in $SafeGroupRIDs ) {
+            $SafeGroupSIDs += $DomainSID + $rid
+        }
+        foreach ($sid in $SafeGroupSIDs) {
+            $users += (Get-ADGroupMember $sid -Server $_ -Recursive).SID.Value
+        }
+        foreach ($user in $users) {
+            $SafeUsers += '|' + $user
+        }
+    }
 
     if (!$Credential -and (Get-RestrictedAdminModeSetting)) {
         Write-Warning "Restricted Admin Mode appears to be in place, re-run with the '-Credential domain\user' option"
