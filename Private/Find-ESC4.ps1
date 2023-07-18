@@ -54,7 +54,9 @@
             }
             if ( ($_.objectClass -eq 'pKICertificateTemplate') -and
                 ($SID -notmatch $SafeUsers) -and
-                ($entry.ActiveDirectoryRights -match $DangerousRights) ) {
+                ($entry.ActiveDirectoryRights -match $DangerousRights) -and
+                ($entry.ActiveDirectoryRights.ObjectType -notmatch $SafeObjectTypes)
+                ) {
                 $Issue = New-Object -TypeName pscustomobject
                 $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force

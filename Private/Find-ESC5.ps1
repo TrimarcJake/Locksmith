@@ -17,7 +17,10 @@
         } else {
             $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
         }
-        if ( ($_.objectClass -ne 'pKICertificateTemplate') -and ($SID -notmatch $SafeOwners) ) {
+        if ( ($_.objectClass -ne 'pKICertificateTemplate') -and 
+            ($SID -notmatch $SafeOwners) -and
+            ($entry.ActiveDirectoryRights.ObjectType -notmatch $SafeObjectTypes)            
+            ) {
             $Issue = New-Object -TypeName pscustomobject
             $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
