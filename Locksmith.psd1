@@ -2,9 +2,9 @@
     AliasesToExport      = @('*')
     Author               = 'Jake Hildreth'
     CmdletsToExport      = @()
-    CompanyName          = 'Trimarc'
+    # CompanyName          = 'Trimarc'
     CompatiblePSEditions = @('Desktop', 'Core')
-    Copyright            = '(c) 2022 - 2023 Author @ Trimarc. All rights reserved.'
+    Copyright            = '(c) 2022 - 2023. All rights reserved.'
     Description          = 'A tiny tool to identify and remediate common misconfigurations in Active Directory Certificate Services.'
     FunctionsToExport    = @('*')
     GUID                 = 'b1325b42-8dc4-4f17-aa1f-dcb5984ca14a'
