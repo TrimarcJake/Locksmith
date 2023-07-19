@@ -33,7 +33,7 @@
                     -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}" -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Revert `
                     -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"  -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC1'
+                $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC3'
                 $Issue
             }
         }
