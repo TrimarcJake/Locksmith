@@ -22,13 +22,13 @@
         Write-Host "`n########## $($IssueTable[$UniqueIssue]) ##########`n"
         switch ($Mode) {
             0 {
-                $Issue | Format-Table Technique, Name, Issue -Wrap
+                $Issue | Format-Table Technique, Name, Issue, severity -Wrap
             }
             1 {
                 if ($Issue.Technique -eq 'ESC8') {
-                    $Issue | Format-List Technique, Name, DistinguishedName, CAEnrollmentEndpoint, Issue, Fix
+                    $Issue | Format-List Technique, Name, DistinguishedName, CAEnrollmentEndpoint, Issue, Fix, severity
                 } else {
-                    $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix
+                    $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix, severity
                     if(($Issue.Technique -eq "DETECT" -or $Issue.Technique -eq "ESC6") -and (Get-RestrictedAdminModeSetting)){
                         Write-Warning "Restricted Admin Mode appears to be configured. Certutil.exe may not work from this host, therefore you may need to execute the 'Fix' commands on the CA server itself"
                     }
