@@ -32,6 +32,8 @@
             $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value '[TODO]' -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC5'
+            $Severity = Set-Severity -Issue $Issue
+            $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
             $Issue
         }
         if ( ($_.objectClass -ne 'pKICertificateTemplate') -and ($SID -match $UnsafeOwners) ) {
@@ -46,6 +48,8 @@
             $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC5'
+            $Severity = Set-Severity -Issue $Issue
+            $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
             $Issue
         }
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
@@ -69,6 +73,8 @@
                 $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; foreach ( `$ace in `$ACL.access ) { if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) { `$ACL.RemoveAccessRule(`$ace) | Out-Null ; Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL } }" -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC5'
+                $Severity = Set-Severity -Issue $Issue
+                $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
                 $Issue
             }
         }
