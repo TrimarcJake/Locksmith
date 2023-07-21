@@ -19,7 +19,7 @@ function Set-Severity {
                 return 'High'
             }
             # ESC1, ESC2, ESC4, ESC5
-            $SID = ConvertTo-IdentityReference -Object $Finding.IdentityReference
+            $SID = ConvertFrom-IdentityReference -Object $Finding.IdentityReference
             if ($SID -match $SafeUsers -or $SID -match $SafeOwners) {
                 return 'Medium'
             }

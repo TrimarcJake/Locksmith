@@ -1,4 +1,4 @@
-function ConvertTo-IdentityReference {
+function ConvertFrom-IdentityReference {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
