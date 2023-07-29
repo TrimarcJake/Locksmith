@@ -9,33 +9,31 @@ Check if Audit level is set:
 Find:
   - Name: ESC1
   - Config: Typical ESC1
-  - Principal: ESC1 (user)
+  - Principal: Authenticated Users
 
-Find:
   - Name: ESC1and2
   - Config: "Any purpose" EKU
-  - Principal: Domain Users
+  - Principal: Authenticated Users
 
 Do Not Find:
   - Name: ESC1Filtered
   - Config: Typical ESC1
-  - Principal: Domain Admins
+  - Principal: Administrators
 
 ## ESC2
 Find:
   - Name: ESC2
   - Config: Typical ESC2
-  - Principal: ESC2 (user)
+  - Principal: Authenticated Users
 
-Find:
   - Name: ESC1and2
   - Config: "Any purpose" EKU
-  - Principal: Domain Users
+  - Principal: Authenticated Users
 
 Do Not Find:
   - Name: ESC2Filtered
   - Config: Typical ESC2
-  - Principal: Cert Publishers
+  - Principal: Administrators
 
 ## ESC3 - Not Complete
 Find:
@@ -48,60 +46,68 @@ Find:
 Find:
   - Name: ESC4GenericAll
   - Config: GenericAll
-  - Principal: ESC4GenericAll
+  - Principal: Authenticated Users
 
-Find:
+  - Name: ESC4UnsafeOwner
+  - Config: UnsafeOwner
+  - Principal: Authenticated Users
+
   - Name: ESC4WriteProperty
   - Config: WriteProperty on All Objects
-  - Principal: ESC4WriteProperty
+  - Principal: Authenticated Users
 
-Find:
   - Name: ESC4WriteOwner
   - Config: WriteOwner
-  - Principal: ESC4WriteOwner
+  - Principal: Authenticated Users
 
 Do Not Find:
   - Name: ESC4FilteredEnroll
   - Config WriteProperty, ExtendedRight on Enroll
   - Principal: Domain Users
 
-Do Not Find:
   - Name: ESC4FilteredAutoEnroll
   - Config: WriteProperty, ExtendedRight on AutoEnroll
   - Principal: Domain Users
 
-Do Not Find:
+  - Name: ESC4FilteredOwner
+  - Config: Owner
+  - Principal: Administrators
+
   - Name: ESC4FilteredSafeUsers
   - Config: GenericAll
-  - Principal: Enteprise Admins
+  - Principal: Administrators
 
 ## ESC5
 Find:
   - Name: ESC5GenericAll
   - Config: GenericAll
-  - Principal: ESC5GenericAll
+  - Principal: Authenticated Users
 
-Find:
+  - Name: ESC5UnsafeOwner
+  - Config: UnsafeOwner
+  - Principal: Authenticated Users
+
   - Name: ESC5WriteProperty
   - Config: WriteProperty on All Objects
-  - Principal: ESC5WriteProperty
+  - Principal: Authenticated Users
 
-Find:
   - Name: ESC5WriteOwner
   - Config: WriteOwner
-  - Principal: ESC4WriteOwner
+  - Principal: Authenticated Users
 
 Do Not Find:
   - Name: ESC5FilteredEnroll
   - Config WriteProperty, ExtendedRight on Enroll
-  - Principal: Domain Users
+  - Principal: Authenticated Users
 
-Do Not Find:
   - Name: ESC5FilteredAutoEnroll
   - Config: WriteProperty, ExtendedRight on AutoEnroll
-  - Principal: Domain Users
+  - Principal: Authenticated Users
 
-Do Not Find:
+  - Name: ESC5FilteredOwner
+  - Config: Owner
+  - Principal: Administrators
+
   - Name: ESC5FilteredSafeUsers
   - Config: GenericAll
   - Principal: Administrators
