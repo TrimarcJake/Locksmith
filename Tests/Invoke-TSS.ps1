@@ -312,3 +312,60 @@ $ACL = Get-Acl "AD:$ESC5WriteOwner"
 $AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$WriteOwner,$Allow
 $ACL.AddAccessRule($AccessRule)
 Set-Acl "AD:$ESC5WriteOwner" -AclObject $ACL
+
+Get-ADObject -Filter 'objectClass -eq "pKIEnrollmentService"' -SearchBase $PKSContainer -Properties * | ForEach-Object {
+    $ForestGC = $(Get-ADDomainController -Discover -Service GlobalCatalog -ForceDiscover | Select-Object -ExpandProperty Hostname) + ":3268"
+    [string]$CAFullName = "$($_.dNSHostName)\$($_.Name)"
+    $CAHostname = $_.dNSHostName.split('.')[0]
+    $CAHostFQDN = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -Properties DnsHostname -Server $ForestGC).DnsHostname
+    $ping = Test-Connection -ComputerName $CAHostFQDN -Quiet
+    if ($ping) {
+        try {
+            $CertutilAudit = certutil -config $CAFullName -getreg CA\AuditFilter
+        } catch {
+            $AuditFilter = 'Failure'
+        }
+        try {
+            $CertutilFlag = certutil -config $CAFullName -getreg policy\EditFlags
+        } catch {
+            $AuditFilter = 'Failure'
+        }
+    } else {
+        $AuditFilter = 'CA Unavailable'
+        $SANFlag = 'CA Unavailable'
+    }
+    if ($CertutilAudit) {
+        try {
+            [string]$AuditFilter = $CertutilAudit | Select-String 'AuditFilter REG_DWORD = ' | Select-String '\('
+            $AuditFilter = $AuditFilter.split('(')[1].split(')')[0]
+        } catch {
+            try {
+                [string]$AuditFilter = $CertutilAudit | Select-String 'AuditFilter REG_DWORD = '
+                $AuditFilter = $AuditFilter.split('=')[1].trim()
+            } catch {
+                $AuditFilter = 'Never Configured'
+            }
+        }
+    }
+    if ($CertutilFlag) {
+        [string]$SANFlag = $CertutilFlag | Select-String ' EDITF_ATTRIBUTESUBJECTALTNAME2 -- 40000 \('
+        if ($SANFlag) {
+            $SANFlag = 'Yes'
+        } else {
+            $SANFlag = 'No'
+        }
+    }
+    $CAFullName
+    $AuditFilter
+    $SANFlag
+
+    if ( ($AuditFilter -ne '0') -and ($AuditFilter -ne 'Never Configured') ) {
+        certutil -config $CAFullname -setreg CA\AuditFilter 0
+        Invoke-Command -ComputerName $CAHostFQDN -ScriptBlock { Get-Service -Name 'certsvc' | Restart-Service -Force }
+    }
+
+    if ($SANFlag -eq 'No') {
+        certutil -config $CAFullname -setreg policy\EditFlags +EDITF_ATTRIBUTESUBJECTALTNAME2
+        Invoke-Command -ComputerName $CAHostFQDN -ScriptBlock { Get-Service -Name 'certsvc' | Restart-Service -Force }
+    }
+}
