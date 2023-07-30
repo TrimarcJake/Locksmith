@@ -17,11 +17,16 @@
 #requires -Modules ActiveDirectory
 
 $NewTemplates = @(
-    'ESC1'
-    'ESC1and2'
-    'ESC1Filtered'
-    'ESC2'
-    'ESC2Filtered'
+    'ESC1and2AutoEnroll'
+    'ESC1and2Enroll'
+    'ESC1AutoEnroll'
+    'ESC1AutoEnrollFiltered'
+    'ESC1Enroll'
+    'ESC1EnrollFiltered'
+    'ESC2AutoEnroll'
+    'ESC2AutoEnrollFiltered'
+    'ESC2Enroll'
+    'ESC2EnrollFiltered'
     'ESC4FilteredEnroll'
     'ESC4FilteredAutoEnroll'
     'ESC4FilteredOwner'
@@ -70,41 +75,77 @@ $NewObjects | ForEach-Object {
     New-ADObject -Name $_ -Type 'container' -Path $PKSContainer
 }
 
-$ESC1 = Get-ADObject "CN=ESC1,CN=Certificate Templates,$PKSContainer" -Properties *
-$ESC1Properties = @{
-    'msPKI-Certificate-Name-Flag' = 1
-    'msPKI-Enrollment-Flag' = 0
-    'pKIExtendedKeyUsage' = '1.3.6.1.5.5.7.3.2'
-} 
-Set-ADObject $ESC1.DistinguishedName -Add $ESC1Properties
-$ACL = Get-Acl "AD:$ESC1"
-$AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$DefaultRights,$Allow,$EnrollGUID
-$ACL.AddAccessRule($AccessRule)
-Set-Acl "AD:$ESC1" -AclObject $ACL
-
-$ESC1and2 = Get-ADObject "CN=ESC1and2,CN=Certificate Templates,$PKSContainer" -Properties *
-$ESC1and2Properties = @{
+$ESC1and2AutoEnroll = Get-ADObject "CN=ESC1and2AutoEnroll,CN=Certificate Templates,$PKSContainer" -Properties *
+$ESC1and2AutoEnrollProperties = @{
     'msPKI-Certificate-Name-Flag' = 1
     'msPKI-Enrollment-Flag' = 0
     'pKIExtendedKeyUsage' = '2.5.29.37.0'
 } 
-Set-ADObject $ESC1and2.DistinguishedName -Add $ESC1and2Properties
-$ACL = Get-Acl "AD:$ESC1and2"
+Set-ADObject $ESC1and2AutoEnroll.DistinguishedName -Add $ESC1and2AutoEnrollProperties
+$ACL = Get-Acl "AD:$ESC1and2AutoEnroll"
+$AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$DefaultRights,$Allow,$AutoEnrollGUID
+$ACL.AddAccessRule($AccessRule)
+Set-Acl "AD:$ESC1and2AutoEnroll" -AclObject $ACL
+
+$ESC1and2Enroll = Get-ADObject "CN=ESC1and2Enroll,CN=Certificate Templates,$PKSContainer" -Properties *
+$ESC1and2EnrollProperties = @{
+    'msPKI-Certificate-Name-Flag' = 1
+    'msPKI-Enrollment-Flag' = 0
+    'pKIExtendedKeyUsage' = '2.5.29.37.0'
+} 
+Set-ADObject $ESC1and2Enroll.DistinguishedName -Add $ESC1and2EnrollProperties
+$ACL = Get-Acl "AD:$ESC1and2Enroll"
 $AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$DefaultRights,$Allow,$EnrollGUID
 $ACL.AddAccessRule($AccessRule)
-Set-Acl "AD:$ESC1and2" -AclObject $ACL
+Set-Acl "AD:$ESC1and2Enroll" -AclObject $ACL
 
-$ESC2 = Get-ADObject "CN=ESC2,CN=Certificate Templates,$PKSContainer" -Properties *
-$ESC2Properties = @{
+$ESC1AutoEnroll = Get-ADObject "CN=ESC1AutoEnroll,CN=Certificate Templates,$PKSContainer" -Properties *
+$ESC1AutoEnrollProperties = @{
+    'msPKI-Certificate-Name-Flag' = 1
+    'msPKI-Enrollment-Flag' = 0
+    'pKIExtendedKeyUsage' = '1.3.6.1.5.5.7.3.2'
+} 
+Set-ADObject $ESC1AutoEnroll.DistinguishedName -Add $ESC1AutoEnrollProperties
+$ACL = Get-Acl "AD:$ESC1AutoEnroll"
+$AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$DefaultRights,$Allow,$AutoEnrollGUID
+$ACL.AddAccessRule($AccessRule)
+Set-Acl "AD:$ESC1AutoEnroll" -AclObject $ACL
+
+$ESC1Enroll = Get-ADObject "CN=ESC1Enroll,CN=Certificate Templates,$PKSContainer" -Properties *
+$ESC1EnrollProperties = @{
+    'msPKI-Certificate-Name-Flag' = 1
+    'msPKI-Enrollment-Flag' = 0
+    'pKIExtendedKeyUsage' = '1.3.6.1.5.5.7.3.2'
+} 
+Set-ADObject $ESC1Enroll.DistinguishedName -Add $ESC1EnrollProperties
+$ACL = Get-Acl "AD:$ESC1Enroll"
+$AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$DefaultRights,$Allow,$EnrollGUID
+$ACL.AddAccessRule($AccessRule)
+Set-Acl "AD:$ESC1Enroll" -AclObject $ACL
+
+$ESC2AutoEnroll = Get-ADObject "CN=ESC2AutoEnroll,CN=Certificate Templates,$PKSContainer" -Properties *
+$ESC2AutoEnrollProperties = @{
     'msPKI-Certificate-Name-Flag' = 1
     'msPKI-Enrollment-Flag' = 0
 }   
-Set-ADObject $ESC2.DistinguishedName -Add $ESC2Properties
-Set-ADObject $ESC2.DistinguishedName -Clear pKIExtendedKeyUsage
-$ACL = Get-Acl "AD:$ESC2"
+Set-ADObject $ESC2AutoEnroll.DistinguishedName -Add $ESC2AutoEnrollProperties
+Set-ADObject $ESC2AutoEnroll.DistinguishedName -Clear pKIExtendedKeyUsage
+$ACL = Get-Acl "AD:$ESC2AutoEnroll"
+$AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$DefaultRights,$Allow,$AutoEnrollGUID
+$ACL.AddAccessRule($AccessRule)
+Set-Acl "AD:$ESC2AutoEnroll" -AclObject $ACL
+
+$ESC2Enroll = Get-ADObject "CN=ESC2Enroll,CN=Certificate Templates,$PKSContainer" -Properties *
+$ESC2EnrollProperties = @{
+    'msPKI-Certificate-Name-Flag' = 1
+    'msPKI-Enrollment-Flag' = 0
+}   
+Set-ADObject $ESC2Enroll.DistinguishedName -Add $ESC2EnrollProperties
+Set-ADObject $ESC2Enroll.DistinguishedName -Clear pKIExtendedKeyUsage
+$ACL = Get-Acl "AD:$ESC2Enroll"
 $AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$DefaultRights,$Allow,$EnrollGUID
 $ACL.AddAccessRule($AccessRule)
-Set-Acl "AD:$ESC2" -AclObject $ACL
+Set-Acl "AD:$ESC2Enroll" -AclObject $ACL
 
 $ESC4GenericAll = Get-ADObject "CN=ESC4GenericAll,CN=Certificate Templates,$PKSContainer" -Properties *
 $ACL = Get-Acl "AD:$ESC4GenericAll"
