@@ -98,7 +98,6 @@ $ESC2 = Get-ADObject "CN=ESC2,CN=Certificate Templates,$PKSContainer" -Propertie
 $ESC2Properties = @{
     'msPKI-Certificate-Name-Flag' = 1
     'msPKI-Enrollment-Flag' = 0
-    'pKIExtendedKeyUsage' = '2.5.29.37.0'
 }   
 Set-ADObject $ESC2.DistinguishedName -Add $ESC2Properties
 Set-ADObject $ESC2.DistinguishedName -Clear pKIExtendedKeyUsage
