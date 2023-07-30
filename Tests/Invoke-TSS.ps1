@@ -106,3 +106,21 @@ $ACL = Get-Acl "AD:$ESC2"
 $AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$DefaultRights,$Allow,$EnrollGUID
 $ACL.AddAccessRule($AccessRule)
 Set-Acl "AD:$ESC2" -AclObject $ACL
+
+$ESC4GenericAll = Get-ADObject "CN=ESC4GenericAll,CN=Certificate Templates,$PKSContainer" -Properties *
+$ACL = Get-Acl "AD:$ESC4GenericAll"
+$AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$GenericAll,$Allow
+$ACL.AddAccessRule($AccessRule)
+Set-Acl "AD:$ESC4GenericAll" -AclObject $ACL
+
+$ESC4WriteProperty = Get-ADObject "CN=ESC4WriteProperty,CN=Certificate Templates,$PKSContainer" -Properties *
+$ACL = Get-Acl "AD:$ESC4WriteProperty"
+$AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$WriteProperty,$Allow
+$ACL.AddAccessRule($AccessRule)
+Set-Acl "AD:$ESC4WriteProperty" -AclObject $ACL
+
+$ESC4WriteOwner = Get-ADObject "CN=ESC4WriteOwner,CN=Certificate Templates,$PKSContainer" -Properties *
+$ACL = Get-Acl "AD:$ESC4WriteOwner"
+$AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$WriteOwner,$Allow
+$ACL.AddAccessRule($AccessRule)
+Set-Acl "AD:$ESC4WriteOwner" -AclObject $ACL
