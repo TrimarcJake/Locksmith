@@ -113,6 +113,11 @@ $AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $Aut
 $ACL.AddAccessRule($AccessRule)
 Set-Acl "AD:$ESC4GenericAll" -AclObject $ACL
 
+$ESC4UnsafeOwner = Get-ADObject "CN=ESC4UnsafeOwner,CN=Certificate Templates,$PKSContainer" -Properties *
+$ACL = Get-Acl "AD:$ESC4UnsafeOwner"
+$ACL.SetOwner($AuthenticatedUsers)
+Set-Acl "AD:$ESC4UnsafeOwner" -AclObject $ACL
+
 $ESC4WriteProperty = Get-ADObject "CN=ESC4WriteProperty,CN=Certificate Templates,$PKSContainer" -Properties *
 $ACL = Get-Acl "AD:$ESC4WriteProperty"
 $AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$WriteProperty,$Allow
@@ -130,6 +135,11 @@ $ACL = Get-Acl "AD:$ESC5GenericAll"
 $AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$GenericAll,$Allow
 $ACL.AddAccessRule($AccessRule)
 Set-Acl "AD:$ESC5GenericAll" -AclObject $ACL
+
+$ESC5UnsafeOwner = Get-ADObject "CN=ESC5UnsafeOwner,$PKSContainer" -Properties *
+$ACL = Get-Acl "AD:$ESC5UnsafeOwner"
+$ACL.SetOwner($AuthenticatedUsers)
+Set-Acl "AD:$ESC5UnsafeOwner" -AclObject $ACL
 
 $ESC5WriteProperty = Get-ADObject "CN=ESC5WriteProperty,$PKSContainer" -Properties *
 $ACL = Get-Acl "AD:$ESC5WriteProperty"
