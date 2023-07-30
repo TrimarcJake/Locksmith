@@ -124,3 +124,21 @@ $ACL = Get-Acl "AD:$ESC4WriteOwner"
 $AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$WriteOwner,$Allow
 $ACL.AddAccessRule($AccessRule)
 Set-Acl "AD:$ESC4WriteOwner" -AclObject $ACL
+
+$ESC5GenericAll = Get-ADObject "CN=ESC5GenericAll,$PKSContainer" -Properties *
+$ACL = Get-Acl "AD:$ESC5GenericAll"
+$AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$GenericAll,$Allow
+$ACL.AddAccessRule($AccessRule)
+Set-Acl "AD:$ESC5GenericAll" -AclObject $ACL
+
+$ESC5WriteProperty = Get-ADObject "CN=ESC5WriteProperty,$PKSContainer" -Properties *
+$ACL = Get-Acl "AD:$ESC5WriteProperty"
+$AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$WriteProperty,$Allow
+$ACL.AddAccessRule($AccessRule)
+Set-Acl "AD:$ESC5WriteProperty" -AclObject $ACL
+
+$ESC5WriteOwner = Get-ADObject "CN=ESC5WriteOwner,$PKSContainer" -Properties *
+$ACL = Get-Acl "AD:$ESC5WriteOwner"
+$AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$WriteOwner,$Allow
+$ACL.AddAccessRule($AccessRule)
+Set-Acl "AD:$ESC5WriteOwner" -AclObject $ACL
