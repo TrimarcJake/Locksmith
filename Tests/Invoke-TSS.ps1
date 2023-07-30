@@ -355,9 +355,6 @@ Get-ADObject -Filter 'objectClass -eq "pKIEnrollmentService"' -SearchBase $PKSCo
             $SANFlag = 'No'
         }
     }
-    $CAFullName
-    $AuditFilter
-    $SANFlag
 
     if ( ($AuditFilter -ne '0') -and ($AuditFilter -ne 'Never Configured') ) {
         certutil -config $CAFullname -setreg CA\AuditFilter 0
