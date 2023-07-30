@@ -223,13 +223,13 @@ Set-Acl "AD:$ESC2FilteredEnroll" -AclObject $ACL
 
 $ESC4FilteredAutoEnroll = Get-ADObject "CN=ESC4FilteredAutoEnroll,CN=Certificate Templates,$PKSContainer" -Properties *
 $ACL = Get-Acl "AD:$ESC4FilteredAutoEnroll"
-$AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$DefaultRights,$Allow, $AutoEnrollGUID
+$AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$DefaultRights,$Allow,$AutoEnrollGUID
 $ACL.AddAccessRule($AccessRule)
 Set-Acl "AD:$ESC4FilteredAutoEnroll" -AclObject $ACL
 
 $ESC4FilteredEnroll = Get-ADObject "CN=ESC4FilteredEnroll,CN=Certificate Templates,$PKSContainer" -Properties *
 $ACL = Get-Acl "AD:$ESC4FilteredEnroll"
-$AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$DefaultRights,$Allow, $EnrollGUID
+$AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$DefaultRights,$Allow,$EnrollGUID
 $ACL.AddAccessRule($AccessRule)
 Set-Acl "AD:$ESC4FilteredEnroll" -AclObject $ACL
 
@@ -269,13 +269,13 @@ Set-Acl "AD:$ESC4WriteOwner" -AclObject $ACL
 
 $ESC5FilteredAutoEnroll = Get-ADObject "CN=ESC5FilteredAutoEnroll,$PKSContainer" -Properties *
 $ACL = Get-Acl "AD:$ESC5FilteredAutoEnroll"
-$AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$DefaultRights,$Allow, $AutoEnrollGUID
+$AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$DefaultRights,$Allow,$AutoEnrollGUID
 $ACL.AddAccessRule($AccessRule)
 Set-Acl "AD:$ESC5FilteredAutoEnroll" -AclObject $ACL
 
 $ESC5FilteredEnroll = Get-ADObject "CN=ESC5FilteredEnroll,$PKSContainer" -Properties *
 $ACL = Get-Acl "AD:$ESC5FilteredEnroll"
-$AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$DefaultRights,$Allow, $EnrollGUID
+$AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$DefaultRights,$Allow,$EnrollGUID
 $ACL.AddAccessRule($AccessRule)
 Set-Acl "AD:$ESC5FilteredEnroll" -AclObject $ACL
 
