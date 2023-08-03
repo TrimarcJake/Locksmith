@@ -11,6 +11,7 @@
     }
 }
 
+Update-Module -Name PSPublishModule -Force
 Import-Module -Name PSPublishModule -Force
 
 Build-Module -ModuleName 'Locksmith' {
