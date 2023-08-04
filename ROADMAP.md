@@ -1,28 +1,30 @@
 ## Continuous
 - Improved Error Handling
 
+## In Progress
+- [ ] ESC3 coverage
+- [ ] Check for Auditing GPOS, Warn if none found
+
 ## Short Term
 - [ ] Rename Modes to something that makes sense
 - [ ] Improved Output: Email, PS Object
 - [ ] Check for Elevation before Fixing
-- [ ] ACL remediation snippets
 
 ## Medium Term
-- [ ] ESC3 coverage
+- [ ] ESC3 Remediation
 - [ ] ESC7 coverage
 - [ ] Text-Based User Interface
-- [ ] Check for Auditing GPOS, Warn if none found
 - [ ] Include Reference Material
 
 ## Long Term
 - [ ] Convert from PS Modules/cmdlets to ADSI calls
 - [ ] ESC8 Remediation
 - [ ] Unit testing (for [Jared](https://github.com/trimarcjared))
-- [ ] ESC3 Remediation
 - [ ] ESC7 Remediation
 - [ ] Multi-Forest support
 
 ## Recently Completed
+- [x] ACL remediation snippets
 - [x] Add individual CA Hosts to $SafeUsers
 - [x] Add sample output to README.md
 - [x] ESC8 coverage
