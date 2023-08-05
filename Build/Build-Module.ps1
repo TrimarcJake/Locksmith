@@ -11,7 +11,7 @@
     }
 }
 
-Update-Module -Name PSPublishModule # -Force
+Update-Module -Name PSPublishModule -Scope CurrentUser
 Import-Module -Name PSPublishModule -Force
 
 Build-Module -ModuleName 'Locksmith' {
@@ -21,7 +21,6 @@ Build-Module -ModuleName 'Locksmith' {
         CompatiblePSEditions = @('Desktop', 'Core')
         GUID                 = 'b1325b42-8dc4-4f17-aa1f-dcb5984ca14a'
         Author               = 'Jake Hildreth'
-        # CompanyName          = 'Trimarc'
         Copyright            = "(c) 2022 - $((Get-Date).Year). All rights reserved."
         Description          = 'A tiny tool to identify and remediate common misconfigurations in Active Directory Certificate Services.'
         PowerShellVersion    = '5.1'
@@ -100,10 +99,18 @@ Build-Module -ModuleName 'Locksmith' {
 
     New-ConfigurationBuild -Enable:$true -SignModule:$false -DeleteTargetModuleBeforeBuild -MergeModuleOnBuild -UseWildcardForFunctions
 
-    New-ConfigurationArtefact -Type Packed -Enable -Path "$PSScriptRoot\..\Artefacts\Packed" -ArtefactName 'Packed'
-    New-ConfigurationArtefact -Type Script -Enable -Path "$PSScriptRoot\..\Artefacts\Script" -ArtefactName 'Script'
-    New-ConfigurationArtefact -Type ScriptPacked -Enable -Path "$PSScriptRoot\..\Artefacts\ScriptPacked" -ArtefactName "ScriptPacked" 
-    New-ConfigurationArtefact -Type Unpacked -Enable -Path "$PSScriptRoot\..\Artefacts\Unpacked" -ArtefactName "Unpacked"
+    $PreScriptMerge = {
+        param (
+            [int]$Mode
+        )
+    }
+
+    $PostScriptMerge = { Invoke-Locksmith -Mode $Mode }
+
+    New-ConfigurationArtefact -Type Packed -Enable -Path "$PSScriptRoot\..\Artefacts\Packed" -ArtefactName '<ModuleName>-v<ModuleVersion>.zip'
+    New-ConfigurationArtefact -Type Script -Enable -Path "$PSScriptRoot\..\Artefacts\Script" -PreScriptMerge $PreScriptMerge -PostScriptMerge $PostScriptMerge -ScriptName "Invoke-<ModuleName>.ps1"
+    New-ConfigurationArtefact -Type ScriptPacked -Enable -Path "$PSScriptRoot\..\Artefacts\ScriptPacked" -ArtefactName "<ModuleName>-v<ModuleVersion>.zip" -PreScriptMerge $PreScriptMerge -PostScriptMerge $PostScriptMerge -ScriptName "Invoke-<ModuleName>.ps1"
+    New-ConfigurationArtefact -Type Unpacked -Enable -Path "$PSScriptRoot\..\Artefacts\Unpacked" -ScriptName "Invoke-<ModuleName>.ps1"
 
     # global options for publishing to github/psgallery
     #New-ConfigurationPublish -Type PowerShellGallery -FilePath 'C:\Support\Important\PowerShellGalleryAPI.txt' -Enabled:$false
