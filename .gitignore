@@ -1,0 +1,17 @@
+Ignore/*
+.vs/*
+.vscode/*
+Examples/Output/*
+Releases/*
+Artefacts/*
+ReleasedUnpacked/*
+Sources/.vs
+Sources/*/.vs
+Sources/*/obj
+Sources/*/bin
+Sources/*/*/obj
+Sources/*/*/bin
+Sources/packages/*
+Lib/Default/*
+Lib/Standard/*
+Lib/Core/*
