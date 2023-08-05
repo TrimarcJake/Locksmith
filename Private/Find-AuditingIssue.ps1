@@ -26,6 +26,8 @@
                 -Value "certutil -config $($_.CAFullname) -setreg CA\AuditFilter  $($_.AuditFilter); Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'DETECT' -Force
         }
+        $Severity = Set-Severity -Issue $Issue
+        $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
         $Issue
     }
 }

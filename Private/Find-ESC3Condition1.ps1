@@ -34,6 +34,8 @@
                 $Issue | Add-Member -MemberType NoteProperty -Name Revert `
                     -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"  -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC3'
+                $Severity = Set-Severity -Issue $Issue
+                $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
                 $Issue
             }
         }

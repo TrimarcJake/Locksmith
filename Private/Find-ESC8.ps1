@@ -25,6 +25,8 @@
                 $Issue['Revert'] = 'TBD'
             }
             $Issue['Technique'] = 'ESC8'
+            $Severity = Set-Severity -Issue $Issue
+            $Issue['Severity'] = $Severity
             [PSCustomObject] $Issue
         }
     }
