@@ -27,6 +27,8 @@
                 $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value 'N/A' -Force
             }
             $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC6'
+            $Severity = Set-Severity -Issue $Issue
+            $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
             $Issue
         }
     }
