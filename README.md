@@ -15,7 +15,7 @@ A ~~tiny~~ small tool to identify and remediate common misconfigurations in Acti
 ## Mode 0 (Default) - Identify Issues and Output to Console
 ``` powershell
 # Module Version
-PS> Invoke-Locksmith.ps1
+PS> Invoke-Locksmithd
 
 # Script Version
 PS> .\Invoke-Locksmith.ps1
