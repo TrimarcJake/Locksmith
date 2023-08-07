@@ -11,10 +11,6 @@
 A ~~tiny~~ small tool built to detect and fix common misconfigurations in Active Directory Certificate Services
 
 # Installation
-## Script (classic.):
-1. Download the latest script version: https://github.com/TrimarcJake/Locksmith/releases/latest/Invoke-Locksmith.zip
-2. Extract the downloaded zip file.
-
 ## Module (from the PowerShell Gallery, preferred):
 1. Open a PowerShell prompt and run `Install-Module -Name Locksmith -Scope CurrentUser`
 
@@ -22,6 +18,10 @@ A ~~tiny~~ small tool built to detect and fix common misconfigurations in Active
 1. Download the latest module version (Locksmith-v<YEAR>.<MONTH>.zip): https://github.com/TrimarcJake/Locksmith/releases/latest
 2. Extract the downloaded zip file.
 3. Open a PowerShell prompt and run `Import-Module Locksmith.psd1`
+
+## Script (classic.):
+1. Download the latest script version: https://github.com/TrimarcJake/Locksmith/releases/latest/Invoke-Locksmith.zip
+2. Extract the downloaded zip file.
 
 # Examples
 ## Mode 0 (Default) - Identify Issues and Output to Console
