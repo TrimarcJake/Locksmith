@@ -8,7 +8,7 @@
      '--'                  '--'                  '--'  
 ```
 
-A ~~tiny~~ small tool to identify and remediate common misconfigurations in Active Directory Certificate Services.
+A ~~tiny~~ small tool built to detect and fix common misconfigurations in Active Directory Certificate Services
 
 # Examples
 
