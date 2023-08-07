@@ -16,21 +16,14 @@ A ~~tiny~~ small tool built to detect and fix common misconfigurations in Active
 2. Extract the downloaded zip file.
 
 ## Module (from the PowerShell Gallery, preferred):
-1.
-```powershell
-Install-Module -Name Locksmith -Scope CurrentUser
-```
+1. Open a PowerShell prompt and run `Install-Module -Name Locksmith -Scope CurrentUser`
 
 ## Module (from here):
 1. Download the latest module version (Locksmith-v<YEAR>.<MONTH>.zip): https://github.com/TrimarcJake/Locksmith/releases/latest
 2. Extract the downloaded zip file.
-3.
-```powershell
-Import-Module Locksmith.psd1
-```
+3. Open a PowerShell prompt and run `Import-Module Locksmith.psd1`
 
 # Examples
-
 ## Mode 0 (Default) - Identify Issues and Output to Console
 ``` powershell
 # Module Version
