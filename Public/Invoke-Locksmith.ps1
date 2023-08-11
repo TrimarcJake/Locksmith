@@ -326,4 +326,37 @@
             }
         }
     }
+
+switch ($OutputType) {
+    # 'Console','CSV','HTML','JSON','PDF'
+    'Console' {
+        # Send output to host console only
+     }
+     'CSV' {
+        # Output CSV (formerly mode 1)
+     }
+     'HTML' {
+        # Output HTML report
+     }
+     'JSON' {
+        # Why not?
+     }
+     'PDF' {
+        <# Will need to import a 3rd party OSS library:
+            - https://merill.net/2013/06/creating-pdf-files-dynamically-with-powershell/
+            - https://www.nuget.org/packages/itext7
+        #>
+     }
+    Default {
+        # Use default, or just let the function set the default to console?
+    }
+} # End OutputType
+
+if ($Action -eq "Fix") {
+    # Call fixes
+}
+else {
+    # Get the results into the desired output.
+}
+
 }
