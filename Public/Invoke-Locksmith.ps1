@@ -55,9 +55,19 @@
     param (
         [string]$Forest,
         [string]$InputPath,
-        [int]$Mode = 0,
-        [string]$OutputPath = (Get-Location).Path,
-        [System.Management.Automation.PSCredential]$Credential
+        [string]$Mode = 0,
+        [System.Management.Automation.PSCredential]$Credential,
+        [Parameter(HelpMessage = 'The default action is `"Scan`" to find all misconfigurations. `"Fix`" will prompt you before fixing each individual finding.')]
+            [ValidateSet('Scan','Fix', ErrorMessage = 'Please choose Scan or Fix for your action.')]
+            [string]$Action = 'Scan',
+        [Parameter()]
+            [ValidateSet('Findings','Detailed', ErrorMessage = 'Please choose Findings or Detailed for your output. Detailed output includes the fixes.')]
+            [string]$Output = 'Findings',
+        [Parameter()]
+            [ValidateSet('Console','CSV','HTML','JSON','PDF', ErrorMessage = 'Please choose CSV, HTML, or JSON for your output type or `"Console`" to show the results on screen.')]
+            [string]$OutputType = 'Console',
+        [Parameter()]
+            [string]$OutputPath = (Get-Location).Path
     )
 
     # Initial variables
