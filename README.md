@@ -54,7 +54,7 @@ Example Output for Mode 0: https://github.com/TrimarcJake/Locksmith/blob/main/ex
 <br>
 <br>
 <a name="Mode1" id="Mode1"></a>
-## Mode 1: Identify Issues and Fixes, Output to Console
+## Mode 1:  Identify Issues and Fixes, Output to Console
 This mode scans the current forest and outputs all discovered AD CS issues and possible fixes to the console in **List** format.
 ``` powershell
 # Module Syntax
@@ -69,7 +69,7 @@ Example Output for Mode 1: https://github.com/TrimarcJake/Locksmith/blob/main/ex
 <br>
 <br>
 <a name="Mode2" id="Mode2"></a>
-## Mode 2: Identify Issues, Output to CSV
+## Mode 2:  Identify Issues, Output to CSV
 Locksmith Mode 2 scans the current forest and outputs all discovered AD CS issues to ADCSIssues.CSV in the present working directory.
 ``` powershell
 # Module Syntax
@@ -84,7 +84,7 @@ Example Output for Mode 2: https://github.com/TrimarcJake/Locksmith/blob/main/ex
 <br>
 <br>
 <a name="Mode3" id="Mode3"></a>
-## Mode 3: Identify Issues and Fixes, Output to CSV
+## Mode 3:  Identify Issues and Fixes, Output to CSV
 In Mode 3, Locksmith scans the current forest and outputs all discovered AD CS issues and example fixes to ADCSRemediation.CSV in the present working directory.
 ``` powershell
 # Module Syntax
@@ -99,7 +99,7 @@ Example Output for Mode 3: https://github.com/TrimarcJake/Locksmith/blob/main/ex
 <br>
 <br>
 <a name="Mode4" id="Mode4"></a>
-## Mode 4: Fix All Issues
+## Mode 4:  Fix All Issues
 Mode 4 is the "easy button." Running Locksmith in Mode 4 will identify all misconfigurations and offer to fix each issue. If there is any possible operational impact, Locksmith will warn you.
 ``` powershell
 # Module Syntax
