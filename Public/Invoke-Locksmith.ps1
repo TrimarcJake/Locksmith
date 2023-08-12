@@ -38,8 +38,29 @@
     Finds any malconfigurations and creates code snippets to fix each issue.
     Attempts to fix all identified issues. This mode may require high-privileged access.
 
-    .INPUTS
-    None. You cannot pipe objects to Invoke-Locksmith.ps1.
+    .PARAMETER Action
+    Specify the desired action to perform:
+
+     - Scan: (Default) Find common ADCS malconfigurations and report the results.
+     - Fix: Scan ADCS for common malconfigurations and then prompt interactively to fix each individual finding.
+
+    .PARAMETER Output
+    Specify the desired output content:
+
+     - Findings: (Default) List all malconfigurations found in ADCS.
+     - DetailedFindings: List all findings with a detailed explanation of each type, including the risk and the resolution.
+     - RemediationScript: Create a script that will help remediate all findings.
+    
+    .PARAMETER OutputType
+    Specify the type of output or file you want to create after scanning. Allows use of multiple values to output multiple file types.
+
+     - Host     (Default) Output the details to your current host console.
+     - CSV      Create a CSV file with the details of found malconfigurations.
+     - HTML     Create an HTML report.
+     - PDF      Create a PDF report.
+
+    .PARAMETER OutputPath
+    Specify the path where you want to save reports and mitigation scripts.
 
     .OUTPUTS
     Output types:
@@ -47,9 +68,13 @@
     2. Console display of identified issues and their fixes
     3. CSV containing all identified issues
     4. CSV containing all identified issues and their fixes
-    #>
 
-    # Windows PowerShell cmdlet Restart-Service requires RunAsAdministrator
+    .INPUTS
+    None. You cannot pipe objects to Invoke-Locksmith.
+
+    .NOTES
+    Windows PowerShell cmdlet Restart-Service requires RunAsAdministrator
+    #>
 
     [CmdletBinding()]
     param (
