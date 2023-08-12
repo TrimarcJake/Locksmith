@@ -328,9 +328,15 @@
     }
 
 switch ($OutputType) {
-    # 'Console','CSV','HTML','JSON','PDF'
     'Console' {
         # Send output to host console only
+        Format-Result $AuditingIssues '0'
+        Format-Result $ESC1 '0'
+        Format-Result $ESC2 '0'
+        Format-Result $ESC4 '0'
+        Format-Result $ESC5 '0'
+        Format-Result $ESC6 '0'
+        Format-Result $ESC8 '0'
      }
      'CSV' {
         # Output CSV (formerly mode 1)
