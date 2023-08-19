@@ -9,9 +9,9 @@
         ($_.AuditFilter -ne '127')
     } | ForEach-Object {
         $Issue = New-Object -TypeName pscustomobject
-        $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
-        $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
-        $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
         if ($_.AuditFilter -match 'CA Unavailable') {
             $Issue | Add-Member -MemberType NoteProperty -Name Issue -Value $_.AuditFilter -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value 'N/A' -Force
