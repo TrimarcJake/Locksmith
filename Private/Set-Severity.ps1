@@ -27,7 +27,8 @@ function Set-Severity {
                 return 'Critical'
             }
         } catch {
-            Write-Error 'Could not determine issue severity'
+            Write-Error "Could not determine issue severity for issue: $($Issue.Issue)"
+                return 'Unknown Failure'
         }
     }
 }
