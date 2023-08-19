@@ -8,7 +8,7 @@
     )
     $ADCSObjects | Where-Object {
         ($_.objectClass -eq 'pKICertificateTemplate') -and
-        ($_.pkiExtendedKeyUsage -match $EnrollmentAgentEKU) -and
+        ($_.pkiExtendedKeyUsage -match $ClientAuthEKU) -and
         ($_.'msPKI-Certificate-Name-Flag' -eq 1) -and
         ($_.'msPKI-Enrollment-Flag' -ne 2) -and
         ( ($_.'msPKI-RA-Signature' -eq 0) -or ($null -eq $_.'msPKI-RA-Signature') )
