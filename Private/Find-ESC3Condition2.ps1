@@ -1,4 +1,4 @@
-﻿function Find-ESC3Condition1 {
+﻿function Find-ESC3Condition2 {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]

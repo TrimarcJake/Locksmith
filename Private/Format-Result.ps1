@@ -8,13 +8,14 @@
     )
 
     $IssueTable = @{
-        DETECT = 'Auditing Issues'
-        ESC1   = 'ESC1 - Misconfigured Certificate Template'
-        ESC2   = 'ESC2 - Misconfigured Certificate Template'
-        ESC4   = 'ESC4 - Vulnerable Certifcate Template Access Control'
-        ESC5   = 'ESC5 - Vulnerable PKI Object Access Control'
-        ESC6   = 'ESC6 - EDITF_ATTRIBUTESUBJECTALTNAME2'
-        ESC8   = 'ESC8 - HTTP Enrollment Enabled'
+        DETECT = 'Auditing Not Fully Enabled'
+        ESC1   = 'ESC1 - Vulnerable Certificate Template - Authentication'
+        ESC2   = 'ESC2 - Vulnerable Certificate Template - Subordinate CA'
+        ESC3   = 'ESC3 - Vulnerable Certificate Template - Enrollment Agent'
+        ESC4   = 'ESC4 - Vulnerable Access Control - Certifcate Template'
+        ESC5   = 'ESC5 - Vulnerable Access Control - PKI Object'
+        ESC6   = 'ESC6 - EDITF_ATTRIBUTESUBJECTALTNAME2 Flag Enabled'
+        ESC8   = 'ESC8 - HTTP/S Enrollment Enabled'
     }
 
     if ($null -ne $Issue) {
