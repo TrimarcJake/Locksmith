@@ -163,19 +163,19 @@
     }
 
     Write-Host 'Identifying auditing issues...'
-    [array]$AuditingIssues = Find-AuditingIssue -ADCSObjects $ADCSObjects
+    [array]$AuditingIssues = Find-AuditingIssue -ADCSObjects $ADCSObjects | Sort-Object Name
 
     Write-Host 'Identifying AD CS templates with dangerous configurations...'
-    [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
-    [array]$ESC2 = Find-ESC2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+    [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers | Sort-Object Name
+    [array]$ESC2 = Find-ESC2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers | Sort-Object Name
 
     Write-Host 'Identifying AD CS template and other objects with poor access control...'
-    [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
-    [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
-    [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects
+    [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners | Sort-Object Name
+    [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners | Sort-Object Name
+    [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects | Sort-Object Name
 
     Write-Host 'Identifying HTTP-based certificate enrollment interfaces...'
-    [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects
+    [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects | Sort-Object Name
 
     [array]$AllIssues = $AuditingIssues + $ESC1 + $ESC2 + $ESC4 + $ESC5 + $ESC6 + $ESC8
 
