@@ -166,8 +166,10 @@
     [array]$AuditingIssues = Find-AuditingIssue -ADCSObjects $ADCSObjects | Sort-Object Name
 
     Write-Host 'Identifying AD CS templates with dangerous configurations...'
-    [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers | Sort-Object Name
-    [array]$ESC2 = Find-ESC2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers | Sort-Object Name
+    [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+    [array]$ESC2 = Find-ESC2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+    [array]$ESC3 = Find-ESC3Condition1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+    # [array]$ESC3Condition2 = Find-ESC3Condition2 -ADCSObjects $ADCSObject -SafeUsers $SafeUsers
 
     Write-Host 'Identifying AD CS template and other objects with poor access control...'
     [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners | Sort-Object Name
@@ -177,10 +179,10 @@
     Write-Host 'Identifying HTTP-based certificate enrollment interfaces...'
     [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects | Sort-Object Name
 
-    [array]$AllIssues = $AuditingIssues + $ESC1 + $ESC2 + $ESC4 + $ESC5 + $ESC6 + $ESC8
+    [array]$AllIssues = $AuditingIssues + $ESC1 + $ESC2 + $ESC3 + $ESC4 + $ESC5 + $ESC6 + $ESC8
 
     # If these are all empty = no issues found, exit
-    if ((!$AuditingIssues) -and (!$ESC1) -and (!$ESC2) -and (!$ESC4) -and (!$ESC5) -and (!$ESC6) -and (!$ESC8) ) {
+    if ((!$AuditingIssues) -and (!$ESC1) -and (!$ESC2) -and (!$ESC3) -and (!$ESC4) -and (!$ESC5) -and (!$ESC6) -and (!$ESC8) ) {
         Write-Host "`n$(Get-Date) : No ADCS issues were found." -ForegroundColor Green
         break
     }
@@ -190,6 +192,7 @@
             Format-Result $AuditingIssues '0'
             Format-Result $ESC1 '0'
             Format-Result $ESC2 '0'
+            Format-Result $ESC3 '0'
             Format-Result $ESC4 '0'
             Format-Result $ESC5 '0'
             Format-Result $ESC6 '0'
@@ -199,6 +202,7 @@
             Format-Result $AuditingIssues '1'
             Format-Result $ESC1 '1'
             Format-Result $ESC2 '1'
+            Format-Result $ESC3 '1'
             Format-Result $ESC4 '1'
             Format-Result $ESC5 '1'
             Format-Result $ESC6 '1'
