@@ -9,6 +9,7 @@
 - [ ] Rename Modes to something that makes sense
 - [ ] Improved Output: Email, PS Object
 - [ ] Check for Elevation before Fixing
+- [ ] Automatic remediation of ESC4/ESC5
 
 ## Medium Term
 - [ ] ESC3 Remediation

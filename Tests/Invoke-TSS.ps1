@@ -51,6 +51,9 @@ $NewTemplates = @(
     'ESC2Enroll'
     'ESC2FilteredAutoEnroll' 
     'ESC2FilteredEnroll'
+    'ESC3Condition1'
+    'ESC3Condition2Schema1'
+    'ESC3Condition2Schema2'
     'ESC4FilteredAutoEnroll' 
     'ESC4FilteredEnroll' 
     'ESC4FilteredOwner'
@@ -101,6 +104,7 @@ $NewObjects | ForEach-Object {
 
 $ESC1and2AutoEnroll = Get-ADObject "CN=ESC1and2AutoEnroll,CN=Certificate Templates,$PKSContainer" -Properties *
 $ESC1and2AutoEnrollProperties = @{
+    'DisplayName' = 'ESC1and2AutoEnroll'
     'msPKI-Certificate-Name-Flag' = 1
     'msPKI-Enrollment-Flag' = 0
     'pKIExtendedKeyUsage' = '2.5.29.37.0'
@@ -242,6 +246,67 @@ $ACL = Get-Acl "AD:$ESC2FilteredEnroll"
 $AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $Administrators,$DefaultRights,$Allow,$EnrollGUID
 $ACL.AddAccessRule($AccessRule)
 Set-Acl "AD:$ESC2FilteredEnroll" -AclObject $ACL
+
+$ESC3Condition1 = Get-ADObject "CN=ESC3Condition1,CN=Certificate Templates,$PKSContainer" -Properties *
+$ESC3Condition1Properties = @{
+    'DisplayName' = 'ESC3Condition1'
+    'msPKI-Enrollment-Flag' = 0
+    'msPKI-Certificate-Application-Policy' = '1.3.6.1.4.1.311.20.2.1'
+    'msPKI-Certificate-Name-Flag' =	-2113929216
+    # 'msPKI-Cert-Template-OID' = '1.3.6.1.4.1.311.21.8.11772860.15111666.14435736.6562275.12440657.32.7694220.3484220'
+    #'msPKI-Minimal-Key-Size' = 2048
+    #'msPKI-Private-Key-Flag' = 16842752
+    'msPKI-RA-Signature' = 0
+    # 'msPKI-Template-Minor-Revision'	= 7
+    'msPKI-Template-Schema-Version'	= 2
+    'pKIExtendedKeyUsage' = '1.3.6.1.4.1.311.20.2.1'
+}   
+Set-ADObject $ESC3Condition1.DistinguishedName -Add $ESC3Condition1Properties
+$ACL = Get-Acl "AD:$ESC3Condition1"
+$AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$DefaultRights,$Allow,$EnrollGUID
+$ACL.AddAccessRule($AccessRule)
+Set-Acl "AD:$ESC3Condition1" -AclObject $ACL
+
+# $ESC3Condition2Schema1 = Get-ADObject "CN=ESC3Condition2Schema1,CN=Certificate Templates,$PKSContainer" -Properties *
+# $ESC3Condition2Schema1Properties = @{
+#     'msPKI-Certificate-Name-Flag' = 1
+#     'msPKI-Enrollment-Flag' = 0
+#     'msPKI-RA-Signature' = 1
+#     # 'msPKI-Certificate-Application-Policy' = ''
+# }   
+# Set-ADObject $ESC3Condition2Schema1.DistinguishedName -Add $ESC3Condition2Schema1Properties
+# Set-ADObject $ESC3Condition2Schema1.DistinguishedName -Clear pKIExtendedKeyUsage
+# $ACL = Get-Acl "AD:$ESC3Condition2Schema1"
+# $AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$DefaultRights,$Allow,$EnrollGUID
+# $ACL.AddAccessRule($AccessRule)
+# Set-Acl "AD:$ESC3Condition2Schema1" -AclObject $ACL
+
+# $CertificateApplicationPolicies = @()
+# $CertificateApplicationPolicies = @(
+#     '1.3.6.1.4.1.311.10.3.4'
+#     '1.3.6.1.5.5.7.3.4'
+#     '1.3.6.1.5.5.7.3.2'
+# )
+
+# $ESC3Condition2Schema2 = Get-ADObject "CN=ESC3Condition2Schema2,CN=Certificate Templates,$PKSContainer" -Properties *
+# $ESC3Condition2Schema2Properties = @{
+#     'msPKI-Certificate-Name-Flag' = 1
+#     'msPKI-Enrollment-Flag' = 0
+#     'msPKI-RA-Application-Policies' = '1.3.6.1.4.1.311.20.2.1'
+#     'msPKI-RA-Signature' = 1
+#     # 'msPKI-Certificate-Application-Policies' = $CertificateApplicationPolicies
+#     'msPKI-Cert-Template-OID'	= '1.3.6.1.4.1.311.21.8.11772860.15111666.14435736.6562275.12440657.32.14251779.12149136'
+#     'msPKI-Minimal-Key-Size' = 2048
+#     'msPKI-Private-Key-Flag' = 16842768
+#     'msPKI-Template-Minor-Revision' = 18
+#     'msPKI-Template-Schema-Version' = 2
+# }   
+# Set-ADObject $ESC3Condition2Schema2.DistinguishedName -Add $ESC3Condition2Schema2Properties
+# Set-ADObject $ESC3Condition2Schema2.DistinguishedName -Clear pKIExtendedKeyUsage
+# $ACL = Get-Acl "AD:$ESC3Condition2Schema2"
+# $AccessRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $AuthenticatedUsers,$DefaultRights,$Allow,$EnrollGUID
+# $ACL.AddAccessRule($AccessRule)
+# Set-Acl "AD:$ESC3Condition2Schema2" -AclObject $ACL
 
 $ESC4FilteredAutoEnroll = Get-ADObject "CN=ESC4FilteredAutoEnroll,CN=Certificate Templates,$PKSContainer" -Properties *
 $ACL = Get-Acl "AD:$ESC4FilteredAutoEnroll"
