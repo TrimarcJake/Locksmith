@@ -80,10 +80,10 @@ function Invoke-Scans {
         $GridViewTitle = "Select the tests to run and press Enter or click OK to continue..."
 
         # Check for Out-GridView or Out-ConsoleGridView
-        if ((Get-Command -Name Out-ConsoleGridView) -and ($PSVersionTable.PSVersion.Major -ge 7)) {
+        if ((Get-Command Out-ConsoleGridView -ErrorAction SilentlyContinue) -and ($PSVersionTable.PSVersion.Major -ge 7)) {
             $Scans = ($EscalationPaths | Select-Object Name,Description | Out-ConsoleGridView -PassThru -Title $GridViewTitle).Name | Sort-Object -Property Name
         }
-        elseif (Get-Command -Name Out-GridView) {
+        elseif (Get-Command -Name Out-GridView -ErrorAction SilentlyContinue) {
             $Scans = ($EscalationPaths | Select-Object Name,Description | Out-GridView -PassThru -Title $GridViewTitle).Name | Sort-Object -Property Name
         }
         else {
