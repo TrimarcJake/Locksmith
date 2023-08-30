@@ -192,6 +192,7 @@
 
     Invoke-Scans -Scans $Scans
 
+    # Maintain support for Mode parameter for now
     switch ($Mode) {
         0 {
             Format-Result $AuditingIssues '0'
