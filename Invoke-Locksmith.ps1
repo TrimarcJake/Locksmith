@@ -1,6 +1,22 @@
 ﻿param (
     [int]$Mode
 )
+function ConvertFrom-IdentityReference {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [array]$Object
+    )
+
+    $Principal = New-Object System.Security.Principal.NTAccount($Object)
+    if ($Principal -match '^(S-1|O:)') {
+        $SID = $Principal
+    }
+    else {
+        $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+    }
+    return $SID
+}
 function Export-RevertScript {
     [CmdletBinding()]
     param(
@@ -38,26 +54,29 @@ function Find-AuditingIssue {
         ($_.AuditFilter -ne '127')
     } | ForEach-Object {
         $Issue = New-Object -TypeName pscustomobject
-        $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
-        $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
-        $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
+        $Issue | Add-Member -MemberType NoteProperty -Name 'Forest' -Value $_.CanonicalName.split('/')[0] -Force
+        $Issue | Add-Member -MemberType NoteProperty -Name 'Name' -Value $_.Name -Force
+        $Issue | Add-Member -MemberType NoteProperty -Name 'DistinguishedName' -Value $_.DistinguishedName -Force
         if ($_.AuditFilter -match 'CA Unavailable') {
-            $Issue | Add-Member -MemberType NoteProperty -Name Issue -Value $_.AuditFilter -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value 'N/A' -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value 'N/A' -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'DETECT' -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name 'Issue' -Value $_.AuditFilter -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name 'Fix' -Value 'N/A' -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name 'Revert' -Value 'N/A' -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name 'Technique' -Value 'DETECT' -Force
         }
         else {
-            $Issue | Add-Member -MemberType NoteProperty -Name Issue -Value "Auditing is not fully enabled. Current value is $($_.AuditFilter)" -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Fix `
-                -Value "certutil -config `'$($_.CAFullname)`' -setreg `'CA\AuditFilter`' 127; Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Revert `
-                -Value "certutil -config $($_.CAFullname) -setreg CA\AuditFilter  $($_.AuditFilter); Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'DETECT' -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name 'Issue' -Value "Auditing is not fully enabled. Current value is $($_.AuditFilter)" -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name 'Fix' `
+                -Value "certutil.exe -config `'$($_.CAFullname)`' -setreg `'CA\AuditFilter`' 127; Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name 'Revert' `
+                -Value "certutil.exe -config $($_.CAFullname) -setreg CA\AuditFilter  $($_.AuditFilter); Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name 'Technique' -Value 'DETECT' -Force
         }
+        $Severity = Set-Severity -Issue $Issue
+        $Issue | Add-Member -MemberType NoteProperty -Name 'Severity' -Value $Severity
         $Issue
     }
 }
+
 function Find-ESC1 {
     [CmdletBinding()]
     param(
@@ -95,6 +114,8 @@ function Find-ESC1 {
                 $Issue | Add-Member -MemberType NoteProperty -Name Revert `
                     -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"  -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC1'
+                $Severity = Set-Severity -Issue $Issue
+                $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
                 $Issue
             }
         }
@@ -138,6 +159,8 @@ function Find-ESC2 {
                 $Issue | Add-Member -MemberType NoteProperty -Name Revert `
                     -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"  -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC2'
+                $Severity = Set-Severity -Issue $Issue
+                $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
                 $Issue
             }
         }
@@ -154,6 +177,49 @@ function Find-ESC3Condition1 {
     $ADCSObjects | Where-Object {
         ($_.objectClass -eq 'pKICertificateTemplate') -and
         ($_.pkiExtendedKeyUsage -match $EnrollmentAgentEKU) -and
+        ($_.'msPKI-Enrollment-Flag' -ne 2) -and
+        ( ($_.'msPKI-RA-Signature' -eq 0) -or ($null -eq $_.'msPKI-RA-Signature') )
+    } | ForEach-Object {
+        foreach ($entry in $_.nTSecurityDescriptor.Access) {
+            $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
+            if ($Principal -match '^(S-1|O:)') {
+                $SID = $Principal
+            }
+            else {
+                $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+            }
+            if ( ($SID -notmatch $SafeUsers) -and ($entry.ActiveDirectoryRights -match 'ExtendedRight') ) {
+                $Issue = New-Object -TypeName pscustomobject
+                $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name IdentityReference -Value $entry.IdentityReference -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name ActiveDirectoryRights -Value $entry.ActiveDirectoryRights -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Issue `
+                    -Value "$($entry.IdentityReference) can enroll in this Enrollment Agent template without Manager Approval"  -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Fix `
+                    -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}" -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Revert `
+                    -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"  -Force
+                $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC3'
+                $Severity = Set-Severity -Issue $Issue
+                $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
+                $Issue
+            }
+        }
+    }
+}
+function Find-ESC3Condition2 {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [array]$ADCSObjects,
+        [Parameter(Mandatory = $true)]
+        [array]$SafeUsers
+    )
+    $ADCSObjects | Where-Object {
+        ($_.objectClass -eq 'pKICertificateTemplate') -and
+        ($_.pkiExtendedKeyUsage -match $ClientAuthEKU) -and
         ($_.'msPKI-Certificate-Name-Flag' -eq 1) -and
         ($_.'msPKI-Enrollment-Flag' -ne 2) -and
         ( ($_.'msPKI-RA-Signature' -eq 0) -or ($null -eq $_.'msPKI-RA-Signature') )
@@ -180,6 +246,8 @@ function Find-ESC3Condition1 {
                 $Issue | Add-Member -MemberType NoteProperty -Name Revert `
                     -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"  -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC3'
+                $Severity = Set-Severity -Issue $Issue
+                $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
                 $Issue
             }
         }
@@ -217,6 +285,8 @@ function Find-ESC4 {
             $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value '[TODO]' -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC4'
+            $Severity = Set-Severity -Issue $Issue
+            $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
             $Issue
         }
         if ( ($_.objectClass -eq 'pKICertificateTemplate') -and ($SID -match $UnsafeOwners) ) {
@@ -231,6 +301,8 @@ function Find-ESC4 {
             $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC4'
+            $Severity = Set-Severity -Issue $Issue
+            $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
             $Issue
         }
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
@@ -257,6 +329,8 @@ function Find-ESC4 {
                 $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; foreach ( `$ace in `$ACL.access ) { if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) { `$ACL.RemoveAccessRule(`$ace) | Out-Null ; Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL } }" -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC4'
+                $Severity = Set-Severity -Issue $Issue
+                $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
                 $Issue
             }
         }
@@ -297,6 +371,8 @@ function Find-ESC5 {
             $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value '[TODO]' -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC5'
+            $Severity = Set-Severity -Issue $Issue
+            $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
             $Issue
         }
         if ( ($_.objectClass -ne 'pKICertificateTemplate') -and ($SID -match $UnsafeOwners) ) {
@@ -311,6 +387,8 @@ function Find-ESC5 {
             $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC5'
+            $Severity = Set-Severity -Issue $Issue
+            $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
             $Issue
         }
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
@@ -335,6 +413,8 @@ function Find-ESC5 {
                 $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; foreach ( `$ace in `$ACL.access ) { if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) { `$ACL.RemoveAccessRule(`$ace) | Out-Null ; Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL } }" -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC5'
+                $Severity = Set-Severity -Issue $Issue
+                $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
                 $Issue
             }
         }
@@ -369,6 +449,8 @@ function Find-ESC6 {
                 $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value 'N/A' -Force
             }
             $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC6'
+            $Severity = Set-Severity -Issue $Issue
+            $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
             $Issue
         }
     }
@@ -401,6 +483,8 @@ function Find-ESC8 {
                 $Issue['Revert'] = 'TBD'
             }
             $Issue['Technique'] = 'ESC8'
+            $Severity = Set-Severity -Issue $Issue
+            $Issue['Severity'] = $Severity
             [PSCustomObject] $Issue
         }
     }
@@ -415,13 +499,14 @@ function Format-Result {
     )
 
     $IssueTable = @{
-        DETECT = 'Auditing Issues'
-        ESC1   = 'ESC1 - Misconfigured Certificate Template'
-        ESC2   = 'ESC2 - Misconfigured Certificate Template'
-        ESC4   = 'ESC4 - Vulnerable Certifcate Template Access Control'
-        ESC5   = 'ESC5 - Vulnerable PKI Object Access Control'
-        ESC6   = 'ESC6 - EDITF_ATTRIBUTESUBJECTALTNAME2'
-        ESC8   = 'ESC8 - HTTP Enrollment Enabled'
+        DETECT = 'Auditing Not Fully Enabled'
+        ESC1   = 'ESC1 - Vulnerable Certificate Template - Authentication'
+        ESC2   = 'ESC2 - Vulnerable Certificate Template - Subordinate CA'
+        ESC3   = 'ESC3 - Vulnerable Certificate Template - Enrollment Agent'
+        ESC4   = 'ESC4 - Vulnerable Access Control - Certifcate Template'
+        ESC5   = 'ESC5 - Vulnerable Access Control - PKI Object'
+        ESC6   = 'ESC6 - EDITF_ATTRIBUTESUBJECTALTNAME2 Flag Enabled'
+        ESC8   = 'ESC8 - HTTP/S Enrollment Enabled'
     }
 
     if ($null -ne $Issue) {
@@ -556,7 +641,7 @@ function Set-AdditionalCAProperty {
                 $CAHostDistinguishedName = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -Server $ForestGC ).DistinguishedName
                 $CAHostFQDN = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -Properties DnsHostname -Server $ForestGC).DnsHostname
             }
-            $ping = Test-Connection -ComputerName $CAHostFQDN -Quiet
+            $ping = Test-Connection -ComputerName $CAHostFQDN -Quiet -Count 1
             if ($ping) {
                 try {
                     if ($Credential) {
@@ -618,6 +703,42 @@ function Set-AdditionalCAProperty {
         }
     }
 }
+function Set-Severity {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [array]$Issue
+    )
+    foreach ($Finding in $Issue) {
+        try {
+            # Auditing
+            if ($Finding.Technique -eq 'DETECT') {
+                return 'Medium'
+            }
+            # ESC6
+            if ($Finding.Technique -eq 'ESC6') {
+                return 'High'
+            }
+            # ESC8
+            if ($Finding.Technique -eq 'ESC8') {
+                return 'High'
+            }
+            # ESC1, ESC2, ESC4, ESC5
+            $SID = ConvertFrom-IdentityReference -Object $Finding.IdentityReference
+            if ($SID -match $SafeUsers -or $SID -match $SafeOwners) {
+                return 'Medium'
+            }
+            if (($SID -notmatch $SafeUsers -and $SID -notmatch $SafeOwners) -and ($Finding.ActiveDirectoryRights -match $DangerousRights)) {
+                return 'Critical'
+            }
+        }
+        catch {
+            Write-Error "Could not determine issue severity for issue: $($Issue.Issue)"
+            return 'Unknown Failure'
+        }
+    }
+}
+
 function Test-IsADAdmin {
     <#
     .SYNOPSIS
@@ -850,6 +971,8 @@ function Invoke-Locksmith {
     Write-Host 'Identifying AD CS templates with dangerous configurations...'
     [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
     [array]$ESC2 = Find-ESC2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+    [array]$ESC3 = Find-ESC3Condition1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+    # [array]$ESC3Condition2 = Find-ESC3Condition2 -ADCSObjects $ADCSObject -SafeUsers $SafeUsers
 
     Write-Host 'Identifying AD CS template and other objects with poor access control...'
     [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
@@ -859,10 +982,10 @@ function Invoke-Locksmith {
     Write-Host 'Identifying HTTP-based certificate enrollment interfaces...'
     [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects
 
-    [array]$AllIssues = $AuditingIssues + $ESC1 + $ESC2 + $ESC4 + $ESC5 + $ESC6 + $ESC8
+    [array]$AllIssues = $AuditingIssues + $ESC1 + $ESC2 + $ESC3 + $ESC4 + $ESC5 + $ESC6 + $ESC8
 
     # If these are all empty = no issues found, exit
-    if ((!$AuditingIssues) -and (!$ESC1) -and (!$ESC2) -and (!$ESC4) -and (!$ESC5) -and (!$ESC6) -and (!$ESC8) ) {
+    if ((!$AuditingIssues) -and (!$ESC1) -and (!$ESC2) -and (!$ESC3) -and (!$ESC4) -and (!$ESC5) -and (!$ESC6) -and (!$ESC8) ) {
         Write-Host "`n$(Get-Date) : No ADCS issues were found." -ForegroundColor Green
         break
     }
@@ -872,6 +995,7 @@ function Invoke-Locksmith {
             Format-Result $AuditingIssues '0'
             Format-Result $ESC1 '0'
             Format-Result $ESC2 '0'
+            Format-Result $ESC3 '0'
             Format-Result $ESC4 '0'
             Format-Result $ESC5 '0'
             Format-Result $ESC6 '0'
@@ -881,6 +1005,7 @@ function Invoke-Locksmith {
             Format-Result $AuditingIssues '1'
             Format-Result $ESC1 '1'
             Format-Result $ESC2 '1'
+            Format-Result $ESC3 '1'
             Format-Result $ESC4 '1'
             Format-Result $ESC5 '1'
             Format-Result $ESC6 '1'
