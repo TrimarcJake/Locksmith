@@ -95,6 +95,26 @@
             [string]$OutputPath = (Get-Location).Path
     )
 
+    # Check if ActiveDirectory PowerShell module is available, and attempt to install if not found
+    if (-not(Get-Module -Name 'ActiveDirectory' -ListAvailable)) {
+        if (Test-IsElevated) {
+            $OS = (Get-CimInstance -ClassName Win32_OperatingSystem).ProductType
+            # 1 - workstation, 2 - domain controller, 3 - non-dc server
+            if ($OS -gt 1) {
+                # Attempt to install ActiveDirectory PowerShell module for Windows Server OSes, works with Windows Server 2012 R2 through Windows Server 2022
+                Install-WindowsFeature -Name RSAT-AD-PowerShell
+            } else {
+                # Attempt to install ActiveDirectory PowerShell module for Windows Desktop OSes
+                Add-WindowsCapability -Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0 -Online
+            }
+        }
+        else {
+            Write-Warning -Message "The ActiveDirectory PowerShell module is required for Locksmith, but is not installed. Please launch an elevated PowerShell session to have this module installed for you automatically."
+            # The goal here is to exit the script without closing the PowerShell window. Need to test.
+            Return
+        }
+    }
+
     # Initial variables
     $Version = '2023.08'
     $AllDomainsCertPublishersSIDs = @()
@@ -162,19 +182,6 @@
         $Targets = Get-Target
     }
 
-    # Check if ActiveDirectory PowerShell module is available, and attempt to install if not found
-    if (-not(Get-Module -Name 'ActiveDirectory' -ListAvailable)) {
-        $OS = (Get-CimInstance -ClassName Win32_OperatingSystem).ProductType
-        # 1 - workstation, 2 - domain controller, 3 - non-dc server
-        if ($OS -gt 1) {
-            # Attempt to install ActiveDirectory PowerShell module for Windows Server OSes, works with Windows Server 2012 R2 through Windows Server 2022
-            Install-WindowsFeature -Name RSAT-AD-PowerShell
-        } else {
-            # Attempt to install ActiveDirectory PowerShell module for Windows Desktop OSes
-            Add-WindowsCapability -Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0 -Online
-        }
-    }
-
     Write-Host "Gathering AD CS Objects from $($Targets)..."
     if ($Credential) {
         $ADCSObjects = Get-ADCSObject -Targets $Targets -Credential $Credential
@@ -198,6 +205,7 @@
             Format-Result $AuditingIssues '0'
             Format-Result $ESC1 '0'
             Format-Result $ESC2 '0'
+            Format-Result $ESC3 '0'
             Format-Result $ESC4 '0'
             Format-Result $ESC5 '0'
             Format-Result $ESC6 '0'
@@ -207,6 +215,7 @@
             Format-Result $AuditingIssues '1'
             Format-Result $ESC1 '1'
             Format-Result $ESC2 '1'
+            Format-Result $ESC3 '1'
             Format-Result $ESC4 '1'
             Format-Result $ESC5 '1'
             Format-Result $ESC6 '1'

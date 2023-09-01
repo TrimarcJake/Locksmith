@@ -11,8 +11,8 @@
     PowerShellVersion    = '5.1'
     PrivateData          = @{
         PSData = @{
-            Tags                       = @('Windows', 'Locksmith', 'CA', 'PKI', 'Active Directory', 'Certificate Services', 'AD CS')
             ExternalModuleDependencies = @('ActiveDirectory', 'ServerManager', 'Microsoft.PowerShell.Utility', 'Microsoft.PowerShell.LocalAccounts', 'Microsoft.PowerShell.Utility', 'Microsoft.PowerShell.Management', 'CimCmdlets', 'Dism')
+            Tags                       = @('Windows', 'Locksmith', 'CA', 'PKI', 'Active Directory', 'Certificate Services', 'AD CS')
         }
     }
     RequiredModules      = @('ActiveDirectory', 'ServerManager', 'Microsoft.PowerShell.Utility', 'Microsoft.PowerShell.LocalAccounts', 'Microsoft.PowerShell.Utility', 'Microsoft.PowerShell.Management', 'CimCmdlets', 'Dism')
