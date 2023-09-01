@@ -38,8 +38,29 @@
     Finds any malconfigurations and creates code snippets to fix each issue.
     Attempts to fix all identified issues. This mode may require high-privileged access.
 
-    .INPUTS
-    None. You cannot pipe objects to Invoke-Locksmith.ps1.
+    .PARAMETER Action
+    Specify the desired action to perform:
+
+     - Scan: (Default) Find common ADCS malconfigurations and report the results.
+     - Fix: Scan ADCS for common malconfigurations and then prompt interactively to fix each individual finding.
+
+    .PARAMETER Output
+    Specify the desired output content:
+
+     - Findings: (Default) List all malconfigurations found in ADCS.
+     - DetailedFindings: List all findings with a detailed explanation of each type, including the risk and the resolution.
+     - RemediationScript: Create a script that will help remediate all findings.
+    
+    .PARAMETER OutputType
+    Specify the type of output or file you want to create after scanning. Allows use of multiple values to output multiple file types.
+
+     - Host     (Default) Output the details to your current host console.
+     - CSV      Create a CSV file with the details of found malconfigurations.
+     - HTML     Create an HTML report.
+     - PDF      Create a PDF report.
+
+    .PARAMETER OutputPath
+    Specify the path where you want to save reports and mitigation scripts.
 
     .OUTPUTS
     Output types:
@@ -47,17 +68,31 @@
     2. Console display of identified issues and their fixes
     3. CSV containing all identified issues
     4. CSV containing all identified issues and their fixes
-    #>
 
-    # Windows PowerShell cmdlet Restart-Service requires RunAsAdministrator
+    .INPUTS
+    None. You cannot pipe objects to Invoke-Locksmith.
+
+    .NOTES
+    Windows PowerShell cmdlet Restart-Service requires RunAsAdministrator
+    #>
 
     [CmdletBinding()]
     param (
         [string]$Forest,
         [string]$InputPath,
-        [int]$Mode = 0,
-        [string]$OutputPath = (Get-Location).Path,
-        [System.Management.Automation.PSCredential]$Credential
+        [string]$Mode = 0,
+        [System.Management.Automation.PSCredential]$Credential,
+        [Parameter()]
+            [ValidateSet('Auditing','ESC1','ESC2','ESC3','ESC4','ESC5','ESC6','ESC8','All','PromptMe')]
+            [array]$Scans = 'All',
+        [Parameter()]
+            [ValidateSet('Findings','Detailed', ErrorMessage = 'Please choose Findings or Detailed for your output. Detailed output includes the fixes.')]
+            [string]$Output = 'Findings',
+        [Parameter()]
+            [ValidateSet('Console','CSV','HTML','JSON','PDF', ErrorMessage = 'Please choose CSV, HTML, or JSON for your output type or `"Console`" to show the results on screen.')]
+            [string]$OutputType = 'Console',
+        [Parameter()]
+            [string]$OutputPath = (Get-Location).Path
     )
 
     # Check if ActiveDirectory PowerShell module is available, and attempt to install if not found
@@ -162,31 +197,9 @@
         $CAHosts | ForEach-Object { $SafeUsers += '|' + $_.Name }
     }
 
-    Write-Host 'Identifying auditing issues...'
-    [array]$AuditingIssues = Find-AuditingIssue -ADCSObjects $ADCSObjects | Sort-Object Name
+    Invoke-Scans -Scans $Scans
 
-    Write-Host 'Identifying AD CS templates with dangerous configurations...'
-    [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
-    [array]$ESC2 = Find-ESC2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
-    [array]$ESC3 = Find-ESC3Condition1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
-    [array]$ESC3 += Find-ESC3Condition2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
-
-    Write-Host 'Identifying AD CS template and other objects with poor access control...'
-    [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners | Sort-Object Name
-    [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners | Sort-Object Name
-    [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects | Sort-Object Name
-
-    Write-Host 'Identifying HTTP-based certificate enrollment interfaces...'
-    [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects | Sort-Object Name
-
-    [array]$AllIssues = $AuditingIssues + $ESC1 + $ESC2 + $ESC3 + $ESC4 + $ESC5 + $ESC6 + $ESC8
-
-    # If these are all empty = no issues found, exit
-    if ((!$AuditingIssues) -and (!$ESC1) -and (!$ESC2) -and (!$ESC3) -and (!$ESC4) -and (!$ESC5) -and (!$ESC6) -and (!$ESC8) ) {
-        Write-Host "`n$(Get-Date) : No ADCS issues were found." -ForegroundColor Green
-        break
-    }
-
+    # Maintain support for Mode parameter for now
     switch ($Mode) {
         0 {
             Format-Result $AuditingIssues '0'
@@ -327,4 +340,43 @@
             }
         }
     }
+
+switch ($OutputType) {
+    'Console' {
+        # Send output to host console only
+        Format-Result $AuditingIssues '0'
+        Format-Result $ESC1 '0'
+        Format-Result $ESC2 '0'
+        Format-Result $ESC4 '0'
+        Format-Result $ESC5 '0'
+        Format-Result $ESC6 '0'
+        Format-Result $ESC8 '0'
+     }
+     'CSV' {
+        # Output CSV (formerly mode 1)
+     }
+     'HTML' {
+        # Output HTML report
+     }
+     'JSON' {
+        # Why not?
+     }
+     'PDF' {
+        <# Will need to import a 3rd party OSS library:
+            - https://merill.net/2013/06/creating-pdf-files-dynamically-with-powershell/
+            - https://www.nuget.org/packages/itext7
+        #>
+     }
+    Default {
+        # Use default, or just let the function set the default to console?
+    }
+} # End OutputType
+
+if ($Action -eq "Fix") {
+    # Call fixes
+}
+else {
+    # Get the results into the desired output.
+}
+
 }
