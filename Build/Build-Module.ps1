@@ -11,7 +11,7 @@
     }
 }
 
-Update-Module -Name PSPublishModule -Scope CurrentUser
+Update-Module -Name PSPublishModule
 Import-Module -Name PSPublishModule -Force
 
 Build-Module -ModuleName 'Locksmith' {
