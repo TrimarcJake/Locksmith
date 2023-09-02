@@ -17,14 +17,14 @@ Import-Module -Name PSPublishModule -Force
 Build-Module -ModuleName 'Locksmith' {
     # Usual defaults as per standard module
     $Manifest = [ordered] @{
-        ModuleVersion        = '2023.08'
+        ModuleVersion        = '2023.9'
         CompatiblePSEditions = @('Desktop', 'Core')
         GUID                 = 'b1325b42-8dc4-4f17-aa1f-dcb5984ca14a'
         Author               = 'Jake Hildreth'
         Copyright            = "(c) 2022 - $((Get-Date).Year). All rights reserved."
         Description          = 'A tiny tool to identify and remediate common misconfigurations in Active Directory Certificate Services.'
         PowerShellVersion    = '5.1'
-        Tags                 = @('Windows', 'Locksmith', 'CA', 'PKI', 'Active Directory', 'Certificate Services','AD CS')
+        Tags                 = @('Windows', 'Locksmith', 'CA', 'PKI', 'ActiveDirectory', 'CertificateServices','ADCS')
     }
     New-ConfigurationManifest @Manifest
 

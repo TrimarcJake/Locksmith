@@ -222,7 +222,8 @@ function Find-ESC3Condition2 {
         ($_.pkiExtendedKeyUsage -match $ClientAuthEKU) -and
         ($_.'msPKI-Certificate-Name-Flag' -eq 1) -and
         ($_.'msPKI-Enrollment-Flag' -ne 2) -and
-        ( ($_.'msPKI-RA-Signature' -eq 0) -or ($null -eq $_.'msPKI-RA-Signature') )
+        ($_.'msPKI-RA-Application-Policies' -eq '1.3.6.1.4.1.311.20.2.1') -and
+        ( ($_.'msPKI-RA-Signature' -eq 1) )
     } | ForEach-Object {
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
@@ -867,8 +868,29 @@ function Invoke-Locksmith {
         [System.Management.Automation.PSCredential]$Credential
     )
 
+    # Check if ActiveDirectory PowerShell module is available, and attempt to install if not found
+    if (-not(Get-Module -Name 'ActiveDirectory' -ListAvailable)) {
+        if (Test-IsElevated) {
+            $OS = (Get-CimInstance -ClassName Win32_OperatingSystem).ProductType
+            # 1 - workstation, 2 - domain controller, 3 - non-dc server
+            if ($OS -gt 1) {
+                # Attempt to install ActiveDirectory PowerShell module for Windows Server OSes, works with Windows Server 2012 R2 through Windows Server 2022
+                Install-WindowsFeature -Name RSAT-AD-PowerShell
+            }
+            else {
+                # Attempt to install ActiveDirectory PowerShell module for Windows Desktop OSes
+                Add-WindowsCapability -Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0 -Online
+            }
+        }
+        else {
+            Write-Warning -Message "The ActiveDirectory PowerShell module is required for Locksmith, but is not installed. Please launch an elevated PowerShell session to have this module installed for you automatically."
+            # The goal here is to exit the script without closing the PowerShell window. Need to test.
+            Return
+        }
+    }
+
     # Initial variables
-    $Version = '2023.08'
+    $Version = '2023.9'
     $AllDomainsCertPublishersSIDs = @()
     $AllDomainsDomainAdminSIDs = @()
     $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
@@ -935,20 +957,6 @@ function Invoke-Locksmith {
         $Targets = Get-Target
     }
 
-    # Check if ActiveDirectory PowerShell module is available, and attempt to install if not found
-    if (-not(Get-Module -Name 'ActiveDirectory' -ListAvailable)) {
-        $OS = (Get-CimInstance -ClassName Win32_OperatingSystem).ProductType
-        # 1 - workstation, 2 - domain controller, 3 - non-dc server
-        if ($OS -gt 1) {
-            # Attempt to install ActiveDirectory PowerShell module for Windows Server OSes, works with Windows Server 2012 R2 through Windows Server 2022
-            Install-WindowsFeature -Name RSAT-AD-PowerShell
-        }
-        else {
-            # Attempt to install ActiveDirectory PowerShell module for Windows Desktop OSes
-            Add-WindowsCapability -Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0 -Online
-        }
-    }
-
     Write-Host "Gathering AD CS Objects from $($Targets)..."
     if ($Credential) {
         $ADCSObjects = Get-ADCSObject -Targets $Targets -Credential $Credential
@@ -966,21 +974,21 @@ function Invoke-Locksmith {
     }
 
     Write-Host 'Identifying auditing issues...'
-    [array]$AuditingIssues = Find-AuditingIssue -ADCSObjects $ADCSObjects
+    [array]$AuditingIssues = Find-AuditingIssue -ADCSObjects $ADCSObjects | Sort-Object Name
 
     Write-Host 'Identifying AD CS templates with dangerous configurations...'
     [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
     [array]$ESC2 = Find-ESC2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
     [array]$ESC3 = Find-ESC3Condition1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
-    # [array]$ESC3Condition2 = Find-ESC3Condition2 -ADCSObjects $ADCSObject -SafeUsers $SafeUsers
+    [array]$ESC3 += Find-ESC3Condition2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
 
     Write-Host 'Identifying AD CS template and other objects with poor access control...'
-    [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
-    [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
-    [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects
+    [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners | Sort-Object Name
+    [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners | Sort-Object Name
+    [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects | Sort-Object Name
 
     Write-Host 'Identifying HTTP-based certificate enrollment interfaces...'
-    [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects
+    [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects | Sort-Object Name
 
     [array]$AllIssues = $AuditingIssues + $ESC1 + $ESC2 + $ESC3 + $ESC4 + $ESC5 + $ESC6 + $ESC8
 
@@ -1145,5 +1153,6 @@ function Invoke-Locksmith {
         }
     }
 }
+
 
 Invoke-Locksmith -Mode $Mode

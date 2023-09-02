@@ -2,17 +2,16 @@
 - Improved Error Handling
 
 ## In Progress
-- [ ] ESC3 coverage
-- [ ] Check for Auditing GPOS, Warn if none found
+- [ ] Rename Modes to something that makes sense
 
 ## Short Term
-- [ ] Rename Modes to something that makes sense
+- [ ] Report on Template Publishing Status
+- [ ] Check for Auditing GPOS, Warn if none found
 - [ ] Improved Output: Email, PS Object
 - [ ] Check for Elevation before Fixing
 - [ ] Automatic remediation of ESC4/ESC5
 
 ## Medium Term
-- [ ] ESC3 Remediation
 - [ ] ESC7 coverage
 - [ ] Text-Based User Interface
 - [ ] Include Reference Material
@@ -25,6 +24,8 @@
 - [ ] Multi-Forest support
 
 ## Recently Completed
+- [x] Basic ESC3 Remediation
+- [x] Basic ESC3 coverage
 - [x] ACL remediation snippets
 - [x] Add individual CA Hosts to $SafeUsers
 - [x] Add sample output to README.md
