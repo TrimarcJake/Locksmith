@@ -3,7 +3,7 @@ function Invoke-Scans {
     param (
     [Parameter()]
         [ValidateSet("Auditing","ESC1","ESC2","ESC3","ESC4","ESC5","ESC6","ESC8","All","PromptMe")]
-        [array]$Scans
+        [array]$Scans = "All"
     )
 
     # Envision this array being created in the base Invoke-Locksmith function, but landing here for now:
