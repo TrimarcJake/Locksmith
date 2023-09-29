@@ -348,6 +348,7 @@
             Format-Result $AuditingIssues '0'
             Format-Result $ESC1 '0'
             Format-Result $ESC2 '0'
+            Format-Result $ESC3 '0'
             Format-Result $ESC4 '0'
             Format-Result $ESC5 '0'
             Format-Result $ESC6 '0'
