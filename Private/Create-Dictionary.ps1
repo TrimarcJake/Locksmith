@@ -7,7 +7,7 @@ The Create-Dictionary function is used to instantiate an array of objects that c
 descriptions, code used to find, code used to fix, and reference URLs. This is invoked by the module's main function.
 #>
 
-class VulnerableConfig {
+class VulnerableConfigurationItem {
     static [string] $Version = '2023.09.28.001'
     [string]$Name
     [string]$Type
@@ -17,9 +17,9 @@ class VulnerableConfig {
     [uri[]]$ReferenceUrls
 }
 
-[array]$Dictionary = [VulnerableConfig]::New()
+[array]$Dictionary = [VulnerableConfigurationItem]::New()
 $Dictionary = @(
-    [VulnerableConfig]@{
+    [VulnerableConfigurationItem]@{
         Name = 'ESC1'
         Type = 'Misconfigured Certificate Templates'
         Category = "Escalation Path"
@@ -27,7 +27,7 @@ $Dictionary = @(
         FixIt = {Write-Output "Add code to fix the vulnerable configuration."}
         ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Misconfigured%20Certificate%20Templates%20%E2%80%94%20ESC1'
     },
-    [VulnerableConfig]@{
+    [VulnerableConfigurationItem]@{
         Name = 'ESC2';
         Type = 'Misconfigured Certificate Templates'
         Category = "Escalation Path"
@@ -35,7 +35,7 @@ $Dictionary = @(
         FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
         ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Misconfigured%20Certificate%20Templates%20%E2%80%94%20ESC2'
     },
-    [VulnerableConfig]@{
+    [VulnerableConfigurationItem]@{
         Name = 'ESC3'
         Type = 'Enrollment Agent Templates'
         Category = "Escalation Path"
@@ -43,7 +43,7 @@ $Dictionary = @(
         FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
         ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Enrollment%20Agent%20Templates%20%E2%80%94%20ESC3'
     },
-    [VulnerableConfig]@{ 
+    [VulnerableConfigurationItem]@{ 
         Name = 'ESC4';
         Type = 'Vulnerable Certificate Template Access Control'
         Category = "Escalation Path"
@@ -51,7 +51,7 @@ $Dictionary = @(
         FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
         ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Vulnerable%20Certificate%20Template%20Access%20Control%20%E2%80%94%20ESC4'
     },
-    [VulnerableConfig]@{
+    [VulnerableConfigurationItem]@{
         Name = 'ESC5';
         Type = 'Vulnerable PKI Object Access Control'
         Category = "Escalation Path"
@@ -59,7 +59,7 @@ $Dictionary = @(
         FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
         ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Vulnerable%20PKI%20Object%20Access%20Control%20%E2%80%94%20ESC5'
     },
-    [VulnerableConfig]@{
+    [VulnerableConfigurationItem]@{
         Name = 'ESC6'
         Type = 'EDITF_ATTRIBUTESUBJECTALTNAME2'
         Category = "Escalation Path"
@@ -67,7 +67,7 @@ $Dictionary = @(
         FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
         ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=EDITF_ATTRIBUTESUBJECTALTNAME2%20%E2%80%94%20ESC6'
     },
-    [VulnerableConfig]@{
+    [VulnerableConfigurationItem]@{
         Name = 'ESC7'
         Type = 'Vulnerable Certificate Authority Access Control'
         Category = "Escalation Path"
@@ -75,7 +75,7 @@ $Dictionary = @(
         FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
         ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Vulnerable%20Certificate%20Authority%20Access%20Control%20%E2%80%94%20ESC7'
     },
-    [VulnerableConfig]@{
+    [VulnerableConfigurationItem]@{
         Name = 'ESC8'
         Type = 'NTLM Relay to AD CS HTTP Endpoints'
         Category = "Escalation Path"
@@ -83,7 +83,7 @@ $Dictionary = @(
         FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
         ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=NTLM%20Relay%20to%20AD%20CS%20HTTP%20Endpoints'
     },
-    [VulnerableConfig]@{
+    [VulnerableConfigurationItem]@{
         Name = 'Auditing'
         Type = 'Gaps in auditing on certificate authorities and AD CS objects.'
         Category = "Server Configuration"
