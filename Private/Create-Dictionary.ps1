@@ -11,6 +11,7 @@ class VulnerableConfig {
     static [string] $Version = '2023.09.28.001'
     [string]$Name
     [string]$Description
+    [ValidateSet('Escalation Path','Server Configuration','GPO Setting')]
     [string]$Category
     [scriptblock]$FindIt
     [scriptblock]$FixIt
