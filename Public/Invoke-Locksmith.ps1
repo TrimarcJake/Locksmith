@@ -342,42 +342,41 @@
         }
     }
 
-switch ($OutputType) {
-    'Console' {
-        # Send output to host console only
-        Format-Result $AuditingIssues '0'
-        Format-Result $ESC1 '0'
-        Format-Result $ESC2 '0'
-        Format-Result $ESC4 '0'
-        Format-Result $ESC5 '0'
-        Format-Result $ESC6 '0'
-        Format-Result $ESC8 '0'
-     }
-     'CSV' {
-        # Output CSV (formerly mode 1)
-     }
-     'HTML' {
-        # Output HTML report
-     }
-     'JSON' {
-        # Why not?
-     }
-     'PDF' {
-        <# Will need to import a 3rd party OSS library:
-            - https://merill.net/2013/06/creating-pdf-files-dynamically-with-powershell/
-            - https://www.nuget.org/packages/itext7
-        #>
-     }
-    Default {
-        # Use default, or just let the function set the default to console?
+    switch ($OutputType) {
+        'Console' {
+            # Send output to host console only
+            Format-Result $AuditingIssues '0'
+            Format-Result $ESC1 '0'
+            Format-Result $ESC2 '0'
+            Format-Result $ESC4 '0'
+            Format-Result $ESC5 '0'
+            Format-Result $ESC6 '0'
+            Format-Result $ESC8 '0'
+         }
+         'CSV' {
+            # Output CSV (formerly mode 1)
+         }
+         'HTML' {
+            # Output HTML report
+         }
+         'JSON' {
+            # Why not?
+         }
+         'PDF' {
+            <# Will need to import a 3rd party OSS library:
+                - https://merill.net/2013/06/creating-pdf-files-dynamically-with-powershell/
+                - https://www.nuget.org/packages/itext7
+            #>
+         }
+        Default {
+            # Use default, or just let the function set the default to console?
+        }
+    } # End OutputType
+
+    if ($Action -eq "Fix") {
+        # Call fixes
     }
-} # End OutputType
-
-if ($Action -eq "Fix") {
-    # Call fixes
-}
-else {
-    # Get the results into the desired output.
-}
-
+    else {
+        # Get the results into the desired output.
+    }
 }
