@@ -116,7 +116,7 @@
     }
 
     # Initial variables
-    $Version = '2023.08'
+    $Version = '2023.10'
     Create-Dictionary
     $AllDomainsCertPublishersSIDs = @()
     $AllDomainsDomainAdminSIDs = @()
@@ -348,13 +348,14 @@
             Format-Result $AuditingIssues '0'
             Format-Result $ESC1 '0'
             Format-Result $ESC2 '0'
+            Format-Result $ESC3 '0'
             Format-Result $ESC4 '0'
             Format-Result $ESC5 '0'
             Format-Result $ESC6 '0'
             Format-Result $ESC8 '0'
          }
          'CSV' {
-            # Output CSV (formerly mode 1)
+            # Output CSV (formerly modes 2 and 3)
          }
          'HTML' {
             # Output HTML report
