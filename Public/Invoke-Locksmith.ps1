@@ -354,7 +354,7 @@
             Format-Result $ESC8 '0'
          }
          'CSV' {
-            # Output CSV (formerly mode 1)
+            # Output CSV (formerly modes 2 and 3)
          }
          'HTML' {
             # Output HTML report
