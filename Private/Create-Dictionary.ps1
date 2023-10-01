@@ -8,7 +8,7 @@ descriptions, code used to find, code used to fix, and reference URLs. This is i
 #>
 
 class VulnerableConfigurationItem {
-    static [string] $Version = '2023.09.28.001'
+    static [string] $Version = '2023.10.01.000'
     [string]$Name
     [string]$Type
     [ValidateSet('Escalation Path','Server Configuration','GPO Setting')][string]$Category
@@ -23,7 +23,7 @@ $Dictionary = @(
         Name = 'ESC1'
         Type = 'Misconfigured Certificate Templates'
         Category = "Escalation Path"
-        FindIt =  {Find-AuditingIssue}
+        FindIt =  {Find-ESC1}
         FixIt = {Write-Output "Add code to fix the vulnerable configuration."}
         ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Misconfigured%20Certificate%20Templates%20%E2%80%94%20ESC1'
     },
@@ -39,7 +39,10 @@ $Dictionary = @(
         Name = 'ESC3'
         Type = 'Enrollment Agent Templates'
         Category = "Escalation Path"
-        FindIt =  {Find-ESC3}
+        FindIt =  {
+            Find-ESC3Condition1
+            Find-ESC3Condition2
+        }
         FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
         ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Enrollment%20Agent%20Templates%20%E2%80%94%20ESC3'
     },
@@ -71,7 +74,7 @@ $Dictionary = @(
         Name = 'ESC7'
         Type = 'Vulnerable Certificate Authority Access Control'
         Category = "Escalation Path"
-        FindIt =  {Find-ESC7}
+        FindIt =  {Write-Output 'We have not created Find-ESC7 yet.'}
         FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
         ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Vulnerable%20Certificate%20Authority%20Access%20Control%20%E2%80%94%20ESC7'
     },
