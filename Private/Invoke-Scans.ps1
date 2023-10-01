@@ -16,10 +16,10 @@ function Invoke-Scans {
 
         # Check for Out-GridView or Out-ConsoleGridView
         if ((Get-Command Out-ConsoleGridView) -and ($PSVersionTable.PSVersion.Major -ge 7)) {
-            $Scans = ($Dictionary | Select-Object Name,Description | Out-ConsoleGridView -OutputMode Multiple -Title $GridViewTitle).Name | Sort-Object -Property Name
+            $Scans = ($Dictionary | Select-Object Name,Type,Category | Out-ConsoleGridView -OutputMode Multiple -Title $GridViewTitle).Name | Sort-Object -Property Name
         }
         elseif (Get-Command -Name Out-GridView) {
-            $Scans = ($Dictionary | Select-Object Name,Description | Out-GridView -PassThru -Title $GridViewTitle).Name | Sort-Object -Property Name
+            $Scans = ($Dictionary | Select-Object Name,Type,Category | Out-GridView -PassThru -Title $GridViewTitle).Name | Sort-Object -Property Name
         }
         else {
             # To Do: Check for admin and prompt to install features/modules or revert to 'All'.
