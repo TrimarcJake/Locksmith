@@ -10,35 +10,50 @@ descriptions, code used to find, code used to fix, and reference URLs. This is i
 class VulnerableConfigurationItem {
     static [string] $Version = '2023.10.01.000'
     [string]$Name
-    [string]$Type
     [ValidateSet('Escalation Path','Server Configuration','GPO Setting')][string]$Category
+    [string]$Subcategory
+    [string]$Summary
     [scriptblock]$FindIt
     [scriptblock]$FixIt
     [uri[]]$ReferenceUrls
 }
+<#
+Class Definition:
+    Version         Update each time the class definition or the dictionary below is changed.
+    Name            The short name of the vulnerable configuration item (VCI).
+    Category        The high level category of VCI types, including escalation path, server configuration, GPO setting, etc.
+    Subcategory     The subcategory of vulnerable configuration item types.
+    Summary         A summary of the vulnerability and how it can be abused.
+    FindIt          The name of the function that is used to look for the VCI, stored as an invokable scriptblock.
+    FixIt           The name of the function that is used to fix the VCI, stored as an invokable scriptblock.
+    ReferenceUrls   An array of URLs that are used as references to learn more about the VCI.
+#>
 
 [array]$Dictionary = [VulnerableConfigurationItem]::New()
 $Dictionary = @(
     [VulnerableConfigurationItem]@{
         Name = 'ESC1'
-        Type = 'Misconfigured Certificate Templates'
-        Category = "Escalation Path"
+        Category = 'Escalation Path'
+        Subcategory = 'Misconfigured Certificate Templates'
+        Summary = ''
         FindIt =  {Find-ESC1}
         FixIt = {Write-Output "Add code to fix the vulnerable configuration."}
         ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Misconfigured%20Certificate%20Templates%20%E2%80%94%20ESC1'
     },
     [VulnerableConfigurationItem]@{
-        Name = 'ESC2';
-        Type = 'Misconfigured Certificate Templates'
-        Category = "Escalation Path"
+        Name = 'ESC2'
+        Category = 'Escalation Path'
+        Subcategory = 'Misconfigured Certificate Templates'
+        Summary = ''
         FindIt =  {Find-ESC2}
         FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
         ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Misconfigured%20Certificate%20Templates%20%E2%80%94%20ESC2'
     },
     [VulnerableConfigurationItem]@{
         Name = 'ESC3'
-        Type = 'Enrollment Agent Templates'
-        Category = "Escalation Path"
+        Category = 'Escalation Path'
+        Subcategory = 'Enrollment Agent Templates'
+        Summary = ''
         FindIt =  {
             Find-ESC3Condition1
             Find-ESC3Condition2
@@ -48,48 +63,54 @@ $Dictionary = @(
     },
     [VulnerableConfigurationItem]@{ 
         Name = 'ESC4';
-        Type = 'Vulnerable Certificate Template Access Control'
-        Category = "Escalation Path"
+        Category = 'Escalation Path'
+        Subcategory = 'Vulnerable Certificate Template Access Control'
+        Summary = ''
         FindIt =  {Find-ESC4}
         FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
         ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Vulnerable%20Certificate%20Template%20Access%20Control%20%E2%80%94%20ESC4'
     },
     [VulnerableConfigurationItem]@{
         Name = 'ESC5';
-        Type = 'Vulnerable PKI Object Access Control'
-        Category = "Escalation Path"
+        Category = 'Escalation Path'
+        Subcategory = 'Vulnerable PKI Object Access Control'
+        Summary = ''
         FindIt =  {Find-ESC5}
         FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
         ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Vulnerable%20PKI%20Object%20Access%20Control%20%E2%80%94%20ESC5'
     },
     [VulnerableConfigurationItem]@{
         Name = 'ESC6'
-        Type = 'EDITF_ATTRIBUTESUBJECTALTNAME2'
-        Category = "Escalation Path"
+        Category = 'Escalation Path'
+        Subcategory = 'EDITF_ATTRIBUTESUBJECTALTNAME2'
+        Summary = ''
         FindIt =  {Find-ESC6}
         FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
         ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=EDITF_ATTRIBUTESUBJECTALTNAME2%20%E2%80%94%20ESC6'
     },
     [VulnerableConfigurationItem]@{
         Name = 'ESC7'
-        Type = 'Vulnerable Certificate Authority Access Control'
-        Category = "Escalation Path"
+        Category = 'Escalation Path'
+        Subcategory = 'Vulnerable Certificate Authority Access Control'
+        Summary = ''
         FindIt =  {Write-Output 'We have not created Find-ESC7 yet.'}
         FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
         ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Vulnerable%20Certificate%20Authority%20Access%20Control%20%E2%80%94%20ESC7'
     },
     [VulnerableConfigurationItem]@{
         Name = 'ESC8'
-        Type = 'NTLM Relay to AD CS HTTP Endpoints'
-        Category = "Escalation Path"
+        Category = 'Escalation Path'
+        Subcategory = 'NTLM Relay to AD CS HTTP Endpoints'
+        Summary = ''
         FindIt =  {Find-ESC8}
         FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
         ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=NTLM%20Relay%20to%20AD%20CS%20HTTP%20Endpoints'
     },
     [VulnerableConfigurationItem]@{
         Name = 'Auditing'
-        Type = 'Gaps in auditing on certificate authorities and AD CS objects.'
-        Category = "Server Configuration"
+        Category = 'Server Configuration'
+        Subcategory = 'Gaps in auditing on certificate authorities and AD CS objects.'
+        Summary = ''
         FindIt =  {Find-AuditingIssue}
         FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
         ReferenceUrls = @('https://github.com/TrimarcJake/Locksmith','https://techcommunity.microsoft.com/t5/ask-the-directory-services-team/designing-and-implementing-a-pki-part-i-design-and-planning/ba-p/396953')
