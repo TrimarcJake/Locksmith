@@ -5,6 +5,7 @@ function Invoke-Scans {
         [ValidateSet("Auditing","ESC1","ESC2","ESC3","ESC4","ESC5","ESC6","ESC8","All","PromptMe")]
         [array]$Scans = "All"
     )
+    # Change PromptMe to its own parameter
 
     # Envision this array being created in the base Invoke-Locksmith function, but landing here for now:
     $EscalationPaths = @(
@@ -80,11 +81,11 @@ function Invoke-Scans {
         $GridViewTitle = "Select the tests to run and press Enter or click OK to continue..."
 
         # Check for Out-GridView or Out-ConsoleGridView
-        if ((Get-Command Out-ConsoleGridView -ErrorAction SilentlyContinue) -and ($PSVersionTable.PSVersion.Major -ge 7)) {
-            $Scans = ($EscalationPaths | Select-Object Name,Description | Out-ConsoleGridView -PassThru -Title $GridViewTitle).Name | Sort-Object -Property Name
+        if ((Get-Command Out-ConsoleGridView) -and ($PSVersionTable.PSVersion.Major -ge 7)) {
+            $Scans = ($Dictionary | Select-Object Name,Description | Out-ConsoleGridView -OutputMode Multiple -Title $GridViewTitle).Name | Sort-Object -Property Name
         }
-        elseif (Get-Command -Name Out-GridView -ErrorAction SilentlyContinue) {
-            $Scans = ($EscalationPaths | Select-Object Name,Description | Out-GridView -PassThru -Title $GridViewTitle).Name | Sort-Object -Property Name
+        elseif (Get-Command -Name Out-GridView) {
+            $Scans = ($Dictionary | Select-Object Name,Description | Out-GridView -PassThru -Title $GridViewTitle).Name | Sort-Object -Property Name
         }
         else {
             # To Do: Check for admin and prompt to install features/modules or revert to 'All'.
