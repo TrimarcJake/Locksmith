@@ -29,8 +29,7 @@ Class Definition:
     ReferenceUrls   An array of URLs that are used as references to learn more about the VCI.
 #>
 
-[array]$Dictionary = [VulnerableConfigurationItem]::New()
-$Dictionary = @(
+[VulnerableConfigurationItem[]]$Dictionary = @(
     [VulnerableConfigurationItem]@{
         Name = 'ESC1'
         Category = 'Escalation Path'
