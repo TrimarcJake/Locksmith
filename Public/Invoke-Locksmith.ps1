@@ -86,10 +86,10 @@
             [ValidateSet('Auditing','ESC1','ESC2','ESC3','ESC4','ESC5','ESC6','ESC8','All','PromptMe')]
             [array]$Scans = 'All',
         [Parameter()]
-            [ValidateSet('Findings','Detailed', ErrorMessage = 'Please choose Findings or Detailed for your output. Detailed output includes the fixes.')]
+            [ValidateSet('Findings','Detailed')]
             [string]$Output = 'Findings',
         [Parameter()]
-            [ValidateSet('Console','CSV','HTML','JSON','PDF', ErrorMessage = 'Please choose CSV, HTML, or JSON for your output type or `"Console`" to show the results on screen.')]
+            [ValidateSet('Console','CSV','HTML','JSON','PDF')]
             [string]$OutputType = 'Console',
         [Parameter()]
             [string]$OutputPath = (Get-Location).Path
