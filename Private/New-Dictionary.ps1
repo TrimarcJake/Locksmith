@@ -3,7 +3,7 @@
 Create a dictionary of the escalation paths and insecure configurations that Locksmith scans for.
 
 .DESCRIPTION
-The Create-Dictionary function is used to instantiate an array of objects that contain the names, definitions,
+The New-Dictionary function is used to instantiate an array of objects that contain the names, definitions,
 descriptions, code used to find, code used to fix, and reference URLs. This is invoked by the module's main function.
 #>
 

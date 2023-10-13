@@ -50,7 +50,7 @@
      - Findings: (Default) List all malconfigurations found in ADCS.
      - DetailedFindings: List all findings with a detailed explanation of each type, including the risk and the resolution.
      - RemediationScript: Create a script that will help remediate all findings.
-    
+
     .PARAMETER OutputType
     Specify the type of output or file you want to create after scanning. Allows use of multiple values to output multiple file types.
 
@@ -117,7 +117,7 @@
 
     # Initial variables
     $Version = '2023.10'
-    Create-Dictionary
+    New-Dictionary
     $AllDomainsCertPublishersSIDs = @()
     $AllDomainsDomainAdminSIDs = @()
     $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
