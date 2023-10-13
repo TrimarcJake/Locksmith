@@ -7,7 +7,7 @@ The Create-Dictionary function is used to instantiate an array of objects that c
 descriptions, code used to find, code used to fix, and reference URLs. This is invoked by the module's main function.
 #>
 
-function Create-Dictionary {
+function New-Dictionary {
         class VulnerableConfigurationItem {
         static [string] $Version = '2023.10.01.000'
         [string]$Name
@@ -61,7 +61,7 @@ function Create-Dictionary {
             FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
             ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Enrollment%20Agent%20Templates%20%E2%80%94%20ESC3'
         },
-        [VulnerableConfigurationItem]@{ 
+        [VulnerableConfigurationItem]@{
             Name = 'ESC4';
             Category = 'Escalation Path'
             Subcategory = 'Vulnerable Certificate Template Access Control'
