@@ -50,7 +50,7 @@ Build-Module -ModuleName 'Locksmith' {
         New-ConfigurationModule -Type ExternalModule -Name $Module
     }
 
-    New-ConfigurationModuleSkip -IgnoreFunctionName 'Clear-Host'
+    New-ConfigurationModuleSkip -IgnoreFunctionName @('Clear-Host','Out-ConsoleGridView') -IgnoreModuleName @( )
 
     $ConfigurationFormat = [ordered] @{
         RemoveComments                              = $false
