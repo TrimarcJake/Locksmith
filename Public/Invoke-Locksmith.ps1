@@ -116,7 +116,7 @@
     }
 
     # Initial variables
-    $Version = '2023.10'
+    $Version = '2023.11'
     New-Dictionary
     $AllDomainsCertPublishersSIDs = @()
     $AllDomainsDomainAdminSIDs = @()

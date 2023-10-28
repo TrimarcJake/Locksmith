@@ -10,16 +10,20 @@ function Invoke-Scans {
     if ($Scans -eq $IsNullOrEmpty) {
         $Scans = 'All'
     }
-    
+
     if ( $Scans -eq "PromptMe" ) {
         $GridViewTitle = "Select the tests to run and press Enter or click OK to continue..."
 
-        if (Get-Command -Name Out-GridView -ErrorAction SilentlyContinue) {
+        # Check for Out-GridView or Out-ConsoleGridView
+        if ((Get-Command Out-ConsoleGridView -ErrorAction SilentlyContinue) -and ($PSVersionTable.PSVersion.Major -ge 7)) {
+            [string]$Scans = ($Dictionary | Select-Object Name,Type,Category | Out-ConsoleGridView -OutputMode Multiple -Title $GridViewTitle).Name | Sort-Object -Property Name
+        }
+        elseif (Get-Command -Name Out-GridView -ErrorAction SilentlyContinue) {
             [string]$Scans = ($Dictionary | Select-Object Name,Type,Category | Out-GridView -PassThru -Title $GridViewTitle).Name | Sort-Object -Property Name
         }
         else {
             # To Do: Check for admin and prompt to install features/modules or revert to 'All'.
-            Write-Information "Out-GridView was not found on your system. Check if PowerShell ISE is installed. Defaulting to `'All`' scans."
+            Write-Information "Out-GridView and Out-ConsoleGridView were not found on your system. Defaulting to `'All`'."
             $Scans = 'All'
         }
     }

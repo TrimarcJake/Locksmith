@@ -55,7 +55,7 @@ Build-Module -ModuleName 'Locksmith' {
     New-ConfigurationModuleSkip -IgnoreFunctionName @('Clear-Host','Out-ConsoleGridView') -IgnoreModuleName @('Microsoft.PowerShell.ConsoleGuiTools')
 
     # Tells the script to exclude Out-ConsoleGridView command from functions if the  module is not available to be loaded
-    New-ConfigurationCommand -ModuleName 'Out-ConsoleGridView' -CommandName @('Out-ConsoleGridView')
+    New-ConfigurationCommand -CommandName @('Out-ConsoleGridView') -ModuleName 'Microsoft.PowerShell.ConsoleGuiTools'
 
     $ConfigurationFormat = [ordered] @{
         RemoveComments                              = $false
