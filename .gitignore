@@ -15,3 +15,4 @@ Sources/packages/*
 Lib/Default/*
 Lib/Standard/*
 Lib/Core/*
+.DS_Store
