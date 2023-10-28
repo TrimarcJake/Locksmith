@@ -1,4 +1,4 @@
-﻿if (Get-Module -Name 'PSPublishModule' -ListAvailable) { 
+﻿if (Get-Module -Name 'PSPublishModule' -ListAvailable) {
     Write-Information 'PSPublishModule is installed.'
 } else {
     Write-Information 'PSPublishModule is not installed. Attempting installation.'
@@ -17,7 +17,7 @@ Import-Module -Name PSPublishModule -Force
 Build-Module -ModuleName 'Locksmith' {
     # Usual defaults as per standard module
     $Manifest = [ordered] @{
-        ModuleVersion        = '2023.10'
+        ModuleVersion        = '2023.11'
         CompatiblePSEditions = @('Desktop', 'Core')
         GUID                 = 'b1325b42-8dc4-4f17-aa1f-dcb5984ca14a'
         Author               = 'Jake Hildreth'
@@ -50,7 +50,12 @@ Build-Module -ModuleName 'Locksmith' {
         New-ConfigurationModule -Type ExternalModule -Name $Module
     }
 
-    New-ConfigurationModuleSkip -IgnoreFunctionName 'Clear-Host'
+
+    # Ignore missing modules or cmdlets during build process
+    New-ConfigurationModuleSkip -IgnoreFunctionName @('Clear-Host','Out-ConsoleGridView') -IgnoreModuleName @('Microsoft.PowerShell.ConsoleGuiTools')
+
+    # Tells the script to exclude Out-ConsoleGridView command from functions if the  module is not available to be loaded
+    New-ConfigurationCommand -ModuleName 'Out-ConsoleGridView' -CommandName @('Out-ConsoleGridView')
 
     $ConfigurationFormat = [ordered] @{
         RemoveComments                              = $false
