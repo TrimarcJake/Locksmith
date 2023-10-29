@@ -95,6 +95,7 @@
             [string]$OutputPath = (Get-Location).Path
     )
 
+    $Version = '2023.11'
     $Logo = @"
     _       _____  _______ _     _ _______ _______ _____ _______ _     _
     |      |     | |       |____/  |______ |  |  |   |      |    |_____|
@@ -129,7 +130,6 @@
     }
 
     # Initial variables
-    $Version = '2023.11'
     $AllDomainsCertPublishersSIDs = @()
     $AllDomainsDomainAdminSIDs = @()
     $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
@@ -142,7 +142,7 @@
     $UnsafeUsers = 'S-1-1-0|-11$|-513$|-515$'
 
     # Generated variables
-    New-Dictionary
+    $Dictionary = New-Dictionary
     $ForestGC = $(Get-ADDomainController -Discover -Service GlobalCatalog -ForceDiscover | Select-Object -ExpandProperty Hostname) + ":3268"
     $DNSRoot = [string]((Get-ADForest).RootDomain | Get-ADDomain).DNSRoot
     $EnterpriseAdminsSID = ([string]((Get-ADForest).RootDomain | Get-ADDomain).DomainSID) + '-519'
