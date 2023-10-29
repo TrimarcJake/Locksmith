@@ -1,4 +1,4 @@
-param (
+﻿param (
     [int]$Mode
 )
 function ConvertFrom-IdentityReference {
