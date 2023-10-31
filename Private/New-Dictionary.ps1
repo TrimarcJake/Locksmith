@@ -117,4 +117,5 @@ function New-Dictionary {
             ReferenceUrls = @('https://github.com/TrimarcJake/Locksmith','https://techcommunity.microsoft.com/t5/ask-the-directory-services-team/designing-and-implementing-a-pki-part-i-design-and-planning/ba-p/396953')
         }
     )
+    Return $Dictionary
 }
