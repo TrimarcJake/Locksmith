@@ -5,6 +5,18 @@ Create a dictionary of the escalation paths and insecure configurations that Loc
 .DESCRIPTION
 The New-Dictionary function is used to instantiate an array of objects that contain the names, definitions,
 descriptions, code used to find, code used to fix, and reference URLs. This is invoked by the module's main function.
+
+.NOTES
+
+    VulnerableConfigurationItem Class Definition:
+        Version         Update each time the class definition or the dictionary below is changed.
+        Name            The short name of the vulnerable configuration item (VCI).
+        Category        The high level category of VCI types, including escalation path, server configuration, GPO setting, etc.
+        Subcategory     The subcategory of vulnerable configuration item types.
+        Summary         A summary of the vulnerability and how it can be abused.
+        FindIt          The name of the function that is used to look for the VCI, stored as an invokable scriptblock.
+        FixIt           The name of the function that is used to fix the VCI, stored as an invokable scriptblock.
+        ReferenceUrls   An array of URLs that are used as references to learn more about the VCI.
 #>
 
 function New-Dictionary {
@@ -18,17 +30,6 @@ function New-Dictionary {
         [scriptblock]$FixIt
         [uri[]]$ReferenceUrls
     }
-    <#
-    Class Definition:
-        Version         Update each time the class definition or the dictionary below is changed.
-        Name            The short name of the vulnerable configuration item (VCI).
-        Category        The high level category of VCI types, including escalation path, server configuration, GPO setting, etc.
-        Subcategory     The subcategory of vulnerable configuration item types.
-        Summary         A summary of the vulnerability and how it can be abused.
-        FindIt          The name of the function that is used to look for the VCI, stored as an invokable scriptblock.
-        FixIt           The name of the function that is used to fix the VCI, stored as an invokable scriptblock.
-        ReferenceUrls   An array of URLs that are used as references to learn more about the VCI.
-    #>
 
     [VulnerableConfigurationItem[]]$Dictionary = @(
         [VulnerableConfigurationItem]@{
