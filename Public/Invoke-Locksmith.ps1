@@ -200,6 +200,7 @@
     }
 
     $Results = Invoke-Scans -Scans $Scans
+
         $AuditingIssues = $Results | Where-Object Technique -eq 'AuditingIssues'
         $ESC1           = $Results | Where-Object Technique -eq 'ESC1'
         $ESC2           = $Results | Where-Object Technique -eq 'ESC2'
