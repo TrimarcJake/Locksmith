@@ -101,6 +101,12 @@
         }
     }
 
+    # Exit if running in restricted admin mode without explicit credentials
+    if (!$Credential -and (Get-RestrictedAdminModeSetting)) {
+        Write-Warning "Restricted Admin Mode appears to be in place, re-run with the '-Credential domain\user' option"
+        break;
+    }
+
     # Initial variables
     $Version = '2023.9'
     $AllDomainsCertPublishersSIDs = @()
