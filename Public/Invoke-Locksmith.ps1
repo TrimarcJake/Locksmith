@@ -156,7 +156,6 @@
         break;
     }
 
-    $Logo
     if ($Credential) {
         $Targets = Get-Target -Credential $Credential
     } else {
@@ -176,6 +175,22 @@
         $ADCSObjects += Get-CAHostObject -ADCSObjects $ADCSObjects
         $CAHosts = Get-CAHostObject -ADCSObjects $ADCSObjects
         $CAHosts | ForEach-Object { $SafeUsers += '|' + $_.Name }
+    }
+
+    if ( $Scans ) {
+        $Results = Invoke-Scans -Scans $Scans
+
+            $AuditingIssues = $Results | Where-Object Technique -eq 'AuditingIssues'
+            $ESC1           = $Results | Where-Object Technique -eq 'ESC1'
+            $ESC2           = $Results | Where-Object Technique -eq 'ESC2'
+            $ESC3           = $Results | Where-Object Technique -eq 'ESC3'
+            $ESC4           = $Results | Where-Object Technique -eq 'ESC4'
+            $ESC5           = $Results | Where-Object Technique -eq 'ESC5'
+            $ESC6           = $Results | Where-Object Technique -eq 'ESC6'
+            $ESC8           = $Results | Where-Object Technique -eq 'ESC8'
+    }
+    else {
+        # Possibly pull the checks below into this block so the scans don't all run a second time.
     }
 
     Write-Host 'Identifying auditing issues...'
