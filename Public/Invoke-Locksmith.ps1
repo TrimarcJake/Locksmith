@@ -38,6 +38,9 @@
     Finds any malconfigurations and creates code snippets to fix each issue.
     Attempts to fix all identified issues. This mode may require high-privileged access.
 
+    .PARAMETER OutputPath
+    Specify the path where you want to save reports and mitigation scripts.
+
     .INPUTS
     None. You cannot pipe objects to Invoke-Locksmith.ps1.
 
@@ -47,9 +50,10 @@
     2. Console display of identified issues and their fixes
     3. CSV containing all identified issues
     4. CSV containing all identified issues and their fixes
-    #>
 
-    # Windows PowerShell cmdlet Restart-Service requires RunAsAdministrator
+    .NOTES
+    Windows PowerShell cmdlet Restart-Service requires RunAsAdministrator
+    #>
 
     [CmdletBinding()]
     param (
