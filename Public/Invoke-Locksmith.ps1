@@ -67,6 +67,20 @@
         [System.Management.Automation.PSCredential]$Credential
     )
 
+    $Version = '2023.11'
+    $Logo = @"
+    _       _____  _______ _     _ _______ _______ _____ _______ _     _
+    |      |     | |       |____/  |______ |  |  |   |      |    |_____|
+    |_____ |_____| |_____  |    \_ ______| |  |  | __|__    |    |     |
+        .--.                  .--.                  .--.
+       /.-. '----------.     /.-. '----------.     /.-. '----------.
+       \'-' .--'--''-'-'     \'-' .--'--''-'-'     \'-' .--'--''-'-'
+        '--'                  '--'                  '--'
+                                                               v$Version
+
+"@
+   $Logo
+
     # Check if ActiveDirectory PowerShell module is available, and attempt to install if not found
     if (-not(Get-Module -Name 'ActiveDirectory' -ListAvailable)) {
         if (Test-IsElevated) {
