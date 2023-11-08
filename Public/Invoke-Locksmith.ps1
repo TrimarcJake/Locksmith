@@ -60,6 +60,9 @@
         [string]$Forest,
         [string]$InputPath,
         [int]$Mode = 0,
+        [Parameter()]
+            [ValidateSet('Auditing','ESC1','ESC2','ESC3','ESC4','ESC5','ESC6','ESC8','All','PromptMe')]
+            [array]$Scans = 'All',
         [string]$OutputPath = (Get-Location).Path,
         [System.Management.Automation.PSCredential]$Credential
     )
