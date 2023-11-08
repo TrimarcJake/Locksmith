@@ -108,31 +108,20 @@
     }
 
     # Initial variables
-    $Version = '2023.9'
     $AllDomainsCertPublishersSIDs = @()
     $AllDomainsDomainAdminSIDs = @()
     $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
     $DangerousRights = 'GenericAll|WriteDacl|WriteOwner|WriteProperty'
     $EnrollmentAgentEKU = '1\.3\.6\.1\.4\.1\.311\.20\.2\.1'
-    $ForestGC = $(Get-ADDomainController -Discover -Service GlobalCatalog -ForceDiscover | Select-Object -ExpandProperty Hostname) + ":3268"
     $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
     $SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$'
     $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
     $UnsafeOwners = 'S-1-1-0|-11$|-513$|-515$'
     $UnsafeUsers = 'S-1-1-0|-11$|-513$|-515$'
-    $Logo = @"
- _       _____  _______ _     _ _______ _______ _____ _______ _     _
- |      |     | |       |____/  |______ |  |  |   |      |    |_____|
- |_____ |_____| |_____  |    \_ ______| |  |  | __|__    |    |     |
-     .--.                  .--.                  .--.
-    /.-. '----------.     /.-. '----------.     /.-. '----------.
-    \'-' .--'--''-'-'     \'-' .--'--''-'-'     \'-' .--'--''-'-'
-     '--'                  '--'                  '--'
-                                                            v$Version
-
-"@
 
     # Generated variables
+    $Dictionary = New-Dictionary
+    $ForestGC = $(Get-ADDomainController -Discover -Service GlobalCatalog -ForceDiscover | Select-Object -ExpandProperty Hostname) + ":3268"
     $DNSRoot = [string]((Get-ADForest).RootDomain | Get-ADDomain).DNSRoot
     $EnterpriseAdminsSID = ([string]((Get-ADForest).RootDomain | Get-ADDomain).DomainSID) + '-519'
     $PreferredOwner = New-Object System.Security.Principal.SecurityIdentifier($EnterpriseAdminsSID)
