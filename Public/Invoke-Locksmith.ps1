@@ -38,6 +38,15 @@
     Finds any malconfigurations and creates code snippets to fix each issue.
     Attempts to fix all identified issues. This mode may require high-privileged access.
 
+    .PARAMETER Scans
+    Specify which scans you want to run. Available scans: 'All' or Auditing, ESC1, ESC2, ESC3, ESC4, ESC5, ESC6, ESC8, or 'PromptMe'
+
+    -Scans All
+    Run all scans (default)
+
+    -Scans PromptMe
+    Presents a grid view of the available scan types that can be selected and run them after you click OK.
+
     .PARAMETER OutputPath
     Specify the path where you want to save reports and mitigation scripts.
 
