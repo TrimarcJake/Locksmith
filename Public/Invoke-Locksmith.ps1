@@ -179,15 +179,16 @@
 
     if ( $Scans ) {
         $Results = Invoke-Scans -Scans $Scans
-
-            $AuditingIssues = $Results | Where-Object Technique -eq 'AuditingIssues'
-            $ESC1           = $Results | Where-Object Technique -eq 'ESC1'
-            $ESC2           = $Results | Where-Object Technique -eq 'ESC2'
-            $ESC3           = $Results | Where-Object Technique -eq 'ESC3'
-            $ESC4           = $Results | Where-Object Technique -eq 'ESC4'
-            $ESC5           = $Results | Where-Object Technique -eq 'ESC5'
-            $ESC6           = $Results | Where-Object Technique -eq 'ESC6'
-            $ESC8           = $Results | Where-Object Technique -eq 'ESC8'
+            # Re-hydrate the findings arrays from the Results hash table
+            $AllIssues      = $Results['AllIssues']
+            $AuditingIssues = $Results['AuditingIssues']
+            $ESC1           = $Results['ESC1']
+            $ESC2           = $Results['ESC2']
+            $ESC3           = $Results['ESC2']
+            $ESC4           = $Results['ESC4']
+            $ESC5           = $Results['ESC5']
+            $ESC6           = $Results['ESC6']
+            $ESC8           = $Results['ESC8']
     }
     else {
         # Possibly pull the checks below into this block so the scans don't all run a second time.
