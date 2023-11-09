@@ -92,5 +92,16 @@ function Invoke-Scans {
         break
     }
 
-    Return $AllIssues
+    # Return a hash table of array names (keys) and arrays (values) so they can be directly referenced with other functions
+    Return @{
+        AllIssues = $AllIssues
+        AuditingIssues = $AuditingIssues
+        ESC1 = $ESC1
+        ESC2 = $ESC2
+        ESC3 = $ESC3
+        ESC4 = $ESC4
+        ESC5 = $ESC5
+        ESC6 = $ESC6
+        ESC8 = $ESC8
+    }
 }
