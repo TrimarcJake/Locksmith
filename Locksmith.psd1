@@ -4,7 +4,7 @@
     CmdletsToExport      = @()
     CompatiblePSEditions = @('Desktop', 'Core')
     Copyright            = '(c) 2022 - 2023. All rights reserved.'
-    Description          = 'A small tool to identify and remediate common misconfigurations in Active Directory Certificate Services.'
+    Description          = 'A small tool to find and fix common misconfigurations in Active Directory Certificate Services.'
     FunctionsToExport    = @('*')
     GUID                 = 'b1325b42-8dc4-4f17-aa1f-dcb5984ca14a'
     ModuleVersion        = '2023.11'
