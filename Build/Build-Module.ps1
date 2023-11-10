@@ -22,7 +22,7 @@ Build-Module -ModuleName 'Locksmith' {
         GUID                 = 'b1325b42-8dc4-4f17-aa1f-dcb5984ca14a'
         Author               = 'Jake Hildreth'
         Copyright            = "(c) 2022 - $((Get-Date).Year). All rights reserved."
-        Description          = 'A small tool to identify and remediate common misconfigurations in Active Directory Certificate Services.'
+        Description          = 'A small tool to find and fix common misconfigurations in Active Directory Certificate Services.'
         PowerShellVersion    = '5.1'
         Tags                 = @('Windows', 'Locksmith', 'CA', 'PKI', 'ActiveDirectory', 'CertificateServices','ADCS')
     }
