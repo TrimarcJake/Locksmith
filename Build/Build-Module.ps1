@@ -106,11 +106,12 @@ Build-Module -ModuleName 'Locksmith' {
 
     $PreScriptMerge = {
         param (
-            [int]$Mode
+            [int]$Mode,
+            [array]$Scans
         )
     }
 
-    $PostScriptMerge = { Invoke-Locksmith -Mode $Mode }
+    $PostScriptMerge = { Invoke-Locksmith -Mode $Mode -Scans $Scans }
 
     New-ConfigurationArtefact -Type Packed -Enable -Path "$PSScriptRoot\..\Artefacts\Packed" -ArtefactName '<ModuleName>-v<ModuleVersion>.zip'
     New-ConfigurationArtefact -Type Script -Enable -Path "$PSScriptRoot\..\Artefacts\Script" -PreScriptMerge $PreScriptMerge -PostScriptMerge $PostScriptMerge -ScriptName "Invoke-<ModuleName>.ps1"
