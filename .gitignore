@@ -1,6 +1,8 @@
 .DS_Store
 .vs/*
 .vscode/*
+ADCSIssues.CSV
+ADCSRemediation.CSV
 Artefacts/*
 Examples/Output/*
 Ignore/*
