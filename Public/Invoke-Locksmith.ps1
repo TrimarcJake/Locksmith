@@ -193,7 +193,7 @@
             $AuditingIssues = $Results['AuditingIssues']
             $ESC1           = $Results['ESC1']
             $ESC2           = $Results['ESC2']
-            $ESC3           = $Results['ESC2']
+            $ESC3           = $Results['ESC3']
             $ESC4           = $Results['ESC4']
             $ESC5           = $Results['ESC5']
             $ESC6           = $Results['ESC6']
