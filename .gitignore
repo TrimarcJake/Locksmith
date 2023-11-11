@@ -1,10 +1,16 @@
-Ignore/*
+.DS_Store
 .vs/*
 .vscode/*
-Examples/Output/*
-Releases/*
+ADCSIssues.CSV
+ADCSRemediation.CSV
 Artefacts/*
+Examples/Output/*
+Ignore/*
+Lib/Core/*
+Lib/Default/*
+Lib/Standard/*
 ReleasedUnpacked/*
+Releases/*
 Sources/.vs
 Sources/*/.vs
 Sources/*/obj
@@ -12,6 +18,3 @@ Sources/*/bin
 Sources/*/*/obj
 Sources/*/*/bin
 Sources/packages/*
-Lib/Default/*
-Lib/Standard/*
-Lib/Core/*

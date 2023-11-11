@@ -38,6 +38,18 @@
     Finds any malconfigurations and creates code snippets to fix each issue.
     Attempts to fix all identified issues. This mode may require high-privileged access.
 
+    .PARAMETER Scans
+    Specify which scans you want to run. Available scans: 'All' or Auditing, ESC1, ESC2, ESC3, ESC4, ESC5, ESC6, ESC8, or 'PromptMe'
+
+    -Scans All
+    Run all scans (default)
+
+    -Scans PromptMe
+    Presents a grid view of the available scan types that can be selected and run them after you click OK.
+
+    .PARAMETER OutputPath
+    Specify the path where you want to save reports and mitigation scripts.
+
     .INPUTS
     None. You cannot pipe objects to Invoke-Locksmith.ps1.
 
@@ -47,18 +59,36 @@
     2. Console display of identified issues and their fixes
     3. CSV containing all identified issues
     4. CSV containing all identified issues and their fixes
-    #>
 
-    # Windows PowerShell cmdlet Restart-Service requires RunAsAdministrator
+    .NOTES
+    Windows PowerShell cmdlet Restart-Service requires RunAsAdministrator
+    #>
 
     [CmdletBinding()]
     param (
         [string]$Forest,
         [string]$InputPath,
         [int]$Mode = 0,
+        [Parameter()]
+            [ValidateSet('Auditing','ESC1','ESC2','ESC3','ESC4','ESC5','ESC6','ESC8','All','PromptMe')]
+            [array]$Scans = 'All',
         [string]$OutputPath = (Get-Location).Path,
         [System.Management.Automation.PSCredential]$Credential
     )
+
+    $Version = '2023.11'
+    $Logo = @"
+    _       _____  _______ _     _ _______ _______ _____ _______ _     _
+    |      |     | |       |____/  |______ |  |  |   |      |    |_____|
+    |_____ |_____| |_____  |    \_ ______| |  |  | __|__    |    |     |
+        .--.                  .--.                  .--.
+       /.-. '----------.     /.-. '----------.     /.-. '----------.
+       \'-' .--'--''-'-'     \'-' .--'--''-'-'     \'-' .--'--''-'-'
+        '--'                  '--'                  '--'
+                                                               v$Version
+
+"@
+   $Logo
 
     # Check if ActiveDirectory PowerShell module is available, and attempt to install if not found
     if (-not(Get-Module -Name 'ActiveDirectory' -ListAvailable)) {
@@ -80,32 +110,27 @@
         }
     }
 
+    # Exit if running in restricted admin mode without explicit credentials
+    if (!$Credential -and (Get-RestrictedAdminModeSetting)) {
+        Write-Warning "Restricted Admin Mode appears to be in place, re-run with the '-Credential domain\user' option"
+        break;
+    }
+
     # Initial variables
-    $Version = '2023.9'
     $AllDomainsCertPublishersSIDs = @()
     $AllDomainsDomainAdminSIDs = @()
     $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
     $DangerousRights = 'GenericAll|WriteDacl|WriteOwner|WriteProperty'
     $EnrollmentAgentEKU = '1\.3\.6\.1\.4\.1\.311\.20\.2\.1'
-    $ForestGC = $(Get-ADDomainController -Discover -Service GlobalCatalog -ForceDiscover | Select-Object -ExpandProperty Hostname) + ":3268"
     $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
     $SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$'
     $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
     $UnsafeOwners = 'S-1-1-0|-11$|-513$|-515$'
     $UnsafeUsers = 'S-1-1-0|-11$|-513$|-515$'
-    $Logo = @"
- _       _____  _______ _     _ _______ _______ _____ _______ _     _
- |      |     | |       |____/  |______ |  |  |   |      |    |_____|
- |_____ |_____| |_____  |    \_ ______| |  |  | __|__    |    |     |
-     .--.                  .--.                  .--.
-    /.-. '----------.     /.-. '----------.     /.-. '----------.
-    \'-' .--'--''-'-'     \'-' .--'--''-'-'     \'-' .--'--''-'-'
-     '--'                  '--'                  '--'
-                                                            v$Version
-
-"@
 
     # Generated variables
+    $Dictionary = New-Dictionary
+    $ForestGC = $(Get-ADDomainController -Discover -Service GlobalCatalog -ForceDiscover | Select-Object -ExpandProperty Hostname) + ":3268"
     $DNSRoot = [string]((Get-ADForest).RootDomain | Get-ADDomain).DNSRoot
     $EnterpriseAdminsSID = ([string]((Get-ADForest).RootDomain | Get-ADDomain).DomainSID) + '-519'
     $PreferredOwner = New-Object System.Security.Principal.SecurityIdentifier($EnterpriseAdminsSID)
@@ -140,7 +165,6 @@
         break;
     }
 
-    $Logo
     if ($Credential) {
         $Targets = Get-Target -Credential $Credential
     } else {
@@ -162,27 +186,23 @@
         $CAHosts | ForEach-Object { $SafeUsers += '|' + $_.Name }
     }
 
-    Write-Host 'Identifying auditing issues...'
-    [array]$AuditingIssues = Find-AuditingIssue -ADCSObjects $ADCSObjects | Sort-Object Name
-
-    Write-Host 'Identifying AD CS templates with dangerous configurations...'
-    [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
-    [array]$ESC2 = Find-ESC2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
-    [array]$ESC3 = Find-ESC3Condition1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
-    [array]$ESC3 += Find-ESC3Condition2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
-
-    Write-Host 'Identifying AD CS template and other objects with poor access control...'
-    [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners | Sort-Object Name
-    [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners | Sort-Object Name
-    [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects | Sort-Object Name
-
-    Write-Host 'Identifying HTTP-based certificate enrollment interfaces...'
-    [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects | Sort-Object Name
-
-    [array]$AllIssues = $AuditingIssues + $ESC1 + $ESC2 + $ESC3 + $ESC4 + $ESC5 + $ESC6 + $ESC8
+    if ( $Scans ) {
+    # If the Scans parameter was used, Invoke-Scans with the specified checks.
+        $Results = Invoke-Scans -Scans $Scans
+            # Re-hydrate the findings arrays from the Results hash table
+            $AllIssues      = $Results['AllIssues']
+            $AuditingIssues = $Results['AuditingIssues']
+            $ESC1           = $Results['ESC1']
+            $ESC2           = $Results['ESC2']
+            $ESC3           = $Results['ESC3']
+            $ESC4           = $Results['ESC4']
+            $ESC5           = $Results['ESC5']
+            $ESC6           = $Results['ESC6']
+            $ESC8           = $Results['ESC8']
+    }
 
     # If these are all empty = no issues found, exit
-    if ((!$AuditingIssues) -and (!$ESC1) -and (!$ESC2) -and (!$ESC3) -and (!$ESC4) -and (!$ESC5) -and (!$ESC6) -and (!$ESC8) ) {
+    if ($null -eq $Results) {
         Write-Host "`n$(Get-Date) : No ADCS issues were found." -ForegroundColor Green
         break
     }
