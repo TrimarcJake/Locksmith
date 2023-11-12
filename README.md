@@ -19,7 +19,6 @@ A ~~tiny~~ small tool built to detect and fix common misconfigurations in Active
    4. [Mode 3](#Mode3)
    5. [Mode 4](#Mode4)
 
-<a name="Installation" id="Installation"></a>
 # Installation
 ## Module
 ### Install module from the PowerShell Gallery (preferred):
