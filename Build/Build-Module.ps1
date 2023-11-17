@@ -107,7 +107,9 @@ Build-Module -ModuleName 'Locksmith' {
     $PreScriptMerge = {
         param (
             [int]$Mode,
-            [array]$Scans
+            [Parameter()]
+                [ValidateSet('Auditing','ESC1','ESC2','ESC3','ESC4','ESC5','ESC6','ESC8','All','PromptMe')]
+                [array]$Scans = 'All'
         )
     }
 
