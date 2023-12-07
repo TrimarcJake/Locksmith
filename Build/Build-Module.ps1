@@ -42,7 +42,6 @@ Build-Module -ModuleName 'Locksmith' {
         # could as well be ignored with New-ConfigurationModuleSkip
         'Microsoft.PowerShell.Utility'
         'Microsoft.PowerShell.LocalAccounts'
-        'Microsoft.PowerShell.Utility'
         'Microsoft.PowerShell.Management'
         'CimCmdlets'
         'Dism'
