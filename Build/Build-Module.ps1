@@ -40,7 +40,7 @@ Build-Module -ModuleName 'Locksmith' {
         # those modules are builtin in PowerShell so no need to install them
         # could as well be ignored with New-ConfigurationModuleSkip
         'Microsoft.PowerShell.Utility'
-        'Microsoft.PowerShell.LocalAccounts',
+        'Microsoft.PowerShell.LocalAccounts'
         'Microsoft.PowerShell.Utility'
         'Microsoft.PowerShell.Management'
         'CimCmdlets'
