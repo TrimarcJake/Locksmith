@@ -54,8 +54,8 @@ Build-Module -ModuleName 'Locksmith' {
     # Ignore missing modules or cmdlets during build process
     New-ConfigurationModuleSkip -IgnoreFunctionName @('Out-ConsoleGridView') -IgnoreModuleName @('Microsoft.PowerShell.ConsoleGuiTools')
 
-    # Tells the script to exclude Out-ConsoleGridView command from functions if the  module is not available to be loaded
-    New-ConfigurationCommand -CommandName @('Out-ConsoleGridView') -ModuleName 'Microsoft.PowerShell.ConsoleGuiTools'
+    # Tells the script to exclude commands from functions if the module is not available to be loaded
+    # New-ConfigurationCommand -CommandName @('') -ModuleName @('') # Populate arrays or remove empty example.
 
     $ConfigurationFormat = [ordered] @{
         RemoveComments                              = $false
