@@ -204,7 +204,7 @@
     if ($null -eq $Results) {
         Write-Host "`n$(Get-Date) : No ADCS issues were found.`n" -ForegroundColor Green
         Write-Host 'Thank you for using ' -NoNewline
-        Write-Host '❤ Locksmith ❤' -ForegroundColor Magenta -NoNewline
+        Write-Host "❤ Locksmith ❤ `n" -ForegroundColor Magenta
         break
     }
 
@@ -254,14 +254,14 @@
             Write-Host 'Creating a script (' -NoNewline
             Write-Host 'Invoke-RevertLocksmith.ps1' -ForegroundColor White -NoNewline
             Write-Host ") which can be used to revert any changes made by Locksmith...`n"
-            # try { Export-RevertScript -AuditingIssues $AuditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC6 $ESC6 } catch {}
+            try { Export-RevertScript -AuditingIssues $AuditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC6 $ESC6 } catch {}
             if ($AuditingIssues) {
                 $AuditingIssues | ForEach-Object {
                     $FixBlock = [scriptblock]::Create($_.Fix)
                     Write-Host 'ISSUE:' -ForegroundColor White
                     Write-Host "Auditing is not fully enabled on Certification Authority `"$($_.Name)`".`n"
                     Write-Host 'TECHNIQUE:' -ForegroundColor White
-                    Write-Host $_.Technique
+                    Write-Host "$($_.Technique)`n"
                     Write-Host 'ACTION TO BE PEFORMED:' -ForegroundColor White
                     Write-Host "Locksmith will attempt to fully enable auditing on Certification Authority `"$($_.Name)`".`n"
                     Write-Host 'COMMAND(S) TO BE RUN:'
@@ -290,9 +290,9 @@
                 $ESC1 | ForEach-Object {
                     $FixBlock = [scriptblock]::Create($_.Fix)
                     Write-Host 'ISSUE:' -ForegroundColor White
-                    Write-Host "Security Principals can enroll in `"$($_.Name)`" template using a Subject Alternative Name without Manager Approval. (ESC1)`n"
+                    Write-Host "Security Principals can enroll in `"$($_.Name)`" template using a Subject Alternative Name without Manager Approval.`n"
                     Write-Host 'TECHNIQUE:' -ForegroundColor White
-                    Write-Host $_.Technique
+                    Write-Host "$($_.Technique)`n"
                     Write-Host 'ACTION TO BE PEFORMED:' -ForegroundColor White
                     Write-Host "Locksmith will attempt to enable Manager Approval on the `"$($_.Name)`" template.`n"
                     Write-Host 'CCOMMAND(S) TO BE RUN:'
@@ -322,9 +322,9 @@
                 $ESC2 | ForEach-Object {
                     $FixBlock = [scriptblock]::Create($_.Fix)
                     Write-Host 'ISSUE:' -ForegroundColor White
-                    Write-Host "Security Principals can enroll in `"$($_.Name)`" template and create a Subordinate Certification Authority without Manager Approval. (ESC2)`n"
+                    Write-Host "Security Principals can enroll in `"$($_.Name)`" template and create a Subordinate Certification Authority without Manager Approval.`n"
                     Write-Host 'TECHNIQUE:' -ForegroundColor White
-                    Write-Host $_.Technique
+                    Write-Host "$($_.Technique)`n"
                     Write-Host 'ACTION TO BE PEFORMED:' -ForegroundColor White
                     Write-Host "Locksmith will attempt to enable Manager Approval on the `"$($_.Name)`" template.`n"
                     Write-Host 'COMMAND(S) TO BE RUN:' -ForegroundColor White
@@ -355,7 +355,7 @@
                     Write-Host 'ISSUE:' -ForegroundColor White
                     Write-Host "The Certification Authority `"$($_.Name)`" has the dangerous EDITF_ATTRIBUTESUBJECTALTNAME2 flag enabled.`n"
                     Write-Host 'TECHNIQUE:' -ForegroundColor White
-                    Write-Host $_.Technique
+                    Write-Host "$($_.Technique)`n"
                     Write-Host 'ACTION TO BE PEFORMED:' -ForegroundColor White
                     Write-Host "Locksmith will attempt to disable the EDITF_ATTRIBUTESUBJECTALTNAME2 flag on Certifiction Authority `"$($_.Name)`".`n"
                     Write-Host 'COMMAND(S) TO BE RUN' -ForegroundColor White
@@ -383,12 +383,17 @@
             }
 
             Write-Host "Mode 4 Complete! There are no more issues that Locksmith can automatically resolve.`n" -ForegroundColor Green
-            Write-Host 'If you experience any operational impact from using Locksmith Mode 4, you can use ' -NoNewline
+            Write-Host 'If you experience any operational impact from using Locksmith Mode 4, use ' -NoNewline
             Write-Host 'Invoke-RevertLocksmith.ps1 ' -ForegroundColor White
-            Write-Host "to revert all changes made by Locksmith.`n"
-            Write-Host "REMINDER: there may be more AD CS issues remaining in your environment.`nRun Locksmith in Modes 0-3 to further investigate your environment`nor reach out to the Locksmith team for assistance.`n" -ForegroundColor Yellow
+            Write-Host "to revert all changes made by Locksmith. It can be found in the current working directory.`n"
+            Write-Host @"
+REMINDER: Locksmith cannot automatically resolve all AD CS issues at this time.
+There may be more AD CS issues remaining in your environment.
+Use Locksmith in Modes 0-3 to further investigate your environment
+or reach out to the Locksmith team for assistance. We'd love to help`n
+"@ -ForegroundColor Yellow
         }
     }
     Write-Host 'Thank you for using ' -NoNewline
-    Write-Host '❤ Locksmith ❤' -ForegroundColor Magenta -NoNewline
+    Write-Host "❤ Locksmith ❤`n" -ForegroundColor Magenta
 }
