@@ -1,10 +1,9 @@
-﻿param (
+param (
     [int]$Mode,
     [Parameter()]
-        [ValidateSet('Auditing','ESC1','ESC2','ESC3','ESC4','ESC5','ESC6','ESC8','All','PromptMe')]
-        [array]$Scans = 'All'
+    [ValidateSet('Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'All', 'PromptMe')]
+    [array]$Scans = 'All'
 )
-
 function ConvertFrom-IdentityReference {
     [CmdletBinding()]
     param(
@@ -15,12 +14,12 @@ function ConvertFrom-IdentityReference {
     $Principal = New-Object System.Security.Principal.NTAccount($Object)
     if ($Principal -match '^(S-1|O:)') {
         $SID = $Principal
-    } else {
+    }
+    else {
         $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
     }
     return $SID
 }
-
 function Export-RevertScript {
     [CmdletBinding()]
     param(
@@ -47,7 +46,6 @@ function Export-RevertScript {
         }
     }
 }
-
 function Find-AuditingIssue {
     [CmdletBinding()]
     param(
@@ -59,9 +57,9 @@ function Find-AuditingIssue {
         ($_.AuditFilter -ne '127')
     } | ForEach-Object {
         $Issue = New-Object -TypeName pscustomobject
-            $Issue | Add-Member -MemberType NoteProperty -Name 'Forest' -Value $_.CanonicalName.split('/')[0] -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name 'Name' -Value $_.Name -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name 'DistinguishedName' -Value $_.DistinguishedName -Force
+        $Issue | Add-Member -MemberType NoteProperty -Name 'Forest' -Value $_.CanonicalName.split('/')[0] -Force
+        $Issue | Add-Member -MemberType NoteProperty -Name 'Name' -Value $_.Name -Force
+        $Issue | Add-Member -MemberType NoteProperty -Name 'DistinguishedName' -Value $_.DistinguishedName -Force
         if ($_.AuditFilter -match 'CA Unavailable') {
             $Issue | Add-Member -MemberType NoteProperty -Name 'Issue' -Value $_.AuditFilter -Force
             $Issue | Add-Member -MemberType NoteProperty -Name 'Fix' -Value 'N/A' -Force
@@ -101,7 +99,8 @@ function Find-ESC1 {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
             if ($Principal -match '^(S-1|O:)') {
                 $SID = $Principal
-            } else {
+            }
+            else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
             }
             if ( ($SID -notmatch $SafeUsers) -and ($entry.ActiveDirectoryRights -match 'ExtendedRight') ) {
@@ -136,7 +135,7 @@ function Find-ESC2 {
     )
     $ADCSObjects | Where-Object {
         ($_.ObjectClass -eq 'pKICertificateTemplate') -and
-        ( (!$_.pkiExtendedKeyUsage) -or ($_.pkiExtendedKeyUsage -match '2.5.29.37.0') )-and
+        ( (!$_.pkiExtendedKeyUsage) -or ($_.pkiExtendedKeyUsage -match '2.5.29.37.0') ) -and
         ($_.'msPKI-Certificate-Name-Flag' -eq 1) -and
         ($_.'msPKI-Enrollment-Flag' -ne 2) -and
         ( ($_.'msPKI-RA-Signature' -eq 0) -or ($null -eq $_.'msPKI-RA-Signature') )
@@ -145,7 +144,8 @@ function Find-ESC2 {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
             if ($Principal -match '^(S-1|O:)') {
                 $SID = $Principal
-            } else {
+            }
+            else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
             }
             if ( ($SID -notmatch $SafeUsers) -and ($entry.ActiveDirectoryRights -match 'ExtendedRight') ) {
@@ -169,7 +169,6 @@ function Find-ESC2 {
         }
     }
 }
-
 function Find-ESC3Condition1 {
     [CmdletBinding()]
     param(
@@ -188,7 +187,8 @@ function Find-ESC3Condition1 {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
             if ($Principal -match '^(S-1|O:)') {
                 $SID = $Principal
-            } else {
+            }
+            else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
             }
             if ( ($SID -notmatch $SafeUsers) -and ($entry.ActiveDirectoryRights -match 'ExtendedRight') ) {
@@ -212,7 +212,6 @@ function Find-ESC3Condition1 {
         }
     }
 }
-
 function Find-ESC3Condition2 {
     [CmdletBinding()]
     param(
@@ -233,7 +232,8 @@ function Find-ESC3Condition2 {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
             if ($Principal -match '^(S-1|O:)') {
                 $SID = $Principal
-            } else {
+            }
+            else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
             }
             if ( ($SID -notmatch $SafeUsers) -and ($entry.ActiveDirectoryRights -match 'ExtendedRight') ) {
@@ -257,7 +257,6 @@ function Find-ESC3Condition2 {
         }
     }
 }
-
 function Find-ESC4 {
     [CmdletBinding()]
     param(
@@ -274,7 +273,8 @@ function Find-ESC4 {
         $Principal = New-Object System.Security.Principal.NTAccount($_.nTSecurityDescriptor.Owner)
         if ($Principal -match '^(S-1|O:)') {
             $SID = $Principal
-        } else {
+        }
+        else {
             $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
         }
         if ( ($_.objectClass -eq 'pKICertificateTemplate') -and ($SID -notmatch $SafeOwners) ) {
@@ -313,14 +313,15 @@ function Find-ESC4 {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
             if ($Principal -match '^(S-1|O:)') {
                 $SID = $Principal
-            } else {
+            }
+            else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
             }
             if ( ($_.objectClass -eq 'pKICertificateTemplate') -and
                 ($SID -notmatch $SafeUsers) -and
                 ($entry.ActiveDirectoryRights -match $DangerousRights) -and
                 ($entry.ActiveDirectoryRights.ObjectType -notmatch $SafeObjectTypes)
-                ) {
+            ) {
                 $Issue = New-Object -TypeName pscustomobject
                 $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
                 $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
@@ -339,7 +340,6 @@ function Find-ESC4 {
         }
     }
 }
-
 function Find-ESC5 {
     [CmdletBinding()]
     param(
@@ -356,13 +356,14 @@ function Find-ESC5 {
         $Principal = New-Object System.Security.Principal.NTAccount($_.nTSecurityDescriptor.Owner)
         if ($Principal -match '^(S-1|O:)') {
             $SID = $Principal
-        } else {
+        }
+        else {
             $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
         }
-        if ( ($_.objectClass -ne 'pKICertificateTemplate') -and
+        if ( ($_.objectClass -ne 'pKICertificateTemplate') -and 
             ($SID -notmatch $SafeOwners) -and
-            ($entry.ActiveDirectoryRights.ObjectType -notmatch $SafeObjectTypes)
-            ) {
+            ($entry.ActiveDirectoryRights.ObjectType -notmatch $SafeObjectTypes)            
+        ) {
             $Issue = New-Object -TypeName pscustomobject
             $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
             $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
@@ -398,7 +399,8 @@ function Find-ESC5 {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
             if ($Principal -match '^(S-1|O:)') {
                 $SID = $Principal
-            } else {
+            }
+            else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
             }
             if ( ($_.objectClass -ne 'pKICertificateTemplate') -and
@@ -422,7 +424,6 @@ function Find-ESC5 {
         }
     }
 }
-
 function Find-ESC6 {
     [CmdletBinding()]
     param(
@@ -458,7 +459,6 @@ function Find-ESC6 {
         }
     }
 }
-
 function Find-ESC8 {
     [CmdletBinding()]
     param(
@@ -479,7 +479,8 @@ function Find-ESC8 {
                 $Issue['CAEnrollmentEndpoint'] = $_.CAEnrollmentEndpoint
                 $Issue['Fix'] = 'TBD - Remediate by doing 1, 2, and 3'
                 $Issue['Revert'] = 'TBD'
-            } else {
+            }
+            else {
                 $Issue['Issue'] = 'HTTPS enrollment is enabled.'
                 $Issue['CAEnrollmentEndpoint'] = $_.CAEnrollmentEndpoint
                 $Issue['Fix'] = 'TBD - Remediate by doing 1, 2, and 3'
@@ -492,7 +493,6 @@ function Find-ESC8 {
         }
     }
 }
-
 function Format-Result {
     [CmdletBinding()]
     param(
@@ -523,9 +523,10 @@ function Format-Result {
             1 {
                 if ($Issue.Technique -eq 'ESC8') {
                     $Issue | Format-List Technique, Name, DistinguishedName, CAEnrollmentEndpoint, Issue, Fix
-                } else {
+                }
+                else {
                     $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix
-                    if(($Issue.Technique -eq "DETECT" -or $Issue.Technique -eq "ESC6") -and (Get-RestrictedAdminModeSetting)){
+                    if (($Issue.Technique -eq "DETECT" -or $Issue.Technique -eq "ESC6") -and (Get-RestrictedAdminModeSetting)) {
                         Write-Warning "Restricted Admin Mode appears to be configured. Certutil.exe may not work from this host, therefore you may need to execute the 'Fix' commands on the CA server itself"
                     }
                 }
@@ -533,7 +534,6 @@ function Format-Result {
         }
     }
 }
-
 function Get-ADCSObject {
     [CmdletBinding()]
     param(
@@ -542,16 +542,16 @@ function Get-ADCSObject {
         [System.Management.Automation.PSCredential]$Credential
     )
     foreach ( $forest in $Targets ) {
-        if ($Credential){
+        if ($Credential) {
             $ADRoot = (Get-ADRootDSE -Credential $Credential -Server $forest).defaultNamingContext
             Get-ADObject -Filter * -SearchBase "CN=Public Key Services,CN=Services,CN=Configuration,$ADRoot" -SearchScope 2 -Properties * -Credential $Credential
-        } else {
+        }
+        else {
             $ADRoot = (Get-ADRootDSE -Server $forest).defaultNamingContext
             Get-ADObject -Filter * -SearchBase "CN=Public Key Services,CN=Services,CN=Configuration,$ADRoot" -SearchScope 2 -Properties *
         }
     }
 }
-
 function Get-CAHostObject {
     [CmdletBinding()]
     param (
@@ -566,29 +566,30 @@ function Get-CAHostObject {
             $ADCSObjects | Where-Object objectClass -Match 'pKIEnrollmentService' | ForEach-Object {
                 Get-ADObject $_.CAHostDistinguishedName -Properties * -Server $ForestGC -Credential $Credential
             }
-        } else {
+        }
+        else {
             $ADCSObjects | Where-Object objectClass -Match 'pKIEnrollmentService' | ForEach-Object {
                 Get-ADObject $_.CAHostDistinguishedName -Properties * -Server $ForestGC
             }
         }
     }
 }
-
 function Get-RestrictedAdminModeSetting {
     $Path = 'HKLM:SYSTEM\CurrentControlSet\Control\Lsa'
     try {
         $RAM = (Get-ItemProperty -Path $Path).DisableRestrictedAdmin
         $Creds = (Get-ItemProperty -Path $Path).DisableRestrictedAdminOutboundCreds
-        if ($RAM -eq '0' -and $Creds -eq '1'){
+        if ($RAM -eq '0' -and $Creds -eq '1') {
             return $true
-        } else {
+        }
+        else {
             return $false
         }
-    } catch {
+    }
+    catch {
         return $false
     }
 }
-
 function Get-Target {
     param (
         [string]$Forest,
@@ -601,14 +602,441 @@ function Get-Target {
     }
     elseif ($InputPath) {
         $Targets = Get-Content $InputPath
-    } else {
-        if ($Credential){
+    }
+    else {
+        if ($Credential) {
             $Targets = (Get-ADForest -Credential $Credential).Name
-        } else {
+        }
+        else {
             $Targets = (Get-ADForest).Name
         }
     }
     return $Targets
+}
+function Invoke-Scans {
+    [CmdletBinding()]
+    param (
+        # Could split Scans and PromptMe into separate parameter sets.
+        [Parameter()]
+        [ValidateSet('Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'All', 'PromptMe')]
+        [array]$Scans = 'All'
+    )
+
+    # Is this needed?
+    if ($Scans -eq $IsNullOrEmpty) {
+        $Scans = 'All'
+    }
+
+    if ( $Scans -eq 'PromptMe' ) {
+        $GridViewTitle = 'Select the tests to run and press Enter or click OK to continue...'
+
+        # Check for Out-GridView or Out-ConsoleGridView
+        if ((Get-Command Out-ConsoleGridView -ErrorAction SilentlyContinue) -and ($PSVersionTable.PSVersion.Major -ge 7)) {
+            [array]$Scans = ($Dictionary | Select-Object Name, Category, Subcategory | Out-ConsoleGridView -OutputMode Multiple -Title $GridViewTitle).Name | Sort-Object -Property Name
+        }
+        elseif (Get-Command -Name Out-GridView -ErrorAction SilentlyContinue) {
+            [array]$Scans = ($Dictionary | Select-Object Name, Category, Subcategory | Out-GridView -PassThru -Title $GridViewTitle).Name | Sort-Object -Property Name
+        }
+        else {
+            # To Do: Check for admin and prompt to install features/modules or revert to 'All'.
+            Write-Information "Out-GridView and Out-ConsoleGridView were not found on your system. Defaulting to `'All`'."
+            $Scans = 'All'
+        }
+    }
+
+    switch ( $Scans ) {
+        Auditing {
+            Write-Host 'Identifying auditing issues...'
+            [array]$AuditingIssues = Find-AuditingIssue -ADCSObjects $ADCSObjects
+        }
+        ESC1 {
+            Write-Host 'Identifying AD CS templates with dangerous ESC1 configurations...'
+            [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+        }
+        ESC2 {
+            Write-Host 'Identifying AD CS templates with dangerous ESC2 configurations...'
+            [array]$ESC2 = Find-ESC2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+        }
+        ESC3 {
+            Write-Host 'Identifying AD CS templates with dangerous ESC3 configurations...'
+            [array]$ESC3 = Find-ESC3Condition1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+            [array]$ESC3 += Find-ESC3Condition2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+        }
+        ESC4 {
+            Write-Host 'Identifying AD CS template and other objects with poor access control (ESC4)...'
+            [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
+        }
+        ESC5 {
+            Write-Host 'Identifying AD CS template and other objects with poor access control (ESC5)...'
+            [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
+        }
+        ESC6 {
+            Write-Host 'Identifying AD CS template and other objects with poor access control (ESC6)...'
+            [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects
+        }
+        ESC8 {
+            Write-Host 'Identifying HTTP-based certificate enrollment interfaces (ESC8)...'
+            [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects
+        }
+        All {
+            Write-Host 'Identifying auditing issues...'
+            [array]$AuditingIssues = Find-AuditingIssue -ADCSObjects $ADCSObjects
+            Write-Host 'Identifying AD CS templates with dangerous ESC1 configurations...'
+            [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+            Write-Host 'Identifying AD CS templates with dangerous ESC2 configurations...'
+            [array]$ESC2 = Find-ESC2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+            Write-Host 'Identifying AD CS templates with dangerous ESC3 configurations...'
+            [array]$ESC3 = Find-ESC3Condition1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+            [array]$ESC3 += Find-ESC3Condition2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+            Write-Host 'Identifying AD CS template and other objects with poor access control (ESC4)...'
+            [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
+            Write-Host 'Identifying AD CS template and other objects with poor access control (ESC5)...'
+            [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
+            Write-Host 'Identifying AD CS template and other objects with poor access control (ESC6)...'
+            [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects
+            Write-Host 'Identifying HTTP-based certificate enrollment interfaces (ESC8)...'
+            [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects
+        }
+    }
+
+    [array]$AllIssues = $AuditingIssues + $ESC1 + $ESC2 + $ESC3 + $ESC4 + $ESC5 + $ESC6 + $ESC8
+
+    # If these are all empty = no issues found, exit
+    if ((!$AuditingIssues) -and (!$ESC1) -and (!$ESC2) -and (!$ESC3) -and (!$ESC4) -and (!$ESC5) -and (!$ESC6) -and (!$ESC8) ) {
+        Write-Host "`n$(Get-Date) : No ADCS issues were found." -ForegroundColor Green
+        break
+    }
+
+    # Return a hash table of array names (keys) and arrays (values) so they can be directly referenced with other functions
+    Return @{
+        AllIssues      = $AllIssues
+        AuditingIssues = $AuditingIssues
+        ESC1           = $ESC1
+        ESC2           = $ESC2
+        ESC3           = $ESC3
+        ESC4           = $ESC4
+        ESC5           = $ESC5
+        ESC6           = $ESC6
+        ESC8           = $ESC8
+    }
+}
+
+<#
+.SYNOPSIS
+Create a dictionary of the escalation paths and insecure configurations that Locksmith scans for.
+
+.DESCRIPTION
+The New-Dictionary function is used to instantiate an array of objects that contain the names, definitions,
+descriptions, code used to find, code used to fix, and reference URLs. This is invoked by the module's main function.
+
+.NOTES
+
+    VulnerableConfigurationItem Class Definition:
+        Version         Update each time the class definition or the dictionary below is changed.
+        Name            The short name of the vulnerable configuration item (VCI).
+        Category        The high level category of VCI types, including escalation path, server configuration, GPO setting, etc.
+        Subcategory     The subcategory of vulnerable configuration item types.
+        Summary         A summary of the vulnerability and how it can be abused.
+        FindIt          The name of the function that is used to look for the VCI, stored as an invokable scriptblock.
+        FixIt           The name of the function that is used to fix the VCI, stored as an invokable scriptblock.
+        ReferenceUrls   An array of URLs that are used as references to learn more about the VCI.
+#>
+
+function New-Dictionary {
+    class VulnerableConfigurationItem {
+        static [string] $Version = '2023.10.01.000'
+        [string]$Name
+        [ValidateSet('Escalation Path', 'Server Configuration', 'GPO Setting')][string]$Category
+        [string]$Subcategory
+        [string]$Summary
+        [scriptblock]$FindIt
+        [scriptblock]$FixIt
+        [uri[]]$ReferenceUrls
+    }
+
+    [VulnerableConfigurationItem[]]$Dictionary = @(
+        [VulnerableConfigurationItem]@{
+            Name          = 'ESC1'
+            Category      = 'Escalation Path'
+            Subcategory   = 'Misconfigured Certificate Templates'
+            Summary       = ''
+            FindIt        = { Find-ESC1 }
+            FixIt         = { Write-Output "Add code to fix the vulnerable configuration." }
+            ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Misconfigured%20Certificate%20Templates%20%E2%80%94%20ESC1'
+        },
+        [VulnerableConfigurationItem]@{
+            Name          = 'ESC2'
+            Category      = 'Escalation Path'
+            Subcategory   = 'Misconfigured Certificate Templates'
+            Summary       = ''
+            FindIt        = { Find-ESC2 }
+            FixIt         = { Write-Output 'Add code to fix the vulnerable configuration.' }
+            ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Misconfigured%20Certificate%20Templates%20%E2%80%94%20ESC2'
+        },
+        [VulnerableConfigurationItem]@{
+            Name          = 'ESC3'
+            Category      = 'Escalation Path'
+            Subcategory   = 'Enrollment Agent Templates'
+            Summary       = ''
+            FindIt        = {
+                Find-ESC3Condition1
+                Find-ESC3Condition2
+            }
+            FixIt         = { Write-Output 'Add code to fix the vulnerable configuration.' }
+            ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Enrollment%20Agent%20Templates%20%E2%80%94%20ESC3'
+        },
+        [VulnerableConfigurationItem]@{
+            Name          = 'ESC4';
+            Category      = 'Escalation Path'
+            Subcategory   = 'Vulnerable Certificate Template Access Control'
+            Summary       = ''
+            FindIt        = { Find-ESC4 }
+            FixIt         = { Write-Output 'Add code to fix the vulnerable configuration.' }
+            ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Vulnerable%20Certificate%20Template%20Access%20Control%20%E2%80%94%20ESC4'
+        },
+        [VulnerableConfigurationItem]@{
+            Name          = 'ESC5';
+            Category      = 'Escalation Path'
+            Subcategory   = 'Vulnerable PKI Object Access Control'
+            Summary       = ''
+            FindIt        = { Find-ESC5 }
+            FixIt         = { Write-Output 'Add code to fix the vulnerable configuration.' }
+            ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Vulnerable%20PKI%20Object%20Access%20Control%20%E2%80%94%20ESC5'
+        },
+        [VulnerableConfigurationItem]@{
+            Name          = 'ESC6'
+            Category      = 'Escalation Path'
+            Subcategory   = 'EDITF_ATTRIBUTESUBJECTALTNAME2'
+            Summary       = ''
+            FindIt        = { Find-ESC6 }
+            FixIt         = { Write-Output 'Add code to fix the vulnerable configuration.' }
+            ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=EDITF_ATTRIBUTESUBJECTALTNAME2%20%E2%80%94%20ESC6'
+        },
+        [VulnerableConfigurationItem]@{
+            Name          = 'ESC7'
+            Category      = 'Escalation Path'
+            Subcategory   = 'Vulnerable Certificate Authority Access Control'
+            Summary       = ''
+            FindIt        = { Write-Output 'We have not created Find-ESC7 yet.' }
+            FixIt         = { Write-Output 'Add code to fix the vulnerable configuration.' }
+            ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Vulnerable%20Certificate%20Authority%20Access%20Control%20%E2%80%94%20ESC7'
+        },
+        [VulnerableConfigurationItem]@{
+            Name          = 'ESC8'
+            Category      = 'Escalation Path'
+            Subcategory   = 'NTLM Relay to AD CS HTTP Endpoints'
+            Summary       = ''
+            FindIt        = { Find-ESC8 }
+            FixIt         = { Write-Output 'Add code to fix the vulnerable configuration.' }
+            ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=NTLM%20Relay%20to%20AD%20CS%20HTTP%20Endpoints'
+        },
+        [VulnerableConfigurationItem]@{
+            Name          = 'Auditing'
+            Category      = 'Server Configuration'
+            Subcategory   = 'Gaps in auditing on certificate authorities and AD CS objects.'
+            Summary       = ''
+            FindIt        = { Find-AuditingIssue }
+            FixIt         = { Write-Output 'Add code to fix the vulnerable configuration.' }
+            ReferenceUrls = @('https://github.com/TrimarcJake/Locksmith', 'https://techcommunity.microsoft.com/t5/ask-the-directory-services-team/designing-and-implementing-a-pki-part-i-design-and-planning/ba-p/396953')
+        }
+    )
+    Return $Dictionary
+}
+
+function New-OutputPath {
+    [CmdletBinding(SupportsShouldProcess)]
+    param ()
+    # Create one output directory per forest
+    foreach ( $forest in $Targets ) {
+        $ForestPath = $OutputPath + "`\" + $forest
+        New-Item -Path $ForestPath -ItemType Directory -Force  | Out-Null
+    }
+}
+function Set-AdditionalCAProperty {
+    [CmdletBinding(SupportsShouldProcess)]
+    param (
+        [parameter(
+            Mandatory = $true,
+            ValueFromPipeline = $true)]
+        [array]$ADCSObjects,
+        [System.Management.Automation.PSCredential]$Credential
+    )
+    process {
+        $ADCSObjects | Where-Object objectClass -Match 'pKIEnrollmentService' | ForEach-Object {
+            [string]$CAEnrollmentEndpoint = $_.'msPKI-Enrollment-Servers' | Select-String 'http.*' | ForEach-Object { $_.Matches[0].Value }
+            [string]$CAFullName = "$($_.dNSHostName)\$($_.Name)"
+            $CAHostname = $_.dNSHostName.split('.')[0]
+            # $CAName = $_.Name
+            if ($Credential) {
+                $CAHostDistinguishedName = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -Server $ForestGC -Credential $Credential).DistinguishedName
+                $CAHostFQDN = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -Properties DnsHostname -Server $ForestGC -Credential $Credential).DnsHostname
+            }
+            else {
+                $CAHostDistinguishedName = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -Server $ForestGC ).DistinguishedName
+                $CAHostFQDN = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -Properties DnsHostname -Server $ForestGC).DnsHostname
+            }
+            $ping = Test-Connection -ComputerName $CAHostFQDN -Quiet -Count 1
+            if ($ping) {
+                try {
+                    if ($Credential) {
+                        $CertutilAudit = Invoke-Command -ComputerName $CAHostname -Credential $Credential -ScriptBlock { param($CAFullName); certutil -config $CAFullName -getreg CA\AuditFilter } -ArgumentList $CAFullName
+                    }
+                    else {
+                        $CertutilAudit = certutil -config $CAFullName -getreg CA\AuditFilter
+                    }
+                }
+                catch {
+                    $AuditFilter = 'Failure'
+                }
+                try {
+                    if ($Credential) {
+                        $CertutilFlag = Invoke-Command -ComputerName $CAHostname -Credential $Credential -ScriptBlock { param($CAFullName); certutil -config $CAFullName -getreg policy\EditFlags } -ArgumentList $CAFullName
+                    }
+                    else {
+                        $CertutilFlag = certutil -config $CAFullName -getreg policy\EditFlags
+                    }
+                }
+                catch {
+                    $AuditFilter = 'Failure'
+                }
+            }
+            else {
+                $AuditFilter = 'CA Unavailable'
+                $SANFlag = 'CA Unavailable'
+            }
+            if ($CertutilAudit) {
+                try {
+                    [string]$AuditFilter = $CertutilAudit | Select-String 'AuditFilter REG_DWORD = ' | Select-String '\('
+                    $AuditFilter = $AuditFilter.split('(')[1].split(')')[0]
+                }
+                catch {
+                    try {
+                        [string]$AuditFilter = $CertutilAudit | Select-String 'AuditFilter REG_DWORD = '
+                        $AuditFilter = $AuditFilter.split('=')[1].trim()
+                    }
+                    catch {
+                        $AuditFilter = 'Never Configured'
+                    }
+                }
+            }
+            if ($CertutilFlag) {
+                [string]$SANFlag = $CertutilFlag | Select-String ' EDITF_ATTRIBUTESUBJECTALTNAME2 -- 40000 \('
+                if ($SANFlag) {
+                    $SANFlag = 'Yes'
+                }
+                else {
+                    $SANFlag = 'No'
+                }
+            }
+            Add-Member -InputObject $_ -MemberType NoteProperty -Name AuditFilter -Value $AuditFilter -Force
+            Add-Member -InputObject $_ -MemberType NoteProperty -Name CAEnrollmentEndpoint -Value $CAEnrollmentEndpoint -Force
+            Add-Member -InputObject $_ -MemberType NoteProperty -Name CAFullName -Value $CAFullName -Force
+            Add-Member -InputObject $_ -MemberType NoteProperty -Name CAHostname -Value $CAHostname -Force
+            Add-Member -InputObject $_ -MemberType NoteProperty -Name CAHostDistinguishedName -Value $CAHostDistinguishedName -Force
+            Add-Member -InputObject $_ -MemberType NoteProperty -Name SANFlag -Value $SANFlag -Force
+        }
+    }
+}
+function Set-Severity {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [array]$Issue
+    )
+    foreach ($Finding in $Issue) {
+        try {
+            # Auditing
+            if ($Finding.Technique -eq 'DETECT') {
+                return 'Medium'
+            }
+            # ESC6
+            if ($Finding.Technique -eq 'ESC6') {
+                return 'High'
+            }
+            # ESC8
+            if ($Finding.Technique -eq 'ESC8') {
+                return 'High'
+            }
+            # ESC1, ESC2, ESC4, ESC5
+            $SID = ConvertFrom-IdentityReference -Object $Finding.IdentityReference
+            if ($SID -match $SafeUsers -or $SID -match $SafeOwners) {
+                return 'Medium'
+            }
+            if (($SID -notmatch $SafeUsers -and $SID -notmatch $SafeOwners) -and ($Finding.ActiveDirectoryRights -match $DangerousRights)) {
+                return 'Critical'
+            }
+        }
+        catch {
+            Write-Error "Could not determine issue severity for issue: $($Issue.Issue)"
+            return 'Unknown Failure'
+        }
+    }
+}
+
+function Test-IsADAdmin {
+    <#
+    .SYNOPSIS
+        Tests if the current user has administrative rights in Active Directory.
+    .DESCRIPTION
+        This function returns True if the current user is a Domain Admin (or equivalent) or False if not.
+    .EXAMPLE
+        Test-IsADAdmin
+    .EXAMPLE
+        if (!(Test-IsADAdmin)) { Write-Host "You are not running with Domain Admin rights and will not be able to make certain changes." -ForeGroundColor Yellow }
+    #>
+    if (
+        # Need to test to make sure this checks domain groups and not local groups, particularly for 'Administrators' (reference SID instead of name?).
+         ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole("Domain Admin") -or
+         ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole("Administrators") -or
+         ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole("Enterprise Admins")
+    ) {
+        Return $true
+    }
+    else {
+        Return $false
+    }
+}
+
+function Test-IsElevated {
+    <#
+    .SYNOPSIS
+        Tests if PowerShell is running with elevated privileges (run as Administrator).
+    .DESCRIPTION
+        This function returns True if the script is being run as an administrator or False if not.
+    .EXAMPLE
+        Test-IsElevated
+    .EXAMPLE
+        if (!(Test-IsElevated)) { Write-Host "You are not running with elevated privileges and will not be able to make any changes." -ForeGroundColor Yellow }
+    .EXAMPLE
+        # Prompt to launch elevated if not already running as administrator:
+        if (!(Test-IsElevated)) {
+            $arguments = "& '" + $myinvocation.mycommand.definition + "'"
+            Start-Process powershell -Verb runAs -ArgumentList $arguments
+            Break
+        }
+    #>
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = New-Object Security.Principal.WindowsPrincipal $identity
+    $principal.IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
+}
+function Test-IsLocalAccountSession {
+    <#
+    .SYNOPSIS
+        Tests if the current session is running under a local user account or a domain account.
+    .DESCRIPTION
+        This function returns True if the current session is a local user or False if it is a domain user.
+    .EXAMPLE
+        Test-IsLocalAccountSession
+    .EXAMPLE
+        if ( (Test-IsLocalAccountSession) ) { Write-Host "You are running this script under a local account." -ForeGroundColor Yellow }
+    #>
+    [CmdletBinding()]
+
+    $CurrentSID = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+    $LocalSIDs = (Get-LocalUser).SID.Value
+    if ($CurrentSID -in $LocalSIDs) {
+        Return $true
+    }
 }
 
 function Invoke-Locksmith {
@@ -683,8 +1111,8 @@ function Invoke-Locksmith {
         [string]$InputPath,
         [int]$Mode = 0,
         [Parameter()]
-            [ValidateSet('Auditing','ESC1','ESC2','ESC3','ESC4','ESC5','ESC6','ESC8','All','PromptMe')]
-            [array]$Scans = 'All',
+        [ValidateSet('Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'All', 'PromptMe')]
+        [array]$Scans = 'All',
         [string]$OutputPath = (Get-Location).Path,
         [System.Management.Automation.PSCredential]$Credential
     )
@@ -701,7 +1129,7 @@ function Invoke-Locksmith {
                                                                v$Version
 
 "@
-   $Logo
+    $Logo
 
     # Check if ActiveDirectory PowerShell module is available, and attempt to install if not found
     if (-not(Get-Module -Name 'ActiveDirectory' -ListAvailable)) {
@@ -711,7 +1139,8 @@ function Invoke-Locksmith {
             if ($OS -gt 1) {
                 # Attempt to install ActiveDirectory PowerShell module for Windows Server OSes, works with Windows Server 2012 R2 through Windows Server 2022
                 Install-WindowsFeature -Name RSAT-AD-PowerShell
-            } else {
+            }
+            else {
                 # Attempt to install ActiveDirectory PowerShell module for Windows Desktop OSes
                 Add-WindowsCapability -Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0 -Online
             }
@@ -760,7 +1189,7 @@ function Invoke-Locksmith {
 
     (Get-ADForest).Domains | ForEach-Object {
         $DomainSID = (Get-ADDomain $_).DomainSID.Value
-        $SafeGroupRIDs = @('-517','-512')
+        $SafeGroupRIDs = @('-517', '-512')
         $SafeGroupSIDs = @('S-1-5-32-544')
         foreach ($rid in $SafeGroupRIDs ) {
             $SafeGroupSIDs += $DomainSID + $rid
@@ -773,14 +1202,10 @@ function Invoke-Locksmith {
         }
     }
 
-    if (!$Credential -and (Get-RestrictedAdminModeSetting)) {
-        Write-Warning "Restricted Admin Mode appears to be in place, re-run with the '-Credential domain\user' option"
-        break;
-    }
-
     if ($Credential) {
         $Targets = Get-Target -Credential $Credential
-    } else {
+    }
+    else {
         $Targets = Get-Target
     }
 
@@ -791,7 +1216,8 @@ function Invoke-Locksmith {
         $ADCSObjects += Get-CAHostObject -ADCSObjects $ADCSObjects -Credential $Credential
         $CAHosts = Get-CAHostObject -ADCSObjects $ADCSObjects -Credential $Credential
         $CAHosts | ForEach-Object { $SafeUsers += '|' + $_.Name }
-    } else {
+    }
+    else {
         $ADCSObjects = Get-ADCSObject -Targets $Targets
         Set-AdditionalCAProperty -ADCSObjects $ADCSObjects
         $ADCSObjects += Get-CAHostObject -ADCSObjects $ADCSObjects
@@ -800,18 +1226,18 @@ function Invoke-Locksmith {
     }
 
     if ( $Scans ) {
-    # If the Scans parameter was used, Invoke-Scans with the specified checks.
+        # If the Scans parameter was used, Invoke-Scans with the specified checks.
         $Results = Invoke-Scans -Scans $Scans
-            # Re-hydrate the findings arrays from the Results hash table
-            $AllIssues      = $Results['AllIssues']
-            $AuditingIssues = $Results['AuditingIssues']
-            $ESC1           = $Results['ESC1']
-            $ESC2           = $Results['ESC2']
-            $ESC3           = $Results['ESC3']
-            $ESC4           = $Results['ESC4']
-            $ESC5           = $Results['ESC5']
-            $ESC6           = $Results['ESC6']
-            $ESC8           = $Results['ESC8']
+        # Re-hydrate the findings arrays from the Results hash table
+        $AllIssues = $Results['AllIssues']
+        $AuditingIssues = $Results['AuditingIssues']
+        $ESC1 = $Results['ESC1']
+        $ESC2 = $Results['ESC2']
+        $ESC3 = $Results['ESC3']
+        $ESC4 = $Results['ESC4']
+        $ESC5 = $Results['ESC5']
+        $ESC6 = $Results['ESC6']
+        $ESC8 = $Results['ESC8']
     }
 
     # If these are all empty = no issues found, exit
@@ -847,7 +1273,8 @@ function Invoke-Locksmith {
             try {
                 $AllIssues | Select-Object Forest, Technique, Name, Issue | Export-Csv -NoTypeInformation $Output
                 Write-Host "$Output created successfully!"
-            } catch {
+            }
+            catch {
                 Write-Host 'Ope! Something broke.'
             }
         }
@@ -857,13 +1284,18 @@ function Invoke-Locksmith {
             try {
                 $AllIssues | Select-Object Forest, Technique, Name, DistinguishedName, Issue, Fix | Export-Csv -NoTypeInformation $Output
                 Write-Host "$Output created successfully!"
-            } catch {
+            }
+            catch {
                 Write-Host 'Ope! Something broke.'
             }
         }
         4 {
             Write-Host 'Creating a script to revert any changes made by Locksmith...'
-            try { Export-RevertScript -AuditingIssues $AuditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC6 $ESC6 } catch {}
+            try {
+                Export-RevertScript -AuditingIssues $AuditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC6 $ESC6 
+            }
+            catch {
+            }
             Write-Host 'Executing Mode 4 - Attempting to fix all identified issues!'
             if ($AuditingIssues) {
                 $AuditingIssues | ForEach-Object {
@@ -879,11 +1311,13 @@ function Invoke-Locksmith {
                         if (!$WarningError) {
                             try {
                                 Invoke-Command -ScriptBlock $FixBlock
-                            } catch {
+                            }
+                            catch {
                                 Write-Error 'Could not modify AD CS auditing. Are you a local admin on this host?'
                             }
                         }
-                    } catch {
+                    }
+                    catch {
                         Write-Host 'SKIPPED!' -ForegroundColor Yellow
                     }
                     Read-Host -Prompt 'Press enter to continue...'
@@ -902,11 +1336,13 @@ function Invoke-Locksmith {
                         if (!$WarningError) {
                             try {
                                 Invoke-Command -ScriptBlock $FixBlock
-                            } catch {
+                            }
+                            catch {
                                 Write-Error 'Could not enable Manager Approval. Are you an Active Directory or AD CS admin?'
                             }
                         }
-                    } catch {
+                    }
+                    catch {
                         Write-Host 'SKIPPED!' -ForegroundColor Yellow
                     }
                     Read-Host -Prompt 'Press enter to continue...'
@@ -925,11 +1361,13 @@ function Invoke-Locksmith {
                         if (!$WarningError) {
                             try {
                                 Invoke-Command -ScriptBlock $FixBlock
-                            } catch {
+                            }
+                            catch {
                                 Write-Error 'Could not enable Manager Approval. Are you an Active Directory or AD CS admin?'
                             }
                         }
-                    } catch {
+                    }
+                    catch {
                         Write-Host 'SKIPPED!' -ForegroundColor Yellow
                     }
                     Read-Host -Prompt 'Press enter to continue...'
@@ -948,11 +1386,13 @@ function Invoke-Locksmith {
                         if (!$WarningError) {
                             try {
                                 Invoke-Command -ScriptBlock $FixBlock
-                            } catch {
+                            }
+                            catch {
                                 Write-Error 'Could not disable the EDITF_ATTRIBUTESUBJECTALTNAME2 flag. Are you an Active Directory or AD CS admin?'
                             }
                         }
-                    } catch {
+                    }
+                    catch {
                         Write-Host 'SKIPPED!' -ForegroundColor Yellow
                     }
                     Read-Host -Prompt 'Press enter to continue...'
@@ -962,422 +1402,5 @@ function Invoke-Locksmith {
     }
 }
 
-function Invoke-Scans {
-    [CmdletBinding()]
-    param (
-    # Could split Scans and PromptMe into separate parameter sets.
-    [Parameter()]
-        [ValidateSet('Auditing','ESC1','ESC2','ESC3','ESC4','ESC5','ESC6','ESC8','All','PromptMe')]
-        [array]$Scans = 'All'
-    )
-
-    # Is this needed?
-    if ($Scans -eq $IsNullOrEmpty) {
-        $Scans = 'All'
-    }
-
-    if ( $Scans -eq 'PromptMe' ) {
-        $GridViewTitle = 'Select the tests to run and press Enter or click OK to continue...'
-
-        # Check for Out-GridView or Out-ConsoleGridView
-        if ((Get-Command Out-ConsoleGridView -ErrorAction SilentlyContinue) -and ($PSVersionTable.PSVersion.Major -ge 7)) {
-            [array]$Scans = ($Dictionary | Select-Object Name,Category,Subcategory | Out-ConsoleGridView -OutputMode Multiple -Title $GridViewTitle).Name | Sort-Object -Property Name
-        }
-        elseif (Get-Command -Name Out-GridView -ErrorAction SilentlyContinue) {
-            [array]$Scans = ($Dictionary | Select-Object Name,Category,Subcategory | Out-GridView -PassThru -Title $GridViewTitle).Name | Sort-Object -Property Name
-        }
-        else {
-            # To Do: Check for admin and prompt to install features/modules or revert to 'All'.
-            Write-Information "Out-GridView and Out-ConsoleGridView were not found on your system. Defaulting to `'All`'."
-            $Scans = 'All'
-        }
-    }
-
-    switch ( $Scans ) {
-        Auditing {
-            Write-Host 'Identifying auditing issues...'
-            [array]$AuditingIssues = Find-AuditingIssue -ADCSObjects $ADCSObjects
-        }
-        ESC1 {
-            Write-Host 'Identifying AD CS templates with dangerous ESC1 configurations...'
-            [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
-        }
-        ESC2 {
-            Write-Host 'Identifying AD CS templates with dangerous ESC2 configurations...'
-            [array]$ESC2 = Find-ESC2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
-        }
-        ESC3 {
-            Write-Host 'Identifying AD CS templates with dangerous ESC3 configurations...'
-            [array]$ESC3 = Find-ESC3Condition1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
-            [array]$ESC3 += Find-ESC3Condition2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
-        }
-        ESC4 {
-            Write-Host 'Identifying AD CS template and other objects with poor access control (ESC4)...'
-            [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
-        }
-        ESC5 {
-            Write-Host 'Identifying AD CS template and other objects with poor access control (ESC5)...'
-            [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
-        }
-        ESC6 {
-            Write-Host 'Identifying AD CS template and other objects with poor access control (ESC6)...'
-            [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects
-        }
-        ESC8 {
-            Write-Host 'Identifying HTTP-based certificate enrollment interfaces (ESC8)...'
-            [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects
-        }
-        All {
-            Write-Host 'Identifying auditing issues...'
-            [array]$AuditingIssues = Find-AuditingIssue -ADCSObjects $ADCSObjects
-            Write-Host 'Identifying AD CS templates with dangerous ESC1 configurations...'
-            [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
-            Write-Host 'Identifying AD CS templates with dangerous ESC2 configurations...'
-            [array]$ESC2 = Find-ESC2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
-            Write-Host 'Identifying AD CS templates with dangerous ESC3 configurations...'
-            [array]$ESC3 = Find-ESC3Condition1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
-            [array]$ESC3 += Find-ESC3Condition2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
-            Write-Host 'Identifying AD CS template and other objects with poor access control (ESC4)...'
-            [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
-            Write-Host 'Identifying AD CS template and other objects with poor access control (ESC5)...'
-            [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
-            Write-Host 'Identifying AD CS template and other objects with poor access control (ESC6)...'
-            [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects
-            Write-Host 'Identifying HTTP-based certificate enrollment interfaces (ESC8)...'
-            [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects
-        }
-    }
-
-    [array]$AllIssues = $AuditingIssues + $ESC1 + $ESC2 + $ESC3 + $ESC4 + $ESC5 + $ESC6 + $ESC8
-
-    # If these are all empty = no issues found, exit
-    if ((!$AuditingIssues) -and (!$ESC1) -and (!$ESC2) -and (!$ESC3) -and (!$ESC4) -and (!$ESC5) -and (!$ESC6) -and (!$ESC8) ) {
-        Write-Host "`n$(Get-Date) : No ADCS issues were found." -ForegroundColor Green
-        break
-    }
-
-    # Return a hash table of array names (keys) and arrays (values) so they can be directly referenced with other functions
-    Return @{
-        AllIssues = $AllIssues
-        AuditingIssues = $AuditingIssues
-        ESC1 = $ESC1
-        ESC2 = $ESC2
-        ESC3 = $ESC3
-        ESC4 = $ESC4
-        ESC5 = $ESC5
-        ESC6 = $ESC6
-        ESC8 = $ESC8
-    }
-}
-
-function New-Dictionary {
-    <#
-    .SYNOPSIS
-    Create a dictionary of the escalation paths and insecure configurations that Locksmith scans for.
-
-    .DESCRIPTION
-    The New-Dictionary function is used to instantiate an array of objects that contain the names, definitions,
-    descriptions, code used to find, code used to fix, and reference URLs. This is invoked by the module's main function.
-
-    .NOTES
-
-        VulnerableConfigurationItem Class Definition:
-            Version         Update each time the class definition or the dictionary below is changed.
-            Name            The short name of the vulnerable configuration item (VCI).
-            Category        The high level category of VCI types, including escalation path, server configuration, GPO setting, etc.
-            Subcategory     The subcategory of vulnerable configuration item types.
-            Summary         A summary of the vulnerability and how it can be abused.
-            FindIt          The name of the function that is used to look for the VCI, stored as an invokable scriptblock.
-            FixIt           The name of the function that is used to fix the VCI, stored as an invokable scriptblock.
-            ReferenceUrls   An array of URLs that are used as references to learn more about the VCI.
-    #>
-    class VulnerableConfigurationItem {
-    static [string] $Version = '2023.10.01.000'
-    [string]$Name
-    [ValidateSet('Escalation Path','Server Configuration','GPO Setting')][string]$Category
-    [string]$Subcategory
-    [string]$Summary
-    [scriptblock]$FindIt
-    [scriptblock]$FixIt
-    [uri[]]$ReferenceUrls
-}
-
-[VulnerableConfigurationItem[]]$Dictionary = @(
-    [VulnerableConfigurationItem]@{
-        Name = 'ESC1'
-        Category = 'Escalation Path'
-        Subcategory = 'Misconfigured Certificate Templates'
-        Summary = ''
-        FindIt =  {Find-ESC1}
-        FixIt = {Write-Output "Add code to fix the vulnerable configuration."}
-        ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Misconfigured%20Certificate%20Templates%20%E2%80%94%20ESC1'
-    },
-    [VulnerableConfigurationItem]@{
-        Name = 'ESC2'
-        Category = 'Escalation Path'
-        Subcategory = 'Misconfigured Certificate Templates'
-        Summary = ''
-        FindIt =  {Find-ESC2}
-        FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
-        ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Misconfigured%20Certificate%20Templates%20%E2%80%94%20ESC2'
-    },
-    [VulnerableConfigurationItem]@{
-        Name = 'ESC3'
-        Category = 'Escalation Path'
-        Subcategory = 'Enrollment Agent Templates'
-        Summary = ''
-        FindIt =  {
-            Find-ESC3Condition1
-            Find-ESC3Condition2
-        }
-        FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
-        ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Enrollment%20Agent%20Templates%20%E2%80%94%20ESC3'
-    },
-    [VulnerableConfigurationItem]@{
-        Name = 'ESC4';
-        Category = 'Escalation Path'
-        Subcategory = 'Vulnerable Certificate Template Access Control'
-        Summary = ''
-        FindIt =  {Find-ESC4}
-        FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
-        ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Vulnerable%20Certificate%20Template%20Access%20Control%20%E2%80%94%20ESC4'
-    },
-    [VulnerableConfigurationItem]@{
-        Name = 'ESC5';
-        Category = 'Escalation Path'
-        Subcategory = 'Vulnerable PKI Object Access Control'
-        Summary = ''
-        FindIt =  {Find-ESC5}
-        FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
-        ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Vulnerable%20PKI%20Object%20Access%20Control%20%E2%80%94%20ESC5'
-    },
-    [VulnerableConfigurationItem]@{
-        Name = 'ESC6'
-        Category = 'Escalation Path'
-        Subcategory = 'EDITF_ATTRIBUTESUBJECTALTNAME2'
-        Summary = ''
-        FindIt =  {Find-ESC6}
-        FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
-        ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=EDITF_ATTRIBUTESUBJECTALTNAME2%20%E2%80%94%20ESC6'
-    },
-    [VulnerableConfigurationItem]@{
-        Name = 'ESC7'
-        Category = 'Escalation Path'
-        Subcategory = 'Vulnerable Certificate Authority Access Control'
-        Summary = ''
-        FindIt =  {Write-Output 'We have not created Find-ESC7 yet.'}
-        FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
-        ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Vulnerable%20Certificate%20Authority%20Access%20Control%20%E2%80%94%20ESC7'
-    },
-    [VulnerableConfigurationItem]@{
-        Name = 'ESC8'
-        Category = 'Escalation Path'
-        Subcategory = 'NTLM Relay to AD CS HTTP Endpoints'
-        Summary = ''
-        FindIt =  {Find-ESC8}
-        FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
-        ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=NTLM%20Relay%20to%20AD%20CS%20HTTP%20Endpoints'
-    },
-    [VulnerableConfigurationItem]@{
-        Name = 'Auditing'
-        Category = 'Server Configuration'
-        Subcategory = 'Gaps in auditing on certificate authorities and AD CS objects.'
-        Summary = ''
-        FindIt =  {Find-AuditingIssue}
-        FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
-        ReferenceUrls = @('https://github.com/TrimarcJake/Locksmith','https://techcommunity.microsoft.com/t5/ask-the-directory-services-team/designing-and-implementing-a-pki-part-i-design-and-planning/ba-p/396953')
-    }
-)
-Return $Dictionary
-}
-
-function New-OutputPath {
-    [CmdletBinding(SupportsShouldProcess)]
-    param ()
-    # Create one output directory per forest
-    foreach ( $forest in $Targets ) {
-        $ForestPath = $OutputPath + "`\" + $forest
-        New-Item -Path $ForestPath -ItemType Directory -Force  | Out-Null
-    }
-}
-
-function Set-AdditionalCAProperty {
-    [CmdletBinding(SupportsShouldProcess)]
-    param (
-        [parameter(
-            Mandatory = $true,
-            ValueFromPipeline = $true)]
-        [array]$ADCSObjects,
-        [System.Management.Automation.PSCredential]$Credential
-    )
-    process {
-        $ADCSObjects | Where-Object objectClass -Match 'pKIEnrollmentService' | ForEach-Object {
-            [string]$CAEnrollmentEndpoint = $_.'msPKI-Enrollment-Servers' | Select-String 'http.*' | ForEach-Object { $_.Matches[0].Value }
-            [string]$CAFullName = "$($_.dNSHostName)\$($_.Name)"
-            $CAHostname = $_.dNSHostName.split('.')[0]
-            # $CAName = $_.Name
-            if ($Credential) {
-                $CAHostDistinguishedName = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -Server $ForestGC -Credential $Credential).DistinguishedName
-                $CAHostFQDN = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -Properties DnsHostname -Server $ForestGC -Credential $Credential).DnsHostname
-            } else {
-                $CAHostDistinguishedName = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -Server $ForestGC ).DistinguishedName
-                $CAHostFQDN = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -Properties DnsHostname -Server $ForestGC).DnsHostname
-            }
-            $ping = Test-Connection -ComputerName $CAHostFQDN -Quiet -Count 1
-            if ($ping) {
-                try {
-                    if ($Credential) {
-                        $CertutilAudit = Invoke-Command -ComputerName $CAHostname -Credential $Credential -ScriptBlock { param($CAFullName); certutil -config $CAFullName -getreg CA\AuditFilter } -ArgumentList $CAFullName
-                    } else {
-                        $CertutilAudit = certutil -config $CAFullName -getreg CA\AuditFilter
-                    }
-                } catch {
-                    $AuditFilter = 'Failure'
-                }
-                try {
-                    if ($Credential) {
-                        $CertutilFlag = Invoke-Command -ComputerName $CAHostname -Credential $Credential -ScriptBlock { param($CAFullName); certutil -config $CAFullName -getreg policy\EditFlags } -ArgumentList $CAFullName
-                    } else {
-                        $CertutilFlag = certutil -config $CAFullName -getreg policy\EditFlags
-                    }
-                } catch {
-                    $AuditFilter = 'Failure'
-                }
-            } else {
-                $AuditFilter = 'CA Unavailable'
-                $SANFlag = 'CA Unavailable'
-            }
-            if ($CertutilAudit) {
-                try {
-                    [string]$AuditFilter = $CertutilAudit | Select-String 'AuditFilter REG_DWORD = ' | Select-String '\('
-                    $AuditFilter = $AuditFilter.split('(')[1].split(')')[0]
-                } catch {
-                    try {
-                        [string]$AuditFilter = $CertutilAudit | Select-String 'AuditFilter REG_DWORD = '
-                        $AuditFilter = $AuditFilter.split('=')[1].trim()
-                    } catch {
-                        $AuditFilter = 'Never Configured'
-                    }
-                }
-            }
-            if ($CertutilFlag) {
-                [string]$SANFlag = $CertutilFlag | Select-String ' EDITF_ATTRIBUTESUBJECTALTNAME2 -- 40000 \('
-                if ($SANFlag) {
-                    $SANFlag = 'Yes'
-                } else {
-                    $SANFlag = 'No'
-                }
-            }
-            Add-Member -InputObject $_ -MemberType NoteProperty -Name AuditFilter -Value $AuditFilter -Force
-            Add-Member -InputObject $_ -MemberType NoteProperty -Name CAEnrollmentEndpoint -Value $CAEnrollmentEndpoint -Force
-            Add-Member -InputObject $_ -MemberType NoteProperty -Name CAFullName -Value $CAFullName -Force
-            Add-Member -InputObject $_ -MemberType NoteProperty -Name CAHostname -Value $CAHostname -Force
-            Add-Member -InputObject $_ -MemberType NoteProperty -Name CAHostDistinguishedName -Value $CAHostDistinguishedName -Force
-            Add-Member -InputObject $_ -MemberType NoteProperty -Name SANFlag -Value $SANFlag -Force
-        }
-    }
-}
-
-function Set-Severity {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory = $true)]
-        [array]$Issue
-    )
-    foreach ($Finding in $Issue) {
-        try {
-            # Auditing
-            if ($Finding.Technique -eq 'DETECT') {
-                return 'Medium'
-            }
-            # ESC6
-            if ($Finding.Technique -eq 'ESC6') {
-                return 'High'
-            }
-            # ESC8
-            if ($Finding.Technique -eq 'ESC8') {
-                return 'High'
-            }
-            # ESC1, ESC2, ESC4, ESC5
-            $SID = ConvertFrom-IdentityReference -Object $Finding.IdentityReference
-            if ($SID -match $SafeUsers -or $SID -match $SafeOwners) {
-                return 'Medium'
-            }
-            if (($SID -notmatch $SafeUsers -and $SID -notmatch $SafeOwners) -and ($Finding.ActiveDirectoryRights -match $DangerousRights)) {
-                return 'Critical'
-            }
-        } catch {
-            Write-Error "Could not determine issue severity for issue: $($Issue.Issue)"
-                return 'Unknown Failure'
-        }
-    }
-}
-
-function Test-IsADAdmin {
-    <#
-    .SYNOPSIS
-        Tests if the current user has administrative rights in Active Directory.
-    .DESCRIPTION
-        This function returns True if the current user is a Domain Admin (or equivalent) or False if not.
-    .EXAMPLE
-        Test-IsADAdmin
-    .EXAMPLE
-        if (!(Test-IsADAdmin)) { Write-Host "You are not running with Domain Admin rights and will not be able to make certain changes." -ForeGroundColor Yellow }
-    #>
-    if (
-        # Need to test to make sure this checks domain groups and not local groups, particularly for 'Administrators' (reference SID instead of name?).
-         ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole("Domain Admin") -or
-         ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole("Administrators") -or
-         ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole("Enterprise Admins")
-       ) {
-        Return $true
-    }
-    else {
-        Return $false
-    }
-}
-
-function Test-IsElevated {
-    <#
-    .SYNOPSIS
-        Tests if PowerShell is running with elevated privileges (run as Administrator).
-    .DESCRIPTION
-        This function returns True if the script is being run as an administrator or False if not.
-    .EXAMPLE
-        Test-IsElevated
-    .EXAMPLE
-        if (!(Test-IsElevated)) { Write-Host "You are not running with elevated privileges and will not be able to make any changes." -ForeGroundColor Yellow }
-    .EXAMPLE
-        # Prompt to launch elevated if not already running as administrator:
-        if (!(Test-IsElevated)) {
-            $arguments = "& '" + $myinvocation.mycommand.definition + "'"
-            Start-Process powershell -Verb runAs -ArgumentList $arguments
-            Break
-        }
-    #>
-    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
-    $principal = New-Object Security.Principal.WindowsPrincipal $identity
-    $principal.IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
-}
-
-function Test-IsLocalAccountSession {
-    <#
-    .SYNOPSIS
-        Tests if the current session is running under a local user account or a domain account.
-    .DESCRIPTION
-        This function returns True if the current session is a local user or False if it is a domain user.
-    .EXAMPLE
-        Test-IsLocalAccountSession
-    .EXAMPLE
-        if ( (Test-IsLocalAccountSession) ) { Write-Host "You are running this script under a local account." -ForeGroundColor Yellow }
-    #>
-    [CmdletBinding()]
-
-    $CurrentSID = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-    $LocalSIDs = (Get-LocalUser).SID.Value
-    if ($CurrentSID -in $LocalSIDs) {
-        Return $true
-    }
-}
 
 Invoke-Locksmith -Mode $Mode -Scans $Scans
