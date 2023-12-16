@@ -10,7 +10,7 @@
         ($_.ObjectClass -eq 'pKICertificateTemplate') -and
         ( (!$_.pkiExtendedKeyUsage) -or ($_.pkiExtendedKeyUsage -match '2.5.29.37.0') )-and
         ($_.'msPKI-Certificate-Name-Flag' -eq 1) -and
-        ($_.'msPKI-Enrollment-Flag' -ne 2) -and
+        !($_.'msPKI-Enrollment-Flag' -band 2) -and
         ( ($_.'msPKI-RA-Signature' -eq 0) -or ($null -eq $_.'msPKI-RA-Signature') )
     } | ForEach-Object {
         foreach ($entry in $_.nTSecurityDescriptor.Access) {

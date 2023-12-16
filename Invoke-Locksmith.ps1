@@ -92,7 +92,7 @@ function Find-ESC1 {
         ($_.objectClass -eq 'pKICertificateTemplate') -and
         ($_.pkiExtendedKeyUsage -match $ClientAuthEKUs) -and
         ($_.'msPKI-Certificate-Name-Flag' -eq 1) -and
-        ($_.'msPKI-Enrollment-Flag' -ne 2) -and
+        !($_.'msPKI-Enrollment-Flag' -band 2) -and
         ( ($_.'msPKI-RA-Signature' -eq 0) -or ($null -eq $_.'msPKI-RA-Signature') )
     } | ForEach-Object {
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
@@ -137,7 +137,7 @@ function Find-ESC2 {
         ($_.ObjectClass -eq 'pKICertificateTemplate') -and
         ( (!$_.pkiExtendedKeyUsage) -or ($_.pkiExtendedKeyUsage -match '2.5.29.37.0') ) -and
         ($_.'msPKI-Certificate-Name-Flag' -eq 1) -and
-        ($_.'msPKI-Enrollment-Flag' -ne 2) -and
+        !($_.'msPKI-Enrollment-Flag' -band 2) -and
         ( ($_.'msPKI-RA-Signature' -eq 0) -or ($null -eq $_.'msPKI-RA-Signature') )
     } | ForEach-Object {
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
@@ -169,6 +169,7 @@ function Find-ESC2 {
         }
     }
 }
+
 function Find-ESC3Condition1 {
     [CmdletBinding()]
     param(
@@ -180,7 +181,7 @@ function Find-ESC3Condition1 {
     $ADCSObjects | Where-Object {
         ($_.objectClass -eq 'pKICertificateTemplate') -and
         ($_.pkiExtendedKeyUsage -match $EnrollmentAgentEKU) -and
-        ($_.'msPKI-Enrollment-Flag' -ne 2) -and
+        !($_.'msPKI-Enrollment-Flag' -band 2) -and
         ( ($_.'msPKI-RA-Signature' -eq 0) -or ($null -eq $_.'msPKI-RA-Signature') )
     } | ForEach-Object {
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
@@ -212,6 +213,7 @@ function Find-ESC3Condition1 {
         }
     }
 }
+
 function Find-ESC3Condition2 {
     [CmdletBinding()]
     param(
@@ -224,7 +226,7 @@ function Find-ESC3Condition2 {
         ($_.objectClass -eq 'pKICertificateTemplate') -and
         ($_.pkiExtendedKeyUsage -match $ClientAuthEKU) -and
         ($_.'msPKI-Certificate-Name-Flag' -eq 1) -and
-        ($_.'msPKI-Enrollment-Flag' -ne 2) -and
+        !($_.'msPKI-Enrollment-Flag' -band 2) -and
         ($_.'msPKI-RA-Application-Policies' -eq '1.3.6.1.4.1.311.20.2.1') -and
         ( ($_.'msPKI-RA-Signature' -eq 1) )
     } | ForEach-Object {
@@ -257,6 +259,7 @@ function Find-ESC3Condition2 {
         }
     }
 }
+
 function Find-ESC4 {
     [CmdletBinding()]
     param(
