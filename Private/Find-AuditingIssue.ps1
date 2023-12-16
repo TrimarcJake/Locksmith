@@ -19,7 +19,7 @@
             $Issue | Add-Member -MemberType NoteProperty -Name 'Technique' -Value 'DETECT' -Force
         }
         else {
-            $Issue | Add-Member -MemberType NoteProperty -Name 'Issue' -Value "Auditing is not fully enabled. Current value is $($_.AuditFilter)" -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name 'Issue' -Value "Auditing is not fully enabled on $($_.CAFullName). Current value is $($_.AuditFilter)" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name 'Fix' `
                 -Value "certutil.exe -config `'$($_.CAFullname)`' -setreg `'CA\AuditFilter`' 127; Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
             $Issue | Add-Member -MemberType NoteProperty -Name 'Revert' `

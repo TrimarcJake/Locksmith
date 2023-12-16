@@ -76,19 +76,23 @@
         [System.Management.Automation.PSCredential]$Credential
     )
 
-    $Version = '2023.11'
-    $Logo = @"
+    $Version = '2023.12'
+    $LogoPart1 = @"
     _       _____  _______ _     _ _______ _______ _____ _______ _     _
     |      |     | |       |____/  |______ |  |  |   |      |    |_____|
     |_____ |_____| |_____  |    \_ ______| |  |  | __|__    |    |     |
+"@
+    $LogoPart2 = @"
         .--.                  .--.                  .--.
        /.-. '----------.     /.-. '----------.     /.-. '----------.
        \'-' .---'-''-'-'     \'-' .--'--''-'-'     \'-' .--'--'-''-'
         '--'                  '--'                  '--'
-                                                               v$Version
-
 "@
-   $Logo
+    $VersionBanner = "                                                          v$Version"
+
+    Write-Host $LogoPart1 -ForegroundColor Magenta
+    Write-Host $LogoPart2 -ForegroundColor White
+    Write-Host $VersionBanner -ForegroundColor Red
 
     # Check if ActiveDirectory PowerShell module is available, and attempt to install if not found
     if (-not(Get-Module -Name 'ActiveDirectory' -ListAvailable)) {
@@ -160,11 +164,6 @@
         }
     }
 
-    if (!$Credential -and (Get-RestrictedAdminModeSetting)) {
-        Write-Warning "Restricted Admin Mode appears to be in place, re-run with the '-Credential domain\user' option"
-        break;
-    }
-
     if ($Credential) {
         $Targets = Get-Target -Credential $Credential
     } else {
@@ -203,7 +202,9 @@
 
     # If these are all empty = no issues found, exit
     if ($null -eq $Results) {
-        Write-Host "`n$(Get-Date) : No ADCS issues were found." -ForegroundColor Green
+        Write-Host "`n$(Get-Date) : No ADCS issues were found.`n" -ForegroundColor Green
+        Write-Host 'Thank you for using ' -NoNewline
+        Write-Host "❤ Locksmith ❤ `n" -ForegroundColor Magenta
         break
     }
 
@@ -233,7 +234,7 @@
             Write-Host "Writing AD CS issues to $Output..."
             try {
                 $AllIssues | Select-Object Forest, Technique, Name, Issue | Export-Csv -NoTypeInformation $Output
-                Write-Host "$Output created successfully!"
+                Write-Host "$Output created successfully!`n"
             } catch {
                 Write-Host 'Ope! Something broke.'
             }
@@ -243,108 +244,156 @@
             Write-Host "Writing AD CS issues to $Output..."
             try {
                 $AllIssues | Select-Object Forest, Technique, Name, DistinguishedName, Issue, Fix | Export-Csv -NoTypeInformation $Output
-                Write-Host "$Output created successfully!"
+                Write-Host "$Output created successfully!`n"
             } catch {
                 Write-Host 'Ope! Something broke.'
             }
         }
         4 {
-            Write-Host 'Creating a script to revert any changes made by Locksmith...'
+            Write-Host "`nExecuting Mode 4 - Attempting to fix all identified issues!`n" -ForegroundColor Green
+            Write-Host 'Creating a script (' -NoNewline
+            Write-Host 'Invoke-RevertLocksmith.ps1' -ForegroundColor White -NoNewline
+            Write-Host ") which can be used to revert any changes made by Locksmith...`n"
             try { Export-RevertScript -AuditingIssues $AuditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC6 $ESC6 } catch {}
-            Write-Host 'Executing Mode 4 - Attempting to fix all identified issues!'
             if ($AuditingIssues) {
                 $AuditingIssues | ForEach-Object {
                     $FixBlock = [scriptblock]::Create($_.Fix)
-                    Write-Host "Attempting to fully enable AD CS auditing on $($_.Name)..."
-                    Write-Host "This should have little impact on your environment.`n"
-                    Write-Host 'Command(s) to be run:'
+                    Write-Host 'ISSUE:' -ForegroundColor White
+                    Write-Host "Auditing is not fully enabled on Certification Authority `"$($_.Name)`".`n"
+                    Write-Host 'TECHNIQUE:' -ForegroundColor White
+                    Write-Host "$($_.Technique)`n"
+                    Write-Host 'ACTION TO BE PEFORMED:' -ForegroundColor White
+                    Write-Host "Locksmith will attempt to fully enable auditing on Certification Authority `"$($_.Name)`".`n"
+                    Write-Host 'COMMAND(S) TO BE RUN:'
                     Write-Host 'PS> ' -NoNewline
                     Write-Host "$($_.Fix)`n" -ForegroundColor Cyan
-                    try {
-                        $WarningError = $null
-                        Write-Warning 'If you continue, this script will attempt to fix this issue.' -WarningAction Inquire -ErrorVariable WarningError
-                        if (!$WarningError) {
-                            try {
-                                Invoke-Command -ScriptBlock $FixBlock
-                            } catch {
-                                Write-Error 'Could not modify AD CS auditing. Are you a local admin on this host?'
-                            }
+                    Write-Host 'OPERATIONAL IMPACT:' -ForegroundColor White
+                    Write-Host "This change should have little to no impact on the AD CS environment.`n" -ForegroundColor Green
+                    Write-Host "If you continue, Locksmith will attempt to fix this issue.`n" -ForegroundColor Yellow
+                    Write-Host "Continue with this operation? [Y] Yes " -NoNewline
+                    Write-Host "[N] " -ForegroundColor Yellow -NoNewline
+                    Write-Host "No: " -NoNewLine
+                    $WarningError = ''
+                    $WarningError = Read-Host
+                    if ($WarningError -like 'y') {
+                        try {
+                            Invoke-Command -ScriptBlock $FixBlock
+                        } catch {
+                            Write-Error 'Could not modify AD CS auditing. Are you a local admin on the CA host?'
                         }
-                    } catch {
-                        Write-Host 'SKIPPED!' -ForegroundColor Yellow
+                    } else {
+                        Write-Host "SKIPPED!`n" -ForegroundColor Yellow
                     }
-                    Read-Host -Prompt 'Press enter to continue...'
                 }
             }
             if ($ESC1) {
                 $ESC1 | ForEach-Object {
                     $FixBlock = [scriptblock]::Create($_.Fix)
-                    Write-Host "Attempting to enable Manager Approval on the $($_.Name) template...`n"
-                    Write-Host 'Command(s) to be run:'
+                    Write-Host 'ISSUE:' -ForegroundColor White
+                    Write-Host "Security Principals can enroll in `"$($_.Name)`" template using a Subject Alternative Name without Manager Approval.`n"
+                    Write-Host 'TECHNIQUE:' -ForegroundColor White
+                    Write-Host "$($_.Technique)`n"
+                    Write-Host 'ACTION TO BE PEFORMED:' -ForegroundColor White
+                    Write-Host "Locksmith will attempt to enable Manager Approval on the `"$($_.Name)`" template.`n"
+                    Write-Host 'CCOMMAND(S) TO BE RUN:'
                     Write-Host 'PS> ' -NoNewline
                     Write-Host "$($_.Fix)`n" -ForegroundColor Cyan
-                    try {
-                        $WarningError = $null
-                        Write-Warning "This could cause some services to stop working until certificates are approved.`nIf you continue this script will attempt to fix this issues." -WarningAction Inquire -ErrorVariable WarningError
-                        if (!$WarningError) {
-                            try {
-                                Invoke-Command -ScriptBlock $FixBlock
-                            } catch {
-                                Write-Error 'Could not enable Manager Approval. Are you an Active Directory or AD CS admin?'
-                            }
+                    Write-Host 'OPERATIONAL IMPACT:' -ForegroundColor White
+                    Write-Host "WARNING: This change could cause some services to stop working until certificates are approved.`n" -ForegroundColor Yellow
+                    Write-Host "If you continue, Locksmith will attempt to fix this issue.`n" -ForegroundColor Yellow
+                    Write-Host "Continue with this operation? [Y] Yes " -NoNewline
+                    Write-Host "[N] " -ForegroundColor Yellow -NoNewline
+                    Write-Host "No: " -NoNewLine
+                    $WarningError = ''
+                    $WarningError = Read-Host
+                    if ($WarningError -like 'y') {
+                        try {
+                            Invoke-Command -ScriptBlock $FixBlock
+                        } catch {
+                            Write-Error 'Could not enable Manager Approval. Are you an Active Directory or AD CS admin?'
                         }
-                    } catch {
-                        Write-Host 'SKIPPED!' -ForegroundColor Yellow
+                    } else {
+                        Write-Host "SKIPPED!`n" -ForegroundColor Yellow
                     }
-                    Read-Host -Prompt 'Press enter to continue...'
+
                 }
             }
             if ($ESC2) {
                 $ESC2 | ForEach-Object {
                     $FixBlock = [scriptblock]::Create($_.Fix)
-                    Write-Host "Attempting to enable Manager Approval on the $($_.Name) template...`n"
-                    Write-Host 'Command(s) to be run:'
+                    Write-Host 'ISSUE:' -ForegroundColor White
+                    Write-Host "Security Principals can enroll in `"$($_.Name)`" template and create a Subordinate Certification Authority without Manager Approval.`n"
+                    Write-Host 'TECHNIQUE:' -ForegroundColor White
+                    Write-Host "$($_.Technique)`n"
+                    Write-Host 'ACTION TO BE PEFORMED:' -ForegroundColor White
+                    Write-Host "Locksmith will attempt to enable Manager Approval on the `"$($_.Name)`" template.`n"
+                    Write-Host 'COMMAND(S) TO BE RUN:' -ForegroundColor White
                     Write-Host 'PS> ' -NoNewline
                     Write-Host "$($_.Fix)`n" -ForegroundColor Cyan
-                    try {
-                        $WarningError = $null
-                        Write-Warning "This could cause some services to stop working until certificates are approved.`nIf you continue, this script will attempt to fix this issue." -WarningAction Inquire -ErrorVariable WarningError
-                        if (!$WarningError) {
-                            try {
-                                Invoke-Command -ScriptBlock $FixBlock
-                            } catch {
-                                Write-Error 'Could not enable Manager Approval. Are you an Active Directory or AD CS admin?'
-                            }
+                    Write-Host 'OPERATIONAL IMPACT:' -ForegroundColor White
+                    Write-Host "WARNING: This change could cause some services to stop working until certificates are approved.`n" -ForegroundColor Yellow
+                    Write-Host "If you continue, Locksmith will attempt to fix this issue.`n" -ForegroundColor Yellow
+                    Write-Host "Continue with this operation? [Y] Yes " -NoNewline
+                    Write-Host "[N] " -ForegroundColor Yellow -NoNewline
+                    Write-Host "No: " -NoNewLine
+                    $WarningError = ''
+                    $WarningError = Read-Host
+                    if ($WarningError -like 'y') {
+                        try {
+                            Invoke-Command -ScriptBlock $FixBlock
+                        } catch {
+                            Write-Error 'Could not enable Manager Approval. Are you an Active Directory or AD CS admin?'
                         }
-                    } catch {
-                        Write-Host 'SKIPPED!' -ForegroundColor Yellow
+                    } else {
+                        Write-Host "SKIPPED!`n" -ForegroundColor Yellow
                     }
-                    Read-Host -Prompt 'Press enter to continue...'
                 }
             }
             if ($ESC6) {
                 $ESC6 | ForEach-Object {
                     $FixBlock = [scriptblock]::Create($_.Fix)
-                    Write-Host "Attempting to disable the EDITF_ATTRIBUTESUBJECTALTNAME2 flag on $($_.Name)...`n"
-                    Write-Host 'Command(s) to be run:'
+                    Write-Host 'ISSUE:' -ForegroundColor White
+                    Write-Host "The Certification Authority `"$($_.Name)`" has the dangerous EDITF_ATTRIBUTESUBJECTALTNAME2 flag enabled.`n"
+                    Write-Host 'TECHNIQUE:' -ForegroundColor White
+                    Write-Host "$($_.Technique)`n"
+                    Write-Host 'ACTION TO BE PEFORMED:' -ForegroundColor White
+                    Write-Host "Locksmith will attempt to disable the EDITF_ATTRIBUTESUBJECTALTNAME2 flag on Certifiction Authority `"$($_.Name)`".`n"
+                    Write-Host 'COMMAND(S) TO BE RUN' -ForegroundColor White
                     Write-Host 'PS> ' -NoNewline
                     Write-Host "$($_.Fix)`n" -ForegroundColor Cyan
-                    try {
-                        $WarningError = $null
-                        Write-Warning "This could cause some services to stop working.`nIf you continue this script will attempt to fix this issues." -WarningAction Inquire -ErrorVariable WarningError
-                        if (!$WarningError) {
-                            try {
-                                Invoke-Command -ScriptBlock $FixBlock
-                            } catch {
-                                Write-Error 'Could not disable the EDITF_ATTRIBUTESUBJECTALTNAME2 flag. Are you an Active Directory or AD CS admin?'
-                            }
+                    $WarningError = 'n'
+                    Write-Host 'OPERATIONAL IMPACT:' -ForegroundColor White
+                    Write-Host "WARNING: This change could cause some services to stop working.`n" -ForegroundColor Yellow
+                    Write-Host "If you continue, Locksmith will attempt to fix this issue.`n" -ForegroundColor Yellow
+                    Write-Host "Continue with this operation? [Y] Yes " -NoNewline
+                    Write-Host "[N] " -ForegroundColor Yellow -NoNewline
+                    Write-Host "No: " -NoNewLine
+                    $WarningError = ''
+                    $WarningError = Read-Host
+                    if ($WarningError -like 'y') {
+                        try {
+                            Invoke-Command -ScriptBlock $FixBlock
+                        } catch {
+                            Write-Error 'Could not disable the EDITF_ATTRIBUTESUBJECTALTNAME2 flag. Are you an Active Directory or AD CS admin?'
                         }
-                    } catch {
-                        Write-Host 'SKIPPED!' -ForegroundColor Yellow
+                    } else {
+                        Write-Host "SKIPPED!`n" -ForegroundColor Yellow
                     }
-                    Read-Host -Prompt 'Press enter to continue...'
                 }
             }
+
+            Write-Host "Mode 4 Complete! There are no more issues that Locksmith can automatically resolve.`n" -ForegroundColor Green
+            Write-Host 'If you experience any operational impact from using Locksmith Mode 4, use ' -NoNewline
+            Write-Host 'Invoke-RevertLocksmith.ps1 ' -ForegroundColor White
+            Write-Host "to revert all changes made by Locksmith. It can be found in the current working directory.`n"
+            Write-Host @"
+REMINDER: Locksmith cannot automatically resolve all AD CS issues at this time.
+There may be more AD CS issues remaining in your environment.
+Use Locksmith in Modes 0-3 to further investigate your environment
+or reach out to the Locksmith team for assistance. We'd love to help`n
+"@ -ForegroundColor Yellow
         }
     }
+    Write-Host 'Thank you for using ' -NoNewline
+    Write-Host "❤ Locksmith ❤`n" -ForegroundColor Magenta
 }

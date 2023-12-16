@@ -10,7 +10,7 @@
         ($_.objectClass -eq 'pKICertificateTemplate') -and
         ($_.pkiExtendedKeyUsage -match $ClientAuthEKU) -and
         ($_.'msPKI-Certificate-Name-Flag' -eq 1) -and
-        ($_.'msPKI-Enrollment-Flag' -ne 2) -and
+        !($_.'msPKI-Enrollment-Flag' -band 2) -and
         ($_.'msPKI-RA-Application-Policies' -eq '1.3.6.1.4.1.311.20.2.1') -and
         ( ($_.'msPKI-RA-Signature' -eq 1) )
     } | ForEach-Object {
