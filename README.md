@@ -40,7 +40,7 @@ A ~~tiny~~ small tool built to detect and fix common misconfigurations in Active
 <a name="Mode0" id="Mode0"></a>
 ## Mode 0: Identify Issues, Output to Console (Default)
 Running `Invoke-Locksmith.ps1` with no parameters or with `-Mode 0` will scan the current Active Directory forest and output all discovered AD CS issues to the console in **Table** format.
-``` powershell
+``` powershell-console
 # Module Syntax
 PS> Invoke-Locksmith
 ```
