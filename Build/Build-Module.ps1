@@ -17,12 +17,13 @@ Import-Module -Name PSPublishModule -Force
 Build-Module -ModuleName 'Locksmith' {
     # Usual defaults as per standard module
     $Manifest = [ordered] @{
-        ModuleVersion        = '2023.11'
+        ModuleVersion        = '2023.12'
         CompatiblePSEditions = @('Desktop', 'Core')
         GUID                 = 'b1325b42-8dc4-4f17-aa1f-dcb5984ca14a'
         Author               = 'Jake Hildreth'
         Copyright            = "(c) 2022 - $((Get-Date).Year). All rights reserved."
         Description          = 'A small tool to find and fix common misconfigurations in Active Directory Certificate Services.'
+        ProjectUri           = 'https://github.com/TrimarcJake/Locksmith'
         PowerShellVersion    = '5.1'
         Tags                 = @('Windows', 'Locksmith', 'CA', 'PKI', 'ActiveDirectory', 'CertificateServices','ADCS')
     }
@@ -40,8 +41,7 @@ Build-Module -ModuleName 'Locksmith' {
         # those modules are builtin in PowerShell so no need to install them
         # could as well be ignored with New-ConfigurationModuleSkip
         'Microsoft.PowerShell.Utility'
-        'Microsoft.PowerShell.LocalAccounts',
-        'Microsoft.PowerShell.Utility'
+        'Microsoft.PowerShell.LocalAccounts'
         'Microsoft.PowerShell.Management'
         'CimCmdlets'
         'Dism'
@@ -54,8 +54,8 @@ Build-Module -ModuleName 'Locksmith' {
     # Ignore missing modules or cmdlets during build process
     New-ConfigurationModuleSkip -IgnoreFunctionName @('Out-ConsoleGridView') -IgnoreModuleName @('Microsoft.PowerShell.ConsoleGuiTools')
 
-    # Tells the script to exclude Out-ConsoleGridView command from functions if the  module is not available to be loaded
-    New-ConfigurationCommand -CommandName @('Out-ConsoleGridView') -ModuleName 'Microsoft.PowerShell.ConsoleGuiTools'
+    # Tells the script to exclude commands from functions if the module is not available to be loaded
+    # New-ConfigurationCommand -CommandName @('') -ModuleName @('') # Populate arrays or remove empty example.
 
     $ConfigurationFormat = [ordered] @{
         RemoveComments                              = $false

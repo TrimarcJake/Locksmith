@@ -6,6 +6,7 @@ ADCSRemediation.CSV
 Artefacts/*
 Examples/Output/*
 Ignore/*
+Invoke-RevertLocksmith.ps1
 Lib/Core/*
 Lib/Default/*
 Lib/Standard/*
