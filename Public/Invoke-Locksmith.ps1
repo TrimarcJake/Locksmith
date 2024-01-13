@@ -96,7 +96,7 @@
 
     # Check if ActiveDirectory PowerShell module is available, and attempt to install if not found
     $RSATInstalled = Test-IsRSATInstalled
-    if (-not $RSATInstalled) {
+    if ($RSATInstalled) {
         # Continue
     } else {
         Install-RSATADPowerShell

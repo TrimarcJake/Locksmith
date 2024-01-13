@@ -7,7 +7,7 @@
     .EXAMPLE
         Test-IsElevated
     #>
-    if (-not(Get-Module -Name 'ActiveDirectory' -ListAvailable)) {
+    if (Get-Module -Name 'ActiveDirectory' -ListAvailable) {
         $true
     } else {
         $false
