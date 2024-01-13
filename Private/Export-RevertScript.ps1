@@ -8,12 +8,18 @@
         [Parameter(Mandatory = $false)]
         [array]$ESC2,
         [Parameter(Mandatory = $false)]
+        [array]$ESC3,
+        [Parameter(Mandatory = $false)]
+        [array]$ESC4,
+        [Parameter(Mandatory = $false)]
+        [array]$ESC5,
+        [Parameter(Mandatory = $false)]
         [array]$ESC6
     )
     begin {
         $Output = 'Invoke-RevertLocksmith.ps1'
         Set-Content -Path $Output -Value "<#`nScript to revert changes performed by Locksmith`nCreated $(Get-Date)`n#>" -Force
-        $Objects = $AuditingIssues + $ESC1 + $ESC2 + $ESC6
+        $Objects = $AuditingIssues + $ESC1 + $ESC2 + $ESC3 + $ESC4 + $ESC5 + $ESC6
     }
     process {
         if ($Objects) {
