@@ -686,23 +686,21 @@ function Invoke-Remediation {
     Write-Host 'Creating a script (' -NoNewline
     Write-Host 'Invoke-RevertLocksmith.ps1' -ForegroundColor White -NoNewline
     Write-Host ") which can be used to revert all changes made by Locksmith...`n"
-    try {
-        Export-RevertScript -AuditingIssues $AuditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC3 $ESC3 -ESC4 $ESC4 -ESC5 $ESC5 -ESC6 $ESC6
-    }
-    catch {
-        Write-Warning 'Creation of Invoke-RevertLocksmith.ps1 failed.'
-        Write-Host "Continue with this operation? [Y] Yes " -NoNewline
-        Write-Host "[N] " -ForegroundColor Yellow -NoNewline
-        Write-Host "No: " -NoNewline
-        $WarningError = ''
-        $WarningError = Read-Host
-        if ($WarningError -like 'y') {
-            # Continue
-        }
-        else {
-            break
-        }
-    }
+    # try {
+    #     Export-RevertScript -AuditingIssues $AuditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC3 $ESC3 -ESC4 $ESC4 -ESC5 $ESC5 -ESC6 $ESC6
+    # } catch {
+    #     Write-Warning 'Creation of Invoke-RevertLocksmith.ps1 failed.'
+    #     Write-Host "Continue with this operation? [Y] Yes " -NoNewline
+    #     Write-Host "[N] " -ForegroundColor Yellow -NoNewline
+    #     Write-Host "No: " -NoNewLine
+    #     $WarningError = ''
+    #     $WarningError = Read-Host
+    #     if ($WarningError -like 'y') {
+    #         # Continue
+    #     } else {
+    #         break
+    #     }
+    # }
     if ($AuditingIssues) {
         $AuditingIssues | ForEach-Object {
             $FixBlock = [scriptblock]::Create($_.Fix)
