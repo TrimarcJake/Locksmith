@@ -33,6 +33,6 @@ flowchart LR
                 UsersSize -- Small --> UsersSGPriority(High);
                 UsersSize -- Medium --> UsersMGPriority(Critical);
                 UsersSize -- Large --> UsersLGPriority(Critical);
-    PrincipalType -- (g)MSA --> gMSAType("(g)MSA Type");
+    PrincipalType -- gMSA --> gMSAType(gMSA Type);
             gMSAType -- Any --> gMSAPriority(Info);
 ```
