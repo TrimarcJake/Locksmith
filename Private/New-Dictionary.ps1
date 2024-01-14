@@ -107,33 +107,33 @@ function New-Dictionary {
             FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
             ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=NTLM%20Relay%20to%20AD%20CS%20HTTP%20Endpoints'
         },
-        [VulnerableConfigurationItem]@{
-            Name = 'ESC9'
-            Category = 'Escalation Path'
-            Subcategory = ''
-            Summary = ''
-            FindIt =  {Find-ESC9}
-            FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
-            ReferenceUrls = ''
-        },
-        [VulnerableConfigurationItem]@{
-            Name = 'ESC10'
-            Category = 'Escalation Path'
-            Subcategory = ''
-            Summary = ''
-            FindIt =  {Find-ESC10}
-            FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
-            ReferenceUrls = ''
-        },
-        [VulnerableConfigurationItem]@{
-            Name = 'ESC11'
-            Category = 'Escalation Path'
-            Subcategory = ''
-            Summary = ''
-            FindIt =  {Find-ESC11}
-            FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
-            ReferenceUrls = ''
-        },
+        # [VulnerableConfigurationItem]@{
+        #     Name = 'ESC9'
+        #     Category = 'Escalation Path'
+        #     Subcategory = ''
+        #     Summary = ''
+        #     FindIt =  {Find-ESC9}
+        #     FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
+        #     ReferenceUrls = ''
+        # },
+        # [VulnerableConfigurationItem]@{
+        #     Name = 'ESC10'
+        #     Category = 'Escalation Path'
+        #     Subcategory = ''
+        #     Summary = ''
+        #     FindIt =  {Find-ESC10}
+        #     FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
+        #     ReferenceUrls = ''
+        # },
+        # [VulnerableConfigurationItem]@{
+        #     Name = 'ESC11'
+        #     Category = 'Escalation Path'
+        #     Subcategory = ''
+        #     Summary = ''
+        #     FindIt =  {Find-ESC11}
+        #     FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
+        #     ReferenceUrls = ''
+        # },
         [VulnerableConfigurationItem]@{
             Name = 'Auditing'
             Category = 'Server Configuration'
