@@ -1,5 +1,5 @@
 ```mermaid
-flowchart LR;
+graph LR;
     ESC1 --> PrincipalType(Principal Type);
         PrincipalType ---- User --> UserType["User Type"];
             UserType -- ADA --> ADAUPriority(Low);
