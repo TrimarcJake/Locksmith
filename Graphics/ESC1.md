@@ -23,7 +23,7 @@ flowchart LR
                 PKIASize -- Small --> PKIASGPriority(Medium);
                 PKIASize -- Medium --> PKIAMGPriority(Info);
                 PKIASize -- Large --> PKIALGPriority(Low);
-            GroupType -- 100% Users --> UsersSize(User Group Size);
+            GroupType -- Regular Users --> UsersSize(User Group Size);
                 UsersSize -- Empty --> UsersEGPriority(High);
                 UsersSize -- Small --> UsersSGPriority(High);
                 UsersSize -- Medium --> UsersMGPriority(Critical);
