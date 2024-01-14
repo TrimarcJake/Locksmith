@@ -1,4 +1,5 @@
 ```mermaid
+%%{init: {'theme':'forest'}}%%
 flowchart LR
     ESC1 --> PrincipalType(Principal Type);
         PrincipalType ---- User --> UserType["User Type"];
