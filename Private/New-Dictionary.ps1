@@ -35,7 +35,7 @@ function New-Dictionary {
         [VulnerableConfigurationItem]@{
             Name = 'ESC1'
             Category = 'Escalation Path'
-            Subcategory = 'Misconfigured Certificate Templates'
+            Subcategory = 'Vulnerable Client Authentication Templates'
             Summary = ''
             FindIt =  {Find-ESC1}
             FixIt = {Write-Output "Add code to fix the vulnerable configuration."}
@@ -44,7 +44,7 @@ function New-Dictionary {
         [VulnerableConfigurationItem]@{
             Name = 'ESC2'
             Category = 'Escalation Path'
-            Subcategory = 'Misconfigured Certificate Templates'
+            Subcategory = 'Vulnerable SubCA/Any Purpose Templates'
             Summary = ''
             FindIt =  {Find-ESC2}
             FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
@@ -53,7 +53,7 @@ function New-Dictionary {
         [VulnerableConfigurationItem]@{
             Name = 'ESC3'
             Category = 'Escalation Path'
-            Subcategory = 'Enrollment Agent Templates'
+            Subcategory = 'Vulnerable Enrollment Agent Templates'
             Summary = ''
             FindIt =  {
                 Find-ESC3Condition1
@@ -65,7 +65,7 @@ function New-Dictionary {
         [VulnerableConfigurationItem]@{
             Name = 'ESC4';
             Category = 'Escalation Path'
-            Subcategory = 'Vulnerable Certificate Template Access Control'
+            Subcategory = 'Certificate Templates with Vulnerable Access Controls'
             Summary = ''
             FindIt =  {Find-ESC4}
             FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
@@ -74,7 +74,7 @@ function New-Dictionary {
         [VulnerableConfigurationItem]@{
             Name = 'ESC5';
             Category = 'Escalation Path'
-            Subcategory = 'Vulnerable PKI Object Access Control'
+            Subcategory = 'PKI Objects with Vulnerable Access Control'
             Summary = ''
             FindIt =  {Find-ESC5}
             FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
@@ -101,7 +101,7 @@ function New-Dictionary {
         [VulnerableConfigurationItem]@{
             Name = 'ESC8'
             Category = 'Escalation Path'
-            Subcategory = 'NTLM Relay to AD CS HTTP Endpoints'
+            Subcategory = 'AD CS HTTP Endpoints vulnerable to NTLM Relay'
             Summary = ''
             FindIt =  {Find-ESC8}
             FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
