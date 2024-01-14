@@ -1,9 +1,9 @@
-@{
+﻿@{
     AliasesToExport      = @('*')
     Author               = 'Jake Hildreth'
     CmdletsToExport      = @()
     CompatiblePSEditions = @('Desktop', 'Core')
-    Copyright            = '(c) 2022 - 2023. All rights reserved.'
+    Copyright            = '(c) 2022 - 2024. All rights reserved.'
     Description          = 'A small tool to find and fix common misconfigurations in Active Directory Certificate Services.'
     FunctionsToExport    = @('*')
     GUID                 = 'b1325b42-8dc4-4f17-aa1f-dcb5984ca14a'
@@ -11,9 +11,9 @@
     PowerShellVersion    = '5.1'
     PrivateData          = @{
         PSData = @{
-            Tags                       = @('Windows', 'Locksmith', 'CA', 'PKI', 'ActiveDirectory', 'CertificateServices', 'ADCS')
-            ProjectUri                 = 'https://github.com/TrimarcJake/Locksmith'
             ExternalModuleDependencies = @('ActiveDirectory', 'ServerManager', 'Microsoft.PowerShell.Utility', 'Microsoft.PowerShell.LocalAccounts', 'Microsoft.PowerShell.Management', 'CimCmdlets', 'Dism')
+            ProjectUri                 = 'https://github.com/TrimarcJake/Locksmith'
+            Tags                       = @('Windows', 'Locksmith', 'CA', 'PKI', 'ActiveDirectory', 'CertificateServices', 'ADCS')
         }
     }
     RequiredModules      = @('ActiveDirectory', 'ServerManager', 'Microsoft.PowerShell.Utility', 'Microsoft.PowerShell.LocalAccounts', 'Microsoft.PowerShell.Management', 'CimCmdlets', 'Dism')

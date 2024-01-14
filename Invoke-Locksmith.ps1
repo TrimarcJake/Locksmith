@@ -1,4 +1,4 @@
-param (
+﻿param (
     [int]$Mode,
     [Parameter()]
     [ValidateSet('Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'All', 'PromptMe')]
@@ -366,25 +366,6 @@ function Find-ESC5 {
         else {
             $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
         }
-        if ( ($_.objectClass -ne 'pKICertificateTemplate') -and 
-            ($SID -notmatch $SafeOwners) -and
-            ($entry.ActiveDirectoryRights.ObjectType -notmatch $SafeObjectTypes)            
-        ) {
-            $Issue = New-Object -TypeName pscustomobject
-            $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name IdentityReference -Value $entry.IdentityReference -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name ActiveDirectoryRights -Value $entry.ActiveDirectoryRights -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Issue `
-                -Value "$($_.nTSecurityDescriptor.Owner) has Owner rights on this object" -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value '[TODO]' -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC5'
-            $Severity = Set-Severity -Issue $Issue
-            $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
-            $Issue
-        }
         if ( ($_.objectClass -ne 'pKICertificateTemplate') -and ($SID -match $UnsafeOwners) ) {
             $Issue = New-Object -TypeName pscustomobject
             $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
@@ -401,6 +382,26 @@ function Find-ESC5 {
             $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
             $Issue
         }
+        elseif ( ($_.objectClass -ne 'pKICertificateTemplate') -and
+            ($SID -notmatch $SafeOwners) -and
+            ($entry.ActiveDirectoryRights.ObjectType -notmatch $SafeObjectTypes)
+        ) {
+            $Issue = New-Object -TypeName pscustomobject
+            $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name IdentityReference -Value $entry.IdentityReference -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name ActiveDirectoryRights -Value $entry.ActiveDirectoryRights -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Issue `
+                -Value "$($_.nTSecurityDescriptor.Owner) has Owner rights on this object" -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value '[TODO]' -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
+            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC5'
+            $Severity = Set-Severity -Issue $Issue
+            $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
+            $Issue
+        }
+
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
             if ($Principal -match '^(S-1|O:)') {
@@ -430,6 +431,7 @@ function Find-ESC5 {
         }
     }
 }
+
 function Find-ESC6 {
     [CmdletBinding()]
     param(
@@ -618,6 +620,73 @@ function Get-Target {
         }
     }
     return $Targets
+}
+function Install-RSATADPowerShell {
+    <#
+    .SYNOPSIS
+        Installs the RSAT AD PowerShell module.
+    .DESCRIPTION
+        This function checks if the current process is elevated and if it is it will prompt to install the RSAT AD PowerShell module.
+    .EXAMPLE
+        Install-RSATADPowerShell
+    #>
+    if (Test-IsElevated) {
+        $OS = (Get-CimInstance -ClassName Win32_OperatingSystem).ProductType
+        # 1 - workstation, 2 - domain controller, 3 - non-dc server
+        if ($OS -gt 1) {
+            Write-Warning "The Active Directory PowerShell module is not installed."
+            Write-Host "If you continue, Locksmith will attempt to install the Active Directory PowerShell module for you.`n" -ForegroundColor Yellow
+            Write-Host "`nCOMMAND: Install-WindowsFeature -Name RSAT-AD-PowerShell`n" -ForegroundColor Cyan
+            Write-Host "Continue with this operation? [Y] Yes " -NoNewline
+            Write-Host "[N] " -ForegroundColor Yellow -NoNewline
+            Write-Host "No: " -NoNewline
+            $WarningError = ''
+            $WarningError = Read-Host
+            if ($WarningError -like 'y') {
+                try {
+                    Write-Host "Beginning the ActiveDirectory PowerShell module installation, please wait.."
+                    # Attempt to install ActiveDirectory PowerShell module for Windows Server OSes, works with Windows Server 2012 R2 through Windows Server 2022
+                    Install-WindowsFeature -Name RSAT-AD-PowerShell
+                }
+                catch {
+                    Write-Error 'Could not install ActiveDirectory PowerShell module. This module needs to be installed to run Locksmith successfully.'
+                }
+            }
+            else {
+                Write-Host "ActiveDirectory PowerShell module NOT installed. Please install to run Locksmith successfully.`n" -ForegroundColor Yellow
+                break;
+            }
+        }
+        else {
+            Write-Warning "The Active Directory PowerShell module is not installed."
+            Write-Host "If you continue, Locksmith will attempt to install the Active Directory PowerShell module for you.`n" -ForegroundColor Yellow
+            Write-Host "`nCOMMAND: Add-WindowsCapability -Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0 -Online`n" -ForegroundColor Cyan
+            Write-Host "Continue with this operation? [Y] Yes " -NoNewline
+            Write-Host "[N] " -ForegroundColor Yellow -NoNewline
+            Write-Host "No: " -NoNewline
+            $WarningError = ''
+            $WarningError = Read-Host
+            if ($WarningError -like 'y') {
+                try {
+                    Write-Host "Beginning the ActiveDirectory PowerShell module installation, please wait.."
+                    # Attempt to install ActiveDirectory PowerShell module for Windows Desktop OSes
+                    Add-WindowsCapability -Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0 -Online
+                }
+                catch {
+                    Write-Error 'Could not install ActiveDirectory PowerShell module. This module needs to be installed to run Locksmith successfully.'
+                }
+            }
+            else {
+                Write-Host "ActiveDirectory PowerShell module NOT installed. Please install to run Locksmith successfully.`n" -ForegroundColor Yellow
+                break;
+            }
+        }
+    }
+    else {
+        Write-Warning -Message "The ActiveDirectory PowerShell module is required for Locksmith, but is not installed. Please launch an elevated PowerShell session to have this module installed for you automatically."
+        # The goal here is to exit the script without closing the PowerShell window. Need to test.
+        Return
+    }
 }
 function Invoke-Scans {
     [CmdletBinding()]
@@ -1045,6 +1114,93 @@ function Test-IsLocalAccountSession {
     }
 }
 
+function Test-IsMemberOfProtectedUsers {
+    <#
+    .SYNOPSIS
+    Check to see if a user is a member of the Protected Users group.
+
+    .DESCRIPTION
+    This function checks to see if a specified user or the current user is a member of the Protected Users group in AD.
+
+    .PARAMETER User
+    The user that will be checked for membership in the Protected Users group. This parameter accepts input from the pipeline.
+
+    .EXAMPLE
+    This example will check if JaneDoe is a member of the Protected Users group.
+
+        Test-IsMemberOfProtectedUsers -User JaneDoe
+
+    .EXAMPLE
+    This example will check if the current user is a member of the Protected Users group.
+
+        Test-IsMemberOfProtectedUsers
+
+    .INPUTS
+    Active Directory user object, user SID, SamAccountName, etc
+
+    .OUTPUTS
+    Boolean
+
+    .NOTES
+    Membership in Active Directory's Protect Users group can have implications for anything that relies on NTLM authentication.
+
+#>
+
+    [CmdletBinding()]
+    param (
+        # User parameter accepts any input that is valid for Get-ADUser
+        [Parameter(
+            ValueFromPipeline = $true
+        )]
+        $User
+    )
+
+    Import-Module ActiveDirectory
+
+    # Use the currently logged in user if none is specified
+    # Get the user from Active Directory
+    if (-not($User)) {
+        $CurrentUser = ([System.Security.Principal.WindowsIdentity]::GetCurrent().Name).Split('\')[-1]
+        $CheckUser = Get-ADUser $CurrentUser
+    }
+    else {
+        $CheckUser = Get-ADUser $User
+    }
+
+    # Get the Protected Users group by SID instead of by its name to ensure compatibility with any locale or language.
+    $DomainSID = (Get-ADDomain).DomainSID.Value
+    $ProtectedUsersSID = "$DomainSID-525"
+
+    # Get members of the Protected Users group for the current domain. Recuse in case groups are nested in it.
+    $ProtectedUsers = Get-ADGroupMember -Identity $ProtectedUsersSID -Recursive | Select-Object -Unique
+
+    # Check if the current user is in the 'Protected Users' group
+    if ($ProtectedUsers -contains $CheckUser) {
+        Write-Verbose "$($CheckUser.Name) ($($CheckUser.DistinguishedName)) is a member of the Protected Users group."
+        $true
+    }
+    else {
+        Write-Verbose "$($CheckUser.Name) ($($CheckUser.DistinguishedName)) is not a member of the Protected Users group."
+        $false
+    }
+}
+
+function Test-IsRSATInstalled {
+    <#
+    .SYNOPSIS
+        Tests if the RSAT AD PowerShell module is installed.
+    .DESCRIPTION
+        This function returns True if the RSAT AD PowerShell module is installed or False if not.
+    .EXAMPLE
+        Test-IsElevated
+    #>
+    if (-not(Get-Module -Name 'ActiveDirectory' -ListAvailable)) {
+        $true
+    }
+    else {
+        $false
+    }
+}
 function Invoke-Locksmith {
     <#
     .SYNOPSIS
@@ -1142,24 +1298,12 @@ function Invoke-Locksmith {
     Write-Host $VersionBanner -ForegroundColor Red
 
     # Check if ActiveDirectory PowerShell module is available, and attempt to install if not found
-    if (-not(Get-Module -Name 'ActiveDirectory' -ListAvailable)) {
-        if (Test-IsElevated) {
-            $OS = (Get-CimInstance -ClassName Win32_OperatingSystem).ProductType
-            # 1 - workstation, 2 - domain controller, 3 - non-dc server
-            if ($OS -gt 1) {
-                # Attempt to install ActiveDirectory PowerShell module for Windows Server OSes, works with Windows Server 2012 R2 through Windows Server 2022
-                Install-WindowsFeature -Name RSAT-AD-PowerShell
-            }
-            else {
-                # Attempt to install ActiveDirectory PowerShell module for Windows Desktop OSes
-                Add-WindowsCapability -Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0 -Online
-            }
-        }
-        else {
-            Write-Warning -Message "The ActiveDirectory PowerShell module is required for Locksmith, but is not installed. Please launch an elevated PowerShell session to have this module installed for you automatically."
-            # The goal here is to exit the script without closing the PowerShell window. Need to test.
-            Return
-        }
+    $RSATInstalled = Test-IsRSATInstalled
+    if (-not $RSATInstalled) {
+        # Continue
+    }
+    else {
+        Install-RSATADPowerShell
     }
 
     # Exit if running in restricted admin mode without explicit credentials
