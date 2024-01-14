@@ -895,7 +895,7 @@ function Set-AdditionalCAProperty {
             Mandatory = $true,
             ValueFromPipeline = $true)]
         [array]$ADCSObjects,
-        [System.Management.Automation.PSCredential]$Credential
+        [PSCredential]$Credential
     )
     process {
         $ADCSObjects | Where-Object objectClass -Match 'pKIEnrollmentService' | ForEach-Object {
@@ -973,6 +973,7 @@ function Set-AdditionalCAProperty {
         }
     }
 }
+
 function Set-Severity {
     [CmdletBinding()]
     param(
