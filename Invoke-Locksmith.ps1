@@ -1194,7 +1194,7 @@ function Test-IsRSATInstalled {
     .EXAMPLE
         Test-IsElevated
     #>
-    if (-not(Get-Module -Name 'ActiveDirectory' -ListAvailable)) {
+    if (Get-Module -Name 'ActiveDirectory' -ListAvailable) {
         $true
     }
     else {
@@ -1299,7 +1299,7 @@ function Invoke-Locksmith {
 
     # Check if ActiveDirectory PowerShell module is available, and attempt to install if not found
     $RSATInstalled = Test-IsRSATInstalled
-    if (-not $RSATInstalled) {
+    if ($RSATInstalled) {
         # Continue
     }
     else {
