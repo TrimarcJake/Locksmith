@@ -20,7 +20,7 @@ descriptions, code used to find, code used to fix, and reference URLs. This is i
 #>
 
 function New-Dictionary {
-        class VulnerableConfigurationItem {
+    class VulnerableConfigurationItem {
         static [string] $Version = '2023.10.01.000'
         [string]$Name
         [ValidateSet('Escalation Path','Server Configuration','GPO Setting')][string]$Category
