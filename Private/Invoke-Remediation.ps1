@@ -165,20 +165,20 @@ function Invoke-Remediation {
             }
         }
     }
-    if ($ESC2) {
-        $ESC2 | ForEach-Object {
+    if ($ESC4) {
+        $ESC4 | Where-Object Issue -like "* Owner rights *" | ForEach-Object { # This selector sucks - Jake
             $FixBlock = [scriptblock]::Create($_.Fix)
             Write-Host 'ISSUE:' -ForegroundColor White
-            Write-Host "Security Principals can enroll in `"$($_.Name)`" template and create a Subordinate Certification Authority without Manager Approval.`n"
+            Write-Host "$($_.Issue)`n"
             Write-Host 'TECHNIQUE:' -ForegroundColor White
             Write-Host "$($_.Technique)`n"
             Write-Host 'ACTION TO BE PERFORMED:' -ForegroundColor White
-            Write-Host "Locksmith will attempt to enable Manager Approval on the `"$($_.Name)`" template.`n"
+            Write-Host "Locksmith will attempt to set the owner of `"$($_.Name)`" template to Enterprise Admins.`n"
             Write-Host 'COMMAND(S) TO BE RUN:' -ForegroundColor White
             Write-Host 'PS> ' -NoNewline
             Write-Host "$($_.Fix)`n" -ForegroundColor Cyan
             Write-Host 'OPERATIONAL IMPACT:' -ForegroundColor White
-            Write-Host "WARNING: This change could cause some services to stop working until certificates are approved.`n" -ForegroundColor Yellow
+            Write-Host "This change should have little to no impact on the AD CS environment.`n" -ForegroundColor Green
             Write-Host "If you continue, Locksmith will attempt to fix this issue.`n" -ForegroundColor Yellow
             Write-Host "Continue with this operation? [Y] Yes " -NoNewline
             Write-Host "[N] " -ForegroundColor Yellow -NoNewline
@@ -189,7 +189,38 @@ function Invoke-Remediation {
                 try {
                     Invoke-Command -ScriptBlock $FixBlock
                 } catch {
-                    Write-Error 'Could not enable Manager Approval. Are you an Active Directory or AD CS admin?'
+                    Write-Error 'Could not change Owner. Are you an Active Directory admin?'
+                }
+            } else {
+                Write-Host "SKIPPED!`n" -ForegroundColor Yellow
+            }
+        }
+    }
+    if ($ESC5) {
+        $ESC5 | Where-Object Issue -like "* Owner rights *" | ForEach-Object { # This selector sucks - Jake
+            $FixBlock = [scriptblock]::Create($_.Fix)
+            Write-Host 'ISSUE:' -ForegroundColor White
+            Write-Host "$($_.Issue)`n"
+            Write-Host 'TECHNIQUE:' -ForegroundColor White
+            Write-Host "$($_.Technique)`n"
+            Write-Host 'ACTION TO BE PERFORMED:' -ForegroundColor White
+            Write-Host "Locksmith will attempt to set the owner of `"$($_.Name)`" object to Enterprise Admins.`n"
+            Write-Host 'COMMAND(S) TO BE RUN:' -ForegroundColor White
+            Write-Host 'PS> ' -NoNewline
+            Write-Host "$($_.Fix)`n" -ForegroundColor Cyan
+            Write-Host 'OPERATIONAL IMPACT:' -ForegroundColor White
+            Write-Host "This change should have little to no impact on the AD CS environment.`n" -ForegroundColor Green
+            Write-Host "If you continue, Locksmith will attempt to fix this issue.`n" -ForegroundColor Yellow
+            Write-Host "Continue with this operation? [Y] Yes " -NoNewline
+            Write-Host "[N] " -ForegroundColor Yellow -NoNewline
+            Write-Host "No: " -NoNewLine
+            $WarningError = ''
+            $WarningError = Read-Host
+            if ($WarningError -like 'y') {
+                try {
+                    Invoke-Command -ScriptBlock $FixBlock
+                } catch {
+                    Write-Error 'Could not change Owner. Are you an Active Directory admin?'
                 }
             } else {
                 Write-Host "SKIPPED!`n" -ForegroundColor Yellow
