@@ -101,7 +101,7 @@ function New-Dictionary {
         [VulnerableConfigurationItem]@{
             Name = 'ESC8'
             Category = 'Escalation Path'
-            Subcategory = 'AD CS HTTP Endpoints vulnerable to NTLM Relay'
+            Subcategory = 'AD CS HTTP Endpoints Vulnerable to NTLM Relay'
             Summary = ''
             FindIt =  {Find-ESC8}
             FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
