@@ -85,10 +85,10 @@ function Find-ESC9 {
     foreach ($template in $templates) {
         $name = $template.Name
 
-        $subjectNameFlag     = $template.msPKI-Cert-Template-OID
-        $subjectType         = $template.msPKI-Certificate-Application-Policy
-        $enrollmentFlag      = $template.msPKI-Enrollment-Flag
-        $certificateNameFlag = $template.msPKI-Certificate-Name-Flag
+        $subjectNameFlag     = $template.'msPKI-Cert-Template-OID'
+        $subjectType         = $template.'msPKI-Certificate-Application-Policy'
+        $enrollmentFlag      = $template.'msPKI-Enrollment-Flag'
+        $certificateNameFlag = $template.'msPKI-Certificate-Name-Flag'
 
         # Check if the template is vulnerable to ESC9
         if ($subjectNameFlag -eq "Supply in the request" -and
