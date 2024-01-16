@@ -1,4 +1,4 @@
-param (
+﻿param (
     [int]$Mode,
     [Parameter()]
     [ValidateSet('Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'All', 'PromptMe')]
@@ -56,26 +56,22 @@ function Find-AuditingIssue {
         ($_.objectClass -eq 'pKIEnrollmentService') -and
         ($_.AuditFilter -ne '127')
     } | ForEach-Object {
-        $Issue = New-Object -TypeName pscustomobject
-        $Issue | Add-Member -MemberType NoteProperty -Name 'Forest' -Value $_.CanonicalName.split('/')[0] -Force
-        $Issue | Add-Member -MemberType NoteProperty -Name 'Name' -Value $_.Name -Force
-        $Issue | Add-Member -MemberType NoteProperty -Name 'DistinguishedName' -Value $_.DistinguishedName -Force
+        $Issue = [pscustomobject]@{
+            Forest            = $_.CanonicalName.split('/')[0]
+            Name              = $_.Name
+            DistinguishedName = $_.DistinguishedName
+            Technique         = 'DETECT'
+        }
         if ($_.AuditFilter -match 'CA Unavailable') {
-            $Issue | Add-Member -MemberType NoteProperty -Name 'Issue' -Value $_.AuditFilter -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name 'Fix' -Value 'N/A' -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name 'Revert' -Value 'N/A' -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name 'Technique' -Value 'DETECT' -Force
+            $Issue['Issue'] = $_.AuditFilter
+            $Issue['Fix'] = 'N/A'
+            $Issue['Revert'] = 'N/A'
         }
         else {
-            $Issue | Add-Member -MemberType NoteProperty -Name 'Issue' -Value "Auditing is not fully enabled on $($_.CAFullName). Current value is $($_.AuditFilter)" -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name 'Fix' `
-                -Value "certutil.exe -config `'$($_.CAFullname)`' -setreg `'CA\AuditFilter`' 127; Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name 'Revert' `
-                -Value "certutil.exe -config $($_.CAFullname) -setreg CA\AuditFilter  $($_.AuditFilter); Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name 'Technique' -Value 'DETECT' -Force
+            $Issue['Issue'] = "Auditing is not fully enabled on $($_.CAFullName). Current value is $($_.AuditFilter)"
+            $Issue['Fix'] = "certutil.exe -config `'$($_.CAFullname)`' -setreg `'CA\AuditFilter`' 127; Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }"
+            $Issue['Revert'] = "certutil.exe -config $($_.CAFullname) -setreg CA\AuditFilter  $($_.AuditFilter); Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }"
         }
-        $Severity = Set-Severity -Issue $Issue
-        $Issue | Add-Member -MemberType NoteProperty -Name 'Severity' -Value $Severity
         $Issue
     }
 }
@@ -104,21 +100,17 @@ function Find-ESC1 {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
             }
             if ( ($SID -notmatch $SafeUsers) -and ($entry.ActiveDirectoryRights -match 'ExtendedRight') ) {
-                $Issue = New-Object -TypeName pscustomobject
-                $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name IdentityReference -Value $entry.IdentityReference -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name ActiveDirectoryRights -Value $entry.ActiveDirectoryRights -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Issue `
-                    -Value "$($entry.IdentityReference) can enroll in this Client Authentication template using a SAN without Manager Approval"  -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Fix `
-                    -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}" -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Revert `
-                    -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"  -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC1'
-                $Severity = Set-Severity -Issue $Issue
-                $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
+                $Issue = [pscustomobject]@{
+                    Forest                = $_.CanonicalName.split('/')[0]
+                    Name                  = $_.Name
+                    DistinguishedName     = $_.DistinguishedName
+                    IdentityReference     = $entry.IdentityReference
+                    ActiveDirectoryRights = $entry.ActiveDirectoryRights
+                    Issue                 = "$($entry.IdentityReference) can enroll in this Client Authentication template using a SAN without Manager Approval"
+                    Fix                   = "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}"
+                    Revert                = "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"
+                    Technique             = 'ESC1'
+                }
                 $Issue
             }
         }
@@ -149,21 +141,17 @@ function Find-ESC2 {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
             }
             if ( ($SID -notmatch $SafeUsers) -and ($entry.ActiveDirectoryRights -match 'ExtendedRight') ) {
-                $Issue = New-Object -TypeName pscustomobject
-                $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name IdentityReference -Value $entry.IdentityReference -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name ActiveDirectoryRights -Value $entry.ActiveDirectoryRights  -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Issue `
-                    -Value "$($entry.IdentityReference) can request a SubCA certificate without Manager Approval" -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Fix `
-                    -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}"  -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Revert `
-                    -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"  -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC2'
-                $Severity = Set-Severity -Issue $Issue
-                $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
+                $Issue = [pscustomobject]@{
+                    Forest                = $_.CanonicalName.split('/')[0]
+                    Name                  = $_.Name
+                    DistinguishedName     = $_.DistinguishedName
+                    IdentityReference     = $entry.IdentityReference
+                    ActiveDirectoryRights = $entry.ActiveDirectoryRights
+                    Issue                 = "$($entry.IdentityReference) can request a SubCA certificate without Manager Approval"
+                    Fix                   = "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}"
+                    Revert                = "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"
+                    Technique             = 'ESC2'
+                }
                 $Issue
             }
         }
@@ -193,21 +181,17 @@ function Find-ESC3Condition1 {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
             }
             if ( ($SID -notmatch $SafeUsers) -and ($entry.ActiveDirectoryRights -match 'ExtendedRight') ) {
-                $Issue = New-Object -TypeName pscustomobject
-                $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name IdentityReference -Value $entry.IdentityReference -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name ActiveDirectoryRights -Value $entry.ActiveDirectoryRights -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Issue `
-                    -Value "$($entry.IdentityReference) can enroll in this Enrollment Agent template without Manager Approval"  -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Fix `
-                    -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}" -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Revert `
-                    -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"  -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC3'
-                $Severity = Set-Severity -Issue $Issue
-                $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
+                $Issue = [pscustomobject]@{
+                    Forest                = $_.CanonicalName.split('/')[0]
+                    Name                  = $_.Name
+                    DistinguishedName     = $_.DistinguishedName
+                    IdentityReference     = $entry.IdentityReference
+                    ActiveDirectoryRights = $entry.ActiveDirectoryRights
+                    Issue                 = "$($entry.IdentityReference) can enroll in this Enrollment Agent template without Manager Approval"
+                    Fix                   = "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}"
+                    Revert                = "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"
+                    Technique             = 'ESC3'
+                }
                 $Issue
             }
         }
@@ -239,21 +223,17 @@ function Find-ESC3Condition2 {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
             }
             if ( ($SID -notmatch $SafeUsers) -and ($entry.ActiveDirectoryRights -match 'ExtendedRight') ) {
-                $Issue = New-Object -TypeName pscustomobject
-                $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name IdentityReference -Value $entry.IdentityReference -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name ActiveDirectoryRights -Value $entry.ActiveDirectoryRights -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Issue `
-                    -Value "$($entry.IdentityReference) can enroll in this Client Authentication template using a SAN without Manager Approval"  -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Fix `
-                    -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}" -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Revert `
-                    -Value "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"  -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC3'
-                $Severity = Set-Severity -Issue $Issue
-                $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
+                $Issue = [pscustomobject]@{
+                    Forest                = $_.CanonicalName.split('/')[0]
+                    Name                  = $_.Name
+                    DistinguishedName     = $_.DistinguishedName
+                    IdentityReference     = $entry.IdentityReference
+                    ActiveDirectoryRights = $entry.ActiveDirectoryRights
+                    Issue                 = "$($entry.IdentityReference) can enroll in this Client Authentication template using a SAN without Manager Approval"
+                    Fix                   = "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}"
+                    Revert                = "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"
+                    Technique             = 'ESC3'
+                }
                 $Issue
             }
         }
@@ -282,35 +262,31 @@ function Find-ESC4 {
         }
 
         if ( ($_.objectClass -eq 'pKICertificateTemplate') -and ($SID -match $UnsafeOwners) ) {
-            $Issue = New-Object -TypeName pscustomobject
-            $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name IdentityReference -Value $entry.IdentityReference -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name ActiveDirectoryRights -Value $entry.ActiveDirectoryRights -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Issue `
-                -Value "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template" -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL" -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL" -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC4'
-            $Severity = Set-Severity -Issue $Issue
-            $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
+            $Issue = [pscustomobject]@{
+                Forest                = $_.CanonicalName.split('/')[0]
+                Name                  = $_.Name
+                DistinguishedName     = $_.DistinguishedName
+                IdentityReference     = $entry.IdentityReference
+                ActiveDirectoryRights = $entry.ActiveDirectoryRights
+                Issue                 = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
+                Fix                   = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
+                Revert                = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
+                Technique             = 'ESC4'
+            }
             $Issue
         }
         elseif ( ($_.objectClass -eq 'pKICertificateTemplate') -and ($SID -notmatch $SafeOwners) ) {
-            $Issue = New-Object -TypeName pscustomobject
-            $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name IdentityReference -Value $entry.IdentityReference -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name ActiveDirectoryRights -Value $entry.ActiveDirectoryRights -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Issue `
-                -Value "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template" -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value '[TODO]' -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC4'
-            $Severity = Set-Severity -Issue $Issue
-            $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
+            $Issue = [pscustomobject]@{
+                Forest                = $_.CanonicalName.split('/')[0]
+                Name                  = $_.Name
+                DistinguishedName     = $_.DistinguishedName
+                IdentityReference     = $entry.IdentityReference
+                ActiveDirectoryRights = $entry.ActiveDirectoryRights
+                Issue                 = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
+                Fix                   = '[TODO]'
+                Revert                = '[TODO]'
+                Technique             = 'ESC4'
+            }
             $Issue
         }
 
@@ -327,19 +303,17 @@ function Find-ESC4 {
                 ($entry.ActiveDirectoryRights -match $DangerousRights) -and
                 ($entry.ActiveDirectoryRights.ObjectType -notmatch $SafeObjectTypes)
             ) {
-                $Issue = New-Object -TypeName pscustomobject
-                $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name IdentityReference -Value $entry.IdentityReference -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name ActiveDirectoryRights -Value $entry.ActiveDirectoryRights -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Issue `
-                    -Value "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this template"  -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; foreach ( `$ace in `$ACL.access ) { if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) { `$ACL.RemoveAccessRule(`$ace) | Out-Null ; Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL } }" -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC4'
-                $Severity = Set-Severity -Issue $Issue
-                $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
+                $Issue = [pscustomobject]@{
+                    Forest                = $_.CanonicalName.split('/')[0]
+                    Name                  = $_.Name
+                    DistinguishedName     = $_.DistinguishedName
+                    IdentityReference     = $entry.IdentityReference
+                    ActiveDirectoryRights = $entry.ActiveDirectoryRights
+                    Issue                 = "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this template"
+                    Fix                   = "`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; foreach ( `$ace in `$ACL.access ) { if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) { `$ACL.RemoveAccessRule(`$ace) | Out-Null ; Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL } }"
+                    Revert                = '[TODO]'
+                    Technique             = 'ESC4'
+                }
                 $Issue
             }
         }
@@ -366,41 +340,38 @@ function Find-ESC5 {
         else {
             $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
         }
-        if ( ($_.objectClass -ne 'pKICertificateTemplate') -and 
-            ($SID -notmatch $SafeOwners) -and
-            ($entry.ActiveDirectoryRights.ObjectType -notmatch $SafeObjectTypes)            
-        ) {
-            $Issue = New-Object -TypeName pscustomobject
-            $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name IdentityReference -Value $entry.IdentityReference -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name ActiveDirectoryRights -Value $entry.ActiveDirectoryRights -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Issue `
-                -Value "$($_.nTSecurityDescriptor.Owner) has Owner rights on this object" -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value '[TODO]' -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC5'
-            $Severity = Set-Severity -Issue $Issue
-            $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
-            $Issue
-        }
         if ( ($_.objectClass -ne 'pKICertificateTemplate') -and ($SID -match $UnsafeOwners) ) {
-            $Issue = New-Object -TypeName pscustomobject
-            $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name IdentityReference -Value $entry.IdentityReference -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name ActiveDirectoryRights -Value $entry.ActiveDirectoryRights -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Issue `
-                -Value "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template" -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL" -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL" -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC5'
-            $Severity = Set-Severity -Issue $Issue
-            $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
+            $Issue = [pscustomobject]@{
+                Forest                = $_.CanonicalName.split('/')[0]
+                Name                  = $_.Name
+                DistinguishedName     = $_.DistinguishedName
+                IdentityReference     = $entry.IdentityReference
+                ActiveDirectoryRights = $entry.ActiveDirectoryRights
+                Issue                 = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
+                Fix                   = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
+                Revert                = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
+                Technique             = 'ESC5'
+            }
             $Issue
         }
+        elseif ( ($_.objectClass -ne 'pKICertificateTemplate') -and
+            ($SID -notmatch $SafeOwners) -and
+            ($entry.ActiveDirectoryRights.ObjectType -notmatch $SafeObjectTypes)
+        ) {
+            $Issue = [pscustomobject]@{
+                Forest                = $_.CanonicalName.split('/')[0]
+                Name                  = $_.Name
+                DistinguishedName     = $_.DistinguishedName
+                IdentityReference     = $entry.IdentityReference
+                ActiveDirectoryRights = $entry.ActiveDirectoryRights
+                Issue                 = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this object"
+                Fix                   = '[TODO]'
+                Revert                = '[TODO]'
+                Technique             = 'ESC5'
+            }
+            $Issue
+        }
+
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
             if ($Principal -match '^(S-1|O:)') {
@@ -412,24 +383,23 @@ function Find-ESC5 {
             if ( ($_.objectClass -ne 'pKICertificateTemplate') -and
                 ($SID -notmatch $SafeUsers) -and
                 ($entry.ActiveDirectoryRights -match $DangerousRights) ) {
-                $Issue = New-Object -TypeName pscustomobject
-                $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name IdentityReference -Value $entry.IdentityReference -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name ActiveDirectoryRights -Value $entry.ActiveDirectoryRights -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Issue `
-                    -Value "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this object" -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value "`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; foreach ( `$ace in `$ACL.access ) { if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) { `$ACL.RemoveAccessRule(`$ace) | Out-Null ; Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL } }" -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value '[TODO]'  -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC5'
-                $Severity = Set-Severity -Issue $Issue
-                $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
+                $Issue = [pscustomobject]@{
+                    Forest                = $_.CanonicalName.split('/')[0]
+                    Name                  = $_.Name
+                    DistinguishedName     = $_.DistinguishedName
+                    IdentityReference     = $entry.IdentityReference
+                    ActiveDirectoryRights = $entry.ActiveDirectoryRights
+                    Issue                 = "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this object"
+                    Fix                   = "`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; foreach ( `$ace in `$ACL.access ) { if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) { `$ACL.RemoveAccessRule(`$ace) | Out-Null ; Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL } }"
+                    Revert                = '[TODO]'
+                    Technique             = 'ESC5'
+                }
                 $Issue
             }
         }
     }
 }
+
 function Find-ESC6 {
     [CmdletBinding()]
     param(
@@ -442,29 +412,28 @@ function Find-ESC6 {
             ($_.SANFlag -ne 'No')
         } | ForEach-Object {
             [string]$CAFullName = "$($_.dNSHostName)\$($_.Name)"
-            $Issue = New-Object -TypeName pscustomobject
-            $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
+            $Issue = [pscustomobject]@{
+                Forest            = $_.CanonicalName.split('/')[0]
+                Name              = $_.Name
+                DistinguishedName = $_.DistinguishedName
+                Technique         = 'ESC6'
+            }
             if ($_.SANFlag -eq 'Yes') {
-                $Issue | Add-Member -MemberType NoteProperty -Name Issue -Value 'EDITF_ATTRIBUTESUBJECTALTNAME2 is enabled.' -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Fix `
-                    -Value "certutil -config $CAFullname -setreg policy\EditFlags -EDITF_ATTRIBUTESUBJECTALTNAME2; Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Revert `
-                    -Value "certutil -config $CAFullname -setreg policy\EditFlags +EDITF_ATTRIBUTESUBJECTALTNAME2; Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
+                $Issue['Issue'] = 'EDITF_ATTRIBUTESUBJECTALTNAME2 is enabled.'
+                $Issue['Fix'] = "certutil -config $CAFullname -setreg policy\EditFlags -EDITF_ATTRIBUTESUBJECTALTNAME2; Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }"
+                $Issue['Revert'] = "certutil -config $CAFullname -setreg policy\EditFlags +EDITF_ATTRIBUTESUBJECTALTNAME2; Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }"
             }
             else {
-                $Issue | Add-Member -MemberType NoteProperty -Name Issue -Value $_.AuditFilter -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value 'N/A' -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value 'N/A' -Force
+                $Issue['Issue'] = $_.AuditFilter
+                $Issue['Fix'] = 'N/A'
+                $Issue['Revert'] = 'N/A'
             }
-            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC6'
-            $Severity = Set-Severity -Issue $Issue
-            $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
+
             $Issue
         }
     }
 }
+
 function Find-ESC8 {
     [CmdletBinding()]
     param(
@@ -475,30 +444,24 @@ function Find-ESC8 {
         $ADCSObjects | Where-Object {
             $_.CAEnrollmentEndpoint
         } | ForEach-Object {
-            $Issue = [ordered] @{
-                Forest            = $_.CanonicalName.split('/')[0]
-                Name              = $_.Name
-                DistinguishedName = $_.DistinguishedName
+            $Issue = [pscustomobject]@{
+                Forest               = $_.CanonicalName.split('/')[0]
+                Name                 = $_.Name
+                DistinguishedName    = $_.DistinguishedName
+                CAEnrollmentEndpoint = $_.CAEnrollmentEndpoint
+                Issue                = 'HTTP enrollment is enabled.'
+                Fix                  = '[TODO]'
+                Revert               = '[TODO]'
+                Technique            = 'ESC8'
             }
-            if ($_.CAEnrollmentEndpoint -like '^http*') {
-                $Issue['Issue'] = 'HTTP enrollment is enabled.'
-                $Issue['CAEnrollmentEndpoint'] = $_.CAEnrollmentEndpoint
-                $Issue['Fix'] = 'TBD - Remediate by doing 1, 2, and 3'
-                $Issue['Revert'] = 'TBD'
-            }
-            else {
+            if ($_.CAEnrollmentEndpoint -like '^https*') {
                 $Issue['Issue'] = 'HTTPS enrollment is enabled.'
-                $Issue['CAEnrollmentEndpoint'] = $_.CAEnrollmentEndpoint
-                $Issue['Fix'] = 'TBD - Remediate by doing 1, 2, and 3'
-                $Issue['Revert'] = 'TBD'
             }
-            $Issue['Technique'] = 'ESC8'
-            $Severity = Set-Severity -Issue $Issue
-            $Issue['Severity'] = $Severity
-            [PSCustomObject] $Issue
+            [PSCustomObject]$Issue
         }
     }
 }
+
 function Format-Result {
     [CmdletBinding()]
     param(
@@ -618,6 +581,73 @@ function Get-Target {
         }
     }
     return $Targets
+}
+function Install-RSATADPowerShell {
+    <#
+    .SYNOPSIS
+        Installs the RSAT AD PowerShell module.
+    .DESCRIPTION
+        This function checks if the current process is elevated and if it is it will prompt to install the RSAT AD PowerShell module.
+    .EXAMPLE
+        Install-RSATADPowerShell
+    #>
+    if (Test-IsElevated) {
+        $OS = (Get-CimInstance -ClassName Win32_OperatingSystem).ProductType
+        # 1 - workstation, 2 - domain controller, 3 - non-dc server
+        if ($OS -gt 1) {
+            Write-Warning "The Active Directory PowerShell module is not installed."
+            Write-Host "If you continue, Locksmith will attempt to install the Active Directory PowerShell module for you.`n" -ForegroundColor Yellow
+            Write-Host "`nCOMMAND: Install-WindowsFeature -Name RSAT-AD-PowerShell`n" -ForegroundColor Cyan
+            Write-Host "Continue with this operation? [Y] Yes " -NoNewline
+            Write-Host "[N] " -ForegroundColor Yellow -NoNewline
+            Write-Host "No: " -NoNewline
+            $WarningError = ''
+            $WarningError = Read-Host
+            if ($WarningError -like 'y') {
+                try {
+                    Write-Host "Beginning the ActiveDirectory PowerShell module installation, please wait.."
+                    # Attempt to install ActiveDirectory PowerShell module for Windows Server OSes, works with Windows Server 2012 R2 through Windows Server 2022
+                    Install-WindowsFeature -Name RSAT-AD-PowerShell
+                }
+                catch {
+                    Write-Error 'Could not install ActiveDirectory PowerShell module. This module needs to be installed to run Locksmith successfully.'
+                }
+            }
+            else {
+                Write-Host "ActiveDirectory PowerShell module NOT installed. Please install to run Locksmith successfully.`n" -ForegroundColor Yellow
+                break;
+            }
+        }
+        else {
+            Write-Warning "The Active Directory PowerShell module is not installed."
+            Write-Host "If you continue, Locksmith will attempt to install the Active Directory PowerShell module for you.`n" -ForegroundColor Yellow
+            Write-Host "`nCOMMAND: Add-WindowsCapability -Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0 -Online`n" -ForegroundColor Cyan
+            Write-Host "Continue with this operation? [Y] Yes " -NoNewline
+            Write-Host "[N] " -ForegroundColor Yellow -NoNewline
+            Write-Host "No: " -NoNewline
+            $WarningError = ''
+            $WarningError = Read-Host
+            if ($WarningError -like 'y') {
+                try {
+                    Write-Host "Beginning the ActiveDirectory PowerShell module installation, please wait.."
+                    # Attempt to install ActiveDirectory PowerShell module for Windows Desktop OSes
+                    Add-WindowsCapability -Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0 -Online
+                }
+                catch {
+                    Write-Error 'Could not install ActiveDirectory PowerShell module. This module needs to be installed to run Locksmith successfully.'
+                }
+            }
+            else {
+                Write-Host "ActiveDirectory PowerShell module NOT installed. Please install to run Locksmith successfully.`n" -ForegroundColor Yellow
+                break;
+            }
+        }
+    }
+    else {
+        Write-Warning -Message "The ActiveDirectory PowerShell module is required for Locksmith, but is not installed. Please launch an elevated PowerShell session to have this module installed for you automatically."
+        # The goal here is to exit the script without closing the PowerShell window. Need to test.
+        Return
+    }
 }
 function Invoke-Scans {
     [CmdletBinding()]
@@ -865,7 +895,7 @@ function Set-AdditionalCAProperty {
             Mandatory = $true,
             ValueFromPipeline = $true)]
         [array]$ADCSObjects,
-        [System.Management.Automation.PSCredential]$Credential
+        [PSCredential]$Credential
     )
     process {
         $ADCSObjects | Where-Object objectClass -Match 'pKIEnrollmentService' | ForEach-Object {
@@ -943,6 +973,7 @@ function Set-AdditionalCAProperty {
         }
     }
 }
+
 function Set-Severity {
     [CmdletBinding()]
     param(
@@ -1045,6 +1076,93 @@ function Test-IsLocalAccountSession {
     }
 }
 
+function Test-IsMemberOfProtectedUsers {
+    <#
+    .SYNOPSIS
+    Check to see if a user is a member of the Protected Users group.
+
+    .DESCRIPTION
+    This function checks to see if a specified user or the current user is a member of the Protected Users group in AD.
+
+    .PARAMETER User
+    The user that will be checked for membership in the Protected Users group. This parameter accepts input from the pipeline.
+
+    .EXAMPLE
+    This example will check if JaneDoe is a member of the Protected Users group.
+
+        Test-IsMemberOfProtectedUsers -User JaneDoe
+
+    .EXAMPLE
+    This example will check if the current user is a member of the Protected Users group.
+
+        Test-IsMemberOfProtectedUsers
+
+    .INPUTS
+    Active Directory user object, user SID, SamAccountName, etc
+
+    .OUTPUTS
+    Boolean
+
+    .NOTES
+    Membership in Active Directory's Protect Users group can have implications for anything that relies on NTLM authentication.
+
+#>
+
+    [CmdletBinding()]
+    param (
+        # User parameter accepts any input that is valid for Get-ADUser
+        [Parameter(
+            ValueFromPipeline = $true
+        )]
+        $User
+    )
+
+    Import-Module ActiveDirectory
+
+    # Use the currently logged in user if none is specified
+    # Get the user from Active Directory
+    if (-not($User)) {
+        $CurrentUser = ([System.Security.Principal.WindowsIdentity]::GetCurrent().Name).Split('\')[-1]
+        $CheckUser = Get-ADUser $CurrentUser
+    }
+    else {
+        $CheckUser = Get-ADUser $User
+    }
+
+    # Get the Protected Users group by SID instead of by its name to ensure compatibility with any locale or language.
+    $DomainSID = (Get-ADDomain).DomainSID.Value
+    $ProtectedUsersSID = "$DomainSID-525"
+
+    # Get members of the Protected Users group for the current domain. Recuse in case groups are nested in it.
+    $ProtectedUsers = Get-ADGroupMember -Identity $ProtectedUsersSID -Recursive | Select-Object -Unique
+
+    # Check if the current user is in the 'Protected Users' group
+    if ($ProtectedUsers -contains $CheckUser) {
+        Write-Verbose "$($CheckUser.Name) ($($CheckUser.DistinguishedName)) is a member of the Protected Users group."
+        $true
+    }
+    else {
+        Write-Verbose "$($CheckUser.Name) ($($CheckUser.DistinguishedName)) is not a member of the Protected Users group."
+        $false
+    }
+}
+
+function Test-IsRSATInstalled {
+    <#
+    .SYNOPSIS
+        Tests if the RSAT AD PowerShell module is installed.
+    .DESCRIPTION
+        This function returns True if the RSAT AD PowerShell module is installed or False if not.
+    .EXAMPLE
+        Test-IsElevated
+    #>
+    if (Get-Module -Name 'ActiveDirectory' -ListAvailable) {
+        $true
+    }
+    else {
+        $false
+    }
+}
 function Invoke-Locksmith {
     <#
     .SYNOPSIS
@@ -1142,24 +1260,12 @@ function Invoke-Locksmith {
     Write-Host $VersionBanner -ForegroundColor Red
 
     # Check if ActiveDirectory PowerShell module is available, and attempt to install if not found
-    if (-not(Get-Module -Name 'ActiveDirectory' -ListAvailable)) {
-        if (Test-IsElevated) {
-            $OS = (Get-CimInstance -ClassName Win32_OperatingSystem).ProductType
-            # 1 - workstation, 2 - domain controller, 3 - non-dc server
-            if ($OS -gt 1) {
-                # Attempt to install ActiveDirectory PowerShell module for Windows Server OSes, works with Windows Server 2012 R2 through Windows Server 2022
-                Install-WindowsFeature -Name RSAT-AD-PowerShell
-            }
-            else {
-                # Attempt to install ActiveDirectory PowerShell module for Windows Desktop OSes
-                Add-WindowsCapability -Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0 -Online
-            }
-        }
-        else {
-            Write-Warning -Message "The ActiveDirectory PowerShell module is required for Locksmith, but is not installed. Please launch an elevated PowerShell session to have this module installed for you automatically."
-            # The goal here is to exit the script without closing the PowerShell window. Need to test.
-            Return
-        }
+    $RSATInstalled = Test-IsRSATInstalled
+    if ($RSATInstalled) {
+        # Continue
+    }
+    else {
+        Install-RSATADPowerShell
     }
 
     # Exit if running in restricted admin mode without explicit credentials

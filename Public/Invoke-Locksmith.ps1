@@ -95,23 +95,11 @@
     Write-Host $VersionBanner -ForegroundColor Red
 
     # Check if ActiveDirectory PowerShell module is available, and attempt to install if not found
-    if (-not(Get-Module -Name 'ActiveDirectory' -ListAvailable)) {
-        if (Test-IsElevated) {
-            $OS = (Get-CimInstance -ClassName Win32_OperatingSystem).ProductType
-            # 1 - workstation, 2 - domain controller, 3 - non-dc server
-            if ($OS -gt 1) {
-                # Attempt to install ActiveDirectory PowerShell module for Windows Server OSes, works with Windows Server 2012 R2 through Windows Server 2022
-                Install-WindowsFeature -Name RSAT-AD-PowerShell
-            } else {
-                # Attempt to install ActiveDirectory PowerShell module for Windows Desktop OSes
-                Add-WindowsCapability -Name Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0 -Online
-            }
-        }
-        else {
-            Write-Warning -Message "The ActiveDirectory PowerShell module is required for Locksmith, but is not installed. Please launch an elevated PowerShell session to have this module installed for you automatically."
-            # The goal here is to exit the script without closing the PowerShell window. Need to test.
-            Return
-        }
+    $RSATInstalled = Test-IsRSATInstalled
+    if ($RSATInstalled) {
+        # Continue
+    } else {
+        Install-RSATADPowerShell
     }
 
     # Exit if running in restricted admin mode without explicit credentials
