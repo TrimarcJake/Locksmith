@@ -1,7 +1,6 @@
 ﻿function Format-Result {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $false)]
         $Issue,
         [Parameter(Mandatory = $true)]
         [int]$Mode

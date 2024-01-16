@@ -1,19 +1,12 @@
 ﻿function Export-RevertScript {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $false)]
         [array]$AuditingIssues,
-        [Parameter(Mandatory = $false)]
         [array]$ESC1,
-        [Parameter(Mandatory = $false)]
         [array]$ESC2,
-        [Parameter(Mandatory = $false)]
         [array]$ESC3,
-        [Parameter(Mandatory = $false)]
         [array]$ESC4,
-        [Parameter(Mandatory = $false)]
         [array]$ESC5,
-        [Parameter(Mandatory = $false)]
         [array]$ESC6
     )
     begin {
