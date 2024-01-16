@@ -1,44 +1,11 @@
-```stl
-solid cube_corner
-  facet normal 0.0 -1.0 0.0
-    outer loop
-      vertex 0.0 0.0 0.0
-      vertex 1.0 0.0 0.0
-      vertex 0.0 0.0 1.0
-    endloop
-  endfacet
-  facet normal 0.0 0.0 -1.0
-    outer loop
-      vertex 0.0 0.0 0.0
-      vertex 0.0 1.0 0.0
-      vertex 1.0 0.0 0.0
-    endloop
-  endfacet
-  facet normal -1.0 0.0 0.0
-    outer loop
-      vertex 0.0 0.0 0.0
-      vertex 0.0 0.0 1.0
-      vertex 0.0 1.0 0.0
-    endloop
-  endfacet
-  facet normal 0.577 0.577 0.577
-    outer loop
-      vertex 1.0 0.0 0.0
-      vertex 0.0 1.0 0.0
-      vertex 0.0 0.0 1.0
-    endloop
-  endfacet
-endsolid
-```
-
 ```
  _       _____  _______ _     _ _______ _______ _____ _______ _     _
  |      |     | |       |____/  |______ |  |  |   |      |    |_____|
  |_____ |_____| |_____  |    \_ ______| |  |  | __|__    |    |     |
-     .--.                  .--.                  .--.            
+     .--.                  .--.                  .--.
     /.-. '----------.     /.-. '----------.     /.-. '----------.
     \'-' .---'-''-'-'     \'-' .--'--''-'-'     \'-' .--'--'-''-'
-     '--'                  '--'                  '--'  
+     '--'                  '--'                  '--'
 ```
 
 A ~~tiny~~ small tool built to detect and fix common misconfigurations in Active Directory Certificate Services.
@@ -139,7 +106,7 @@ PS> Invoke-Locksmith -Mode 4
 ```
 ``` powershell
 # Script Syntax
-PS> .\Invoke-Locksmith.ps1 -Mode 4 
+PS> .\Invoke-Locksmith.ps1 -Mode 4
 ```
 
 Example Output for Mode 4: https://github.com/TrimarcJake/Locksmith/blob/main/examples/Mode4.md
