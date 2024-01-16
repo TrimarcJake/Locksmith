@@ -30,7 +30,7 @@ All types of contributions are encouraged and valued. See the [Table of Contents
 This project and everyone participating in it is governed by the
 [Locksmith Code of Conduct](https://github.com/TrimarcJake/Locksmithblob/master/CODE_OF_CONDUCT.md).
 By participating, you are expected to uphold this code. Please report unacceptable behavior
-to .
+to coc@dotdot.horse.
 
 
 ## I Have a Question
@@ -43,7 +43,7 @@ If you then still feel the need to ask a question and need clarification, we rec
 
 - Open an [Issue](https://github.com/TrimarcJake/Locksmith/issues/new).
 - Provide as much context as you can about what you're running into.
-- Provide project and platform versions (nodejs, npm, etc), depending on what seems relevant.
+- Provide project and platform versions (Windows Version, Powershell Version, Windows Terminal, etc.), depending on what seems relevant.
 
 We will then take care of the issue as soon as possible.
 
@@ -98,7 +98,7 @@ This section guides you through submitting an enhancement suggestion for Locksmi
 - Make sure that you are using the latest version.
 - Read the [documentation](https://github.com/TrimarcJake/Locksmith/blob/main/README.md) carefully and find out if the functionality is already covered, maybe by an individual configuration.
 - Perform a [search](https://github.com/TrimarcJake/Locksmith/issues) to see if the enhancement has already been suggested. If it has, add a comment to the existing issue instead of opening a new one.
-- Find out whether your idea fits with the scope and aims of the project. It's up to you to make a strong case to convince the project's developers of the merits of this feature. Keep in mind that we want features that will be useful to the majority of our users and not just a small subset. If you're just targeting a minority of users, consider writing an add-on/plugin library.
+- Find out whether your idea fits with the scope and aims of the project. It's up to you to make a strong case to convince the project's developers of the merits of this feature. Keep in mind that we want features that will be useful to the majority of our users and not just a small subset. If you're just targeting a minority of users, consider writing a new function.
 
 <!-- omit in toc -->
 #### How Do I Submit a Good Enhancement Suggestion?
