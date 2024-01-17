@@ -2,13 +2,24 @@
  _       _____  _______ _     _ _______ _______ _____ _______ _     _
  |      |     | |       |____/  |______ |  |  |   |      |    |_____|
  |_____ |_____| |_____  |    \_ ______| |  |  | __|__    |    |     |
-     .--.                  .--.                  .--.            
+     .--.                  .--.                  .--.
     /.-. '----------.     /.-. '----------.     /.-. '----------.
     \'-' .---'-''-'-'     \'-' .--'--''-'-'     \'-' .--'--'-''-'
-     '--'                  '--'                  '--'  
+     '--'                  '--'                  '--'
 ```
 
 A ~~tiny~~ small tool built to detect and fix common misconfigurations in Active Directory Certificate Services.
+
+<!-- locksmith-badges-start -->
+![GitHub release](https://img.shields.io/github/v/release/trimarcjake/locksmith?sort=semver)
+![GitHub top language](https://img.shields.io/github/languages/top/trimarcjake/locksmith)
+[![GitHub contributors](https://img.shields.io/github/contributors/trimarcjake/locksmith.svg)](https://github.com/trimarcjake/locksmith/graphs/contributors/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/trimarcjake/Locksmith/powershell.yml?logo=github&label=PSScriptAnalyzer)
+[![MegaLinter](https://github.com/trimarcjake/locksmith/workflows/MegaLinter/badge.svg?branch=testing)](https://github.com/trimarcjake/locksmith/actions?query=workflow%3AMegaLinter+branch%3Atesting)
+![PowerShell Gallery Downloads](https://img.shields.io/powershellgallery/dt/locksmith?logo=powershell&label=PowerShell%20Gallery%20Downloads&color=blue)
+[![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=Checkout+Locksmith+and+fix+common+misconfigurations+in+Active+Directory+Certificate+Services.&url=https://github.com/trimarcjake/locksmith&hashtags=ADCS,PKI,infosec,powershell)
+<!-- locksmith-badges-end -->
 
 # Contents
 1. [Installation](#Installation)
@@ -106,7 +117,7 @@ PS> Invoke-Locksmith -Mode 4
 ```
 ``` powershell
 # Script Syntax
-PS> .\Invoke-Locksmith.ps1 -Mode 4 
+PS> .\Invoke-Locksmith.ps1 -Mode 4
 ```
 
 Example Output for Mode 4: https://github.com/TrimarcJake/Locksmith/blob/main/examples/Mode4.md
