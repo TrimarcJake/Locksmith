@@ -13,6 +13,7 @@ A ~~tiny~~ small tool built to detect and fix common misconfigurations in Active
 <!-- locksmith-badges-start -->
 ![GitHub release](https://img.shields.io/github/v/release/trimarcjake/locksmith?sort=semver)
 ![GitHub top language](https://img.shields.io/github/languages/top/trimarcjake/locksmith)
+![PowerShell Gallery Platform Support](https://img.shields.io/powershellgallery/p/locksmith)
 [![GitHub contributors](https://img.shields.io/github/contributors/trimarcjake/locksmith.svg)](https://github.com/trimarcjake/locksmith/graphs/contributors/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/trimarcjake/Locksmith/powershell.yml?logo=github&label=PSScriptAnalyzer)
