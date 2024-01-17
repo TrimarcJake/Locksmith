@@ -122,3 +122,28 @@ PS> .\Invoke-Locksmith.ps1 -Mode 4
 ```
 
 Example Output for Mode 4: https://github.com/TrimarcJake/Locksmith/blob/main/examples/Mode4.md
+<br>
+<br>
+<a name="Scans" id="Scans"></a>
+## Scans:  Select Which Scans to Run
+Use the `-Scans` parameter to choose which vulnerabilities to scan for. Acceptable values include `All`, `Auditing`, `ESC1`, `ESC2`, `ESC3`, `ESC4`, `ESC5`, `ESC6`, `ESC8`, or `PromptMe`. The `PromptMe` option presents an interactive list allowing you to select scans.
+
+``` powershell
+# Run all scans
+PS> Invoke-Locksmith -Scan All
+```
+
+``` powershell
+# Prompt the user for a list of scans to select
+PS> Invoke-Locksmith.ps1 -Scans PromptMe
+```
+
+``` powershell
+# Scan for ESC1 vulnerable paths
+PS> Invoke-Locksmith.ps1 -Scans ESC1
+```
+
+``` powershell
+# Scan for ESC1, ESC2, and ESC8 vulnerable paths
+PS> Invoke-Locksmith.ps1 -Scans ESC1,ESC2,ESC8
+```
