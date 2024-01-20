@@ -42,11 +42,11 @@ A ~~tiny~~ small tool built to detect and fix common misconfigurations in Active
 Running `Invoke-Locksmith.ps1` with no parameters or with `-Mode 0` will scan the current Active Directory forest and output all discovered AD CS issues to the console in **Table** format.
 ``` powershell
 # Module Syntax
-PS> Invoke-Locksmith
+Invoke-Locksmith
 ```
 ``` powershell
 # Script Syntax
-PS> .\Invoke-Locksmith.ps1
+.\Invoke-Locksmith.ps1
 ```
 
 Example Output for Mode 0: https://github.com/TrimarcJake/Locksmith/blob/main/examples/Mode0.md
@@ -57,11 +57,11 @@ Example Output for Mode 0: https://github.com/TrimarcJake/Locksmith/blob/main/ex
 This mode scans the current forest and outputs all discovered AD CS issues and possible fixes to the console in **List** format.
 ``` powershell
 # Module Syntax
-PS> Invoke-Locksmith -Mode 1
+Invoke-Locksmith -Mode 1
 ```
 ``` powershell
 # Script Syntax
-PS> .\Invoke-Locksmith.ps1 -Mode 1
+.\Invoke-Locksmith.ps1 -Mode 1
 ```
 
 Example Output for Mode 1: https://github.com/TrimarcJake/Locksmith/blob/main/examples/Mode1.md
@@ -72,11 +72,11 @@ Example Output for Mode 1: https://github.com/TrimarcJake/Locksmith/blob/main/ex
 Locksmith Mode 2 scans the current forest and outputs all discovered AD CS issues to ADCSIssues.CSV in the present working directory.
 ``` powershell
 # Module Syntax
-PS> Invoke-Locksmith -Mode 2
+Invoke-Locksmith -Mode 2
 ```
 ``` powershell
 # Script Syntax
-PS> .\Invoke-Locksmith.ps1 -Mode 2
+.\Invoke-Locksmith.ps1 -Mode 2
 ```
 
 Example Output for Mode 2: https://github.com/TrimarcJake/Locksmith/blob/main/examples/Mode2.md
@@ -87,11 +87,11 @@ Example Output for Mode 2: https://github.com/TrimarcJake/Locksmith/blob/main/ex
 In Mode 3, Locksmith scans the current forest and outputs all discovered AD CS issues and example fixes to ADCSRemediation.CSV in the present working directory.
 ``` powershell
 # Module Syntax
-PS> Invoke-Locksmith -Mode 3
+Invoke-Locksmith -Mode 3
 ```
 ``` powershell
 # Script Syntax
-PS> .\Invoke-Locksmith.ps1 -Mode 3
+.\Invoke-Locksmith.ps1 -Mode 3
 ```
 
 Example Output for Mode 3: https://github.com/TrimarcJake/Locksmith/blob/main/examples/Mode3.md
@@ -102,11 +102,11 @@ Example Output for Mode 3: https://github.com/TrimarcJake/Locksmith/blob/main/ex
 Mode 4 is the "easy button." Running Locksmith in Mode 4 will identify all misconfigurations and offer to fix each issue. If there is any possible operational impact, Locksmith will warn you.
 ``` powershell
 # Module Syntax
-PS> Invoke-Locksmith -Mode 4
+Invoke-Locksmith -Mode 4
 ```
 ``` powershell
 # Script Syntax
-PS> .\Invoke-Locksmith.ps1 -Mode 4
+.\Invoke-Locksmith.ps1 -Mode 4
 ```
 
 Example Output for Mode 4: https://github.com/TrimarcJake/Locksmith/blob/main/examples/Mode4.md
