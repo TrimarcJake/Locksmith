@@ -61,16 +61,14 @@ function Find-AuditingIssue {
             Name              = $_.Name
             DistinguishedName = $_.DistinguishedName
             Technique         = 'DETECT'
+            Issue             = "Auditing is not fully enabled on $($_.CAFullName). Current value is $($_.AuditFilter)"
+            Fix               = "certutil.exe -config `'$($_.CAFullname)`' -setreg `'CA\AuditFilter`' 127; Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }"
+            Revert            = "certutil.exe -config $($_.CAFullname) -setreg CA\AuditFilter  $($_.AuditFilter); Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }"
         }
         if ($_.AuditFilter -match 'CA Unavailable') {
-            $Issue['Issue'] = $_.AuditFilter
-            $Issue['Fix'] = 'N/A'
-            $Issue['Revert'] = 'N/A'
-        }
-        else {
-            $Issue['Issue'] = "Auditing is not fully enabled on $($_.CAFullName). Current value is $($_.AuditFilter)"
-            $Issue['Fix'] = "certutil.exe -config `'$($_.CAFullname)`' -setreg `'CA\AuditFilter`' 127; Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }"
-            $Issue['Revert'] = "certutil.exe -config $($_.CAFullname) -setreg CA\AuditFilter  $($_.AuditFilter); Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }"
+            $Issue.Issue = $_.AuditFilter
+            $Issue.Fix = 'N/A'
+            $Issue.Revert = 'N/A'
         }
         $Issue
     }
@@ -417,18 +415,15 @@ function Find-ESC6 {
                 Name              = $_.Name
                 DistinguishedName = $_.DistinguishedName
                 Technique         = 'ESC6'
+                Issue             = $_.AuditFilter
+                Fix               = 'N/A'
+                Revert            = 'N/A'
             }
             if ($_.SANFlag -eq 'Yes') {
-                $Issue['Issue'] = 'EDITF_ATTRIBUTESUBJECTALTNAME2 is enabled.'
-                $Issue['Fix'] = "certutil -config $CAFullname -setreg policy\EditFlags -EDITF_ATTRIBUTESUBJECTALTNAME2; Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }"
-                $Issue['Revert'] = "certutil -config $CAFullname -setreg policy\EditFlags +EDITF_ATTRIBUTESUBJECTALTNAME2; Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }"
+                $Issue.Issue = 'EDITF_ATTRIBUTESUBJECTALTNAME2 is enabled.'
+                $Issue.Fix = "certutil -config $CAFullname -setreg policy\EditFlags -EDITF_ATTRIBUTESUBJECTALTNAME2; Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }"
+                $Issue.Revert = "certutil -config $CAFullname -setreg policy\EditFlags +EDITF_ATTRIBUTESUBJECTALTNAME2; Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }"
             }
-            else {
-                $Issue['Issue'] = $_.AuditFilter
-                $Issue['Fix'] = 'N/A'
-                $Issue['Revert'] = 'N/A'
-            }
-
             $Issue
         }
     }
@@ -455,7 +450,7 @@ function Find-ESC8 {
                 Technique            = 'ESC8'
             }
             if ($_.CAEnrollmentEndpoint -like '^https*') {
-                $Issue['Issue'] = 'HTTPS enrollment is enabled.'
+                $Issue.Issue = 'HTTPS enrollment is enabled.'
             }
             $Issue
         }
