@@ -10,6 +10,18 @@
 
 A ~~tiny~~ small tool built to detect and fix common misconfigurations in Active Directory Certificate Services.
 
+<!-- locksmith-badges-start -->
+![GitHub release](https://img.shields.io/github/v/release/trimarcjake/locksmith?sort=semver)
+![GitHub top language](https://img.shields.io/github/languages/top/trimarcjake/locksmith)
+![PowerShell Gallery Platform Support](https://img.shields.io/powershellgallery/p/locksmith)
+[![GitHub contributors](https://img.shields.io/github/contributors/trimarcjake/locksmith.svg)](https://github.com/trimarcjake/locksmith/graphs/contributors/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/trimarcjake/Locksmith/powershell.yml?logo=github&label=PSScriptAnalyzer)
+[![MegaLinter](https://github.com/trimarcjake/locksmith/workflows/MegaLinter/badge.svg?branch=testing)](https://github.com/trimarcjake/locksmith/actions?query=workflow%3AMegaLinter+branch%3Atesting)
+![PowerShell Gallery Downloads](https://img.shields.io/powershellgallery/dt/locksmith?logo=powershell&label=PowerShell%20Gallery%20Downloads&color=blue)
+[![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=Checkout+Locksmith+and+fix+common+misconfigurations+in+Active+Directory+Certificate+Services.&url=https://github.com/trimarcjake/locksmith&hashtags=ADCS,PKI,infosec,powershell)
+<!-- locksmith-badges-end -->
+
 # Contents
 1. [Installation](#Installation)
 2. [Run Locksmith](#RunLocksmith)
@@ -27,7 +39,7 @@ A ~~tiny~~ small tool built to detect and fix common misconfigurations in Active
 ### Install module manually from GitHub:
 1. Download the [latest module version](https://github.com/TrimarcJake/Locksmith/releases/latest) ( **Locksmith-v**\<YEAR\>**.**\<MONTH\>**.zip** )
 2. Extract the downloaded zip file
-3. Open a PowerShell prompt to the loction of the extracted file and run `Import-Module Locksmith.psd1`
+3. Open a PowerShell prompt to the location of the extracted file and run `Import-Module Locksmith.psd1`
 
 ## Script
 ### Download the standalone script (classic) without module:
@@ -110,3 +122,28 @@ Invoke-Locksmith -Mode 4
 ```
 
 Example Output for Mode 4: https://github.com/TrimarcJake/Locksmith/blob/main/examples/Mode4.md
+<br>
+<br>
+<a name="Scans" id="Scans"></a>
+## Scans:  Select Which Scans to Run
+Use the `-Scans` parameter to choose which vulnerabilities to scan for. Acceptable values include `All`, `Auditing`, `ESC1`, `ESC2`, `ESC3`, `ESC4`, `ESC5`, `ESC6`, `ESC8`, or `PromptMe`. The `PromptMe` option presents an interactive list allowing you to select scans.
+
+``` powershell
+# Run all scans
+Invoke-Locksmith -Scan All
+```
+
+``` powershell
+# Prompt the user for a list of scans to select
+Invoke-Locksmith.ps1 -Scans PromptMe
+```
+
+``` powershell
+# Scan for ESC1 vulnerable paths
+Invoke-Locksmith.ps1 -Scans ESC1
+```
+
+``` powershell
+# Scan for ESC1, ESC2, and ESC8 vulnerable paths
+Invoke-Locksmith.ps1 -Scans ESC1,ESC2,ESC8
+```
