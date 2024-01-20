@@ -21,7 +21,7 @@
             if ($_.CAEnrollmentEndpoint -like '^https*') {
                 $Issue['Issue'] = 'HTTPS enrollment is enabled.'
             }
-            [PSCustomObject]$Issue
+            $Issue
         }
     }
 }

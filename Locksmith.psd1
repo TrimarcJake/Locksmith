@@ -12,6 +12,7 @@
     PrivateData          = @{
         PSData = @{
             ExternalModuleDependencies = @('ActiveDirectory', 'ServerManager', 'Microsoft.PowerShell.Utility', 'Microsoft.PowerShell.LocalAccounts', 'Microsoft.PowerShell.Management', 'CimCmdlets', 'Dism')
+            IconUri                    = 'https://github.com/TrimarcJake/Locksmith/Images/locksmith.ico'
             ProjectUri                 = 'https://github.com/TrimarcJake/Locksmith'
             Tags                       = @('Windows', 'Locksmith', 'CA', 'PKI', 'ActiveDirectory', 'CertificateServices', 'ADCS')
         }
