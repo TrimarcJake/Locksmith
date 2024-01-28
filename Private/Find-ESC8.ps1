@@ -8,26 +8,20 @@
         $ADCSObjects | Where-Object {
             $_.CAEnrollmentEndpoint
         } | ForEach-Object {
-            $Issue = [ordered] @{
-                Forest            = $_.CanonicalName.split('/')[0]
-                Name              = $_.Name
-                DistinguishedName = $_.DistinguishedName
+            $Issue = [pscustomobject]@{
+                Forest               = $_.CanonicalName.split('/')[0]
+                Name                 = $_.Name
+                DistinguishedName    = $_.DistinguishedName
+                CAEnrollmentEndpoint = $_.CAEnrollmentEndpoint
+                Issue                = 'HTTP enrollment is enabled.'
+                Fix                  = '[TODO]'
+                Revert               = '[TODO]'
+                Technique            = 'ESC8'
             }
-            if ($_.CAEnrollmentEndpoint -like '^http*') {
-                $Issue['Issue'] = 'HTTP enrollment is enabled.'
-                $Issue['CAEnrollmentEndpoint'] = $_.CAEnrollmentEndpoint
-                $Issue['Fix'] = 'TBD - Remediate by doing 1, 2, and 3'
-                $Issue['Revert'] = 'TBD'
-            } else {
-                $Issue['Issue'] = 'HTTPS enrollment is enabled.'
-                $Issue['CAEnrollmentEndpoint'] = $_.CAEnrollmentEndpoint
-                $Issue['Fix'] = 'TBD - Remediate by doing 1, 2, and 3'
-                $Issue['Revert'] = 'TBD'
+            if ($_.CAEnrollmentEndpoint -like '^https*') {
+                $Issue.Issue = 'HTTPS enrollment is enabled.'
             }
-            $Issue['Technique'] = 'ESC8'
-            $Severity = Set-Severity -Issue $Issue
-            $Issue['Severity'] = $Severity
-            [PSCustomObject] $Issue
+            $Issue
         }
     }
 }
