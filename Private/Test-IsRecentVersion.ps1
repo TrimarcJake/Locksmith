@@ -9,6 +9,8 @@ function Test-IsRecentVersion {
             [int16]$Days = 60
     )
 
+    # Strip the 'v' if it was used so the script can work with or without it in the input
+    $Version = $Version.Replace('v','')
     try {
         # Checking the most recent release in GitHub, but we could also use PowerShell Gallery.
         $Uri = "https://api.github.com/repos/trimarcjake/locksmith/releases"
