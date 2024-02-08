@@ -19,9 +19,9 @@
                 Technique            = 'ESC8'
             }
             if ($_.CAEnrollmentEndpoint -like '^https*') {
-                $Issue['Issue'] = 'HTTPS enrollment is enabled.'
+                $Issue.Issue = 'HTTPS enrollment is enabled.'
             }
-            [PSCustomObject]$Issue
+            $Issue
         }
     }
 }
