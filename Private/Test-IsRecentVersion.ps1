@@ -9,21 +9,6 @@ function Test-IsRecentVersion {
             [int16]$Days = 90
     )
 
-    if ( -not($Version) ) {
-        # Try to get the installed version number if one is not passed to this function
-        try {
-            # Get the most recent version of the Locksmith module that is installed
-            $Version = ((Get-Module Locksmith -ListAvailable).Version | Sort-Object -Descending | Select-Object -First 1).ToString()
-            # Extrapolate the approximate release date of the installed version
-            $InstalledVersionMonth = [datetime]::Parse($Version.Replace('.','-')+"-01")
-            # Release date is typically the first Saturday of the month
-            $InstalledVersionReleaseDate = $InstalledVersionMonth.AddDays( 6 - ($InstallVersionMonth.DayOfWeek) )
-        } catch {
-            Write-Error -Message "Unable to find an installed version of Locksmith. That's awkward."
-            break
-        }
-    }
-
     try {
         # Checking the most recent release in GitHub, but might want to switch to PowerShell Gallery.
         $Uri = "https://api.github.com/repos/trimarcjake/locksmith/releases"
