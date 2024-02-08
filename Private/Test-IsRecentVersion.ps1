@@ -1,4 +1,4 @@
-function Test-IsModuleVersionRecent {
+function Test-IsRecentVersion {
     [CmdletBinding()]
     param (
         # Check a specific version number from the script
@@ -56,17 +56,17 @@ Standalone Script:`t $ScriptDownloadLink
     if ( ($LatestReleaseDate) -and $InstalledVersionReleaseDate -le ($LatestReleaseDate.AddDays(-$Days)) ) {
         Write-Warning -Verbose -Message $OutOfDateMessage -WarningAction Continue
         Write-Information -MessageData $LatestReleaseInfo -InformationAction Continue
-        $IsModuleVersionRecent = $false
+        $IsRecentVersion = $false
     }
     # If we found the installed version date and it is more than [x] days old
     elseif ( ($InstalledVersionDate) -and $InstalledVersionReleaseDate -le $OutOfDateDate ) {
         Write-Warning -Verbose -Message $OutOfDateMessage -WarningAction Continue
-        $IsModuleVersionRecent = $false
+        $IsRecentVersion = $false
     }
     else {
         # We could add positive checks, but they would be redundant...
-        $IsModuleVersionRecent = $True
+        $IsRecentVersion = $True
     }
 
-    $IsModuleVersionRecent
+    $IsRecentVersion
 }
