@@ -31,6 +31,10 @@ Standalone Script:`t $ScriptDownloadLink
     }
     catch {
         Write-Warning "Unable to find the latest available version of the Locksmith module on GitHub." -WarningAction Continue
+        # Find the approximate release date of the installed version. Handles version with or without 'v' prefix.
+        $InstalledVersionMonth = [datetime]::Parse(($Version.Replace('v','')).Replace('.','-')+"-01")
+        # Release date is typically the first Saturday of the month. Let's guess as close as possible!
+        $InstalledVersionReleaseDate = $InstalledVersionMonth.AddDays( 6 - ($InstallVersionMonth.DayOfWeek) )
     }
 
     # The date at which to consider this module "out of date" is based on the $Days parameter
@@ -43,8 +47,8 @@ Standalone Script:`t $ScriptDownloadLink
         Write-Warning -Verbose -Message $OutOfDateMessage -WarningAction Continue
         Write-Information -MessageData $LatestReleaseInfo -InformationAction Continue
         $IsRecentVersion = $false
-    } elseif ( ($InstalledVersionDate) -and ($InstalledVersionReleaseDate -le $OutOfDateDate) ) {
-        # If we found the installed version date and it is more than [x] days old
+    } elseif ( $InstalledVersionReleaseDate -le $OutOfDateDate ) {
+        # If we didn't get the latest release date online, use the estimated release date to check age.
         Write-Warning -Verbose -Message $OutOfDateMessage -WarningAction Continue
         $IsRecentVersion = $false
     } else {
