@@ -2,7 +2,7 @@ function Test-IsRecentVersion {
     [CmdletBinding()]
     param (
         # Check a specific version number from the script
-        [Parameter()]
+        [Parameter(Mandatory)]
             [string]$Version,
         # Define the number of days past a module release date at which to consider the release "out of date."
         [Parameter()]
