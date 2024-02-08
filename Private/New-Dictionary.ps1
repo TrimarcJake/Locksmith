@@ -20,7 +20,7 @@ descriptions, code used to find, code used to fix, and reference URLs. This is i
 #>
 
 function New-Dictionary {
-        class VulnerableConfigurationItem {
+    class VulnerableConfigurationItem {
         static [string] $Version = '2023.10.01.000'
         [string]$Name
         [ValidateSet('Escalation Path','Server Configuration','GPO Setting')][string]$Category
@@ -35,7 +35,7 @@ function New-Dictionary {
         [VulnerableConfigurationItem]@{
             Name = 'ESC1'
             Category = 'Escalation Path'
-            Subcategory = 'Misconfigured Certificate Templates'
+            Subcategory = 'Vulnerable Client Authentication Templates'
             Summary = ''
             FindIt =  {Find-ESC1}
             FixIt = {Write-Output "Add code to fix the vulnerable configuration."}
@@ -44,7 +44,7 @@ function New-Dictionary {
         [VulnerableConfigurationItem]@{
             Name = 'ESC2'
             Category = 'Escalation Path'
-            Subcategory = 'Misconfigured Certificate Templates'
+            Subcategory = 'Vulnerable SubCA/Any Purpose Templates'
             Summary = ''
             FindIt =  {Find-ESC2}
             FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
@@ -53,7 +53,7 @@ function New-Dictionary {
         [VulnerableConfigurationItem]@{
             Name = 'ESC3'
             Category = 'Escalation Path'
-            Subcategory = 'Enrollment Agent Templates'
+            Subcategory = 'Vulnerable Enrollment Agent Templates'
             Summary = ''
             FindIt =  {
                 Find-ESC3Condition1
@@ -65,7 +65,7 @@ function New-Dictionary {
         [VulnerableConfigurationItem]@{
             Name = 'ESC4';
             Category = 'Escalation Path'
-            Subcategory = 'Vulnerable Certificate Template Access Control'
+            Subcategory = 'Certificate Templates with Vulnerable Access Controls'
             Summary = ''
             FindIt =  {Find-ESC4}
             FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
@@ -74,7 +74,7 @@ function New-Dictionary {
         [VulnerableConfigurationItem]@{
             Name = 'ESC5';
             Category = 'Escalation Path'
-            Subcategory = 'Vulnerable PKI Object Access Control'
+            Subcategory = 'PKI Objects with Vulnerable Access Control'
             Summary = ''
             FindIt =  {Find-ESC5}
             FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
@@ -101,12 +101,39 @@ function New-Dictionary {
         [VulnerableConfigurationItem]@{
             Name = 'ESC8'
             Category = 'Escalation Path'
-            Subcategory = 'NTLM Relay to AD CS HTTP Endpoints'
+            Subcategory = 'AD CS HTTP Endpoints Vulnerable to NTLM Relay'
             Summary = ''
             FindIt =  {Find-ESC8}
             FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
             ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=NTLM%20Relay%20to%20AD%20CS%20HTTP%20Endpoints'
         },
+        # [VulnerableConfigurationItem]@{
+        #     Name = 'ESC9'
+        #     Category = 'Escalation Path'
+        #     Subcategory = ''
+        #     Summary = ''
+        #     FindIt =  {Find-ESC9}
+        #     FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
+        #     ReferenceUrls = ''
+        # },
+        # [VulnerableConfigurationItem]@{
+        #     Name = 'ESC10'
+        #     Category = 'Escalation Path'
+        #     Subcategory = ''
+        #     Summary = ''
+        #     FindIt =  {Find-ESC10}
+        #     FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
+        #     ReferenceUrls = ''
+        # },
+        # [VulnerableConfigurationItem]@{
+        #     Name = 'ESC11'
+        #     Category = 'Escalation Path'
+        #     Subcategory = ''
+        #     Summary = ''
+        #     FindIt =  {Find-ESC11}
+        #     FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
+        #     ReferenceUrls = ''
+        # },
         [VulnerableConfigurationItem]@{
             Name = 'Auditing'
             Category = 'Server Configuration'
