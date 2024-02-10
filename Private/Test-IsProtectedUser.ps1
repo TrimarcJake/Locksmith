@@ -1,5 +1,5 @@
 function Test-IsMemberOfProtectedUsers {
-<#
+    <#
     .SYNOPSIS
     Check to see if a user is a member of the Protected Users group.
 
@@ -26,9 +26,12 @@ function Test-IsMemberOfProtectedUsers {
     Boolean
 
     .NOTES
-    Membership in Active Directory's Protect Users group can have implications for anything that relies on NTLM authentication.
+    Membership in Active Directory's Protected Users group can have implications for anything that relies on NTLM authentication.
 
-#>
+    .LINK
+    https://docs.microsoft.com/en-us/windows-server/security/credentials-protection-and-management/protected-users-group
+
+    #>
 
     [CmdletBinding()]
     param (
@@ -55,7 +58,7 @@ function Test-IsMemberOfProtectedUsers {
     $DomainSID = (Get-ADDomain).DomainSID.Value
     $ProtectedUsersSID = "$DomainSID-525"
 
-    # Get members of the Protected Users group for the current domain. Recuse in case groups are nested in it.
+    # Get members of the Protected Users group for the current domain. Recurse in case groups are nested in it.
     $ProtectedUsers = Get-ADGroupMember -Identity $ProtectedUsersSID -Recursive | Select-Object -Unique
 
     # Check if the current user is in the 'Protected Users' group

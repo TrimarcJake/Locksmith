@@ -1,4 +1,40 @@
 function Test-IsRecentVersion {
+    <#
+    .SYNOPSIS
+        Check if the installed version of the Locksmith module is up to date.
+
+    .DESCRIPTION
+        This script checks the installed version of the Locksmith module against the latest release on GitHub.
+        It determines if the installed version is considered "out of date" based on the number of days specified.
+        If the installed version is out of date, a warning message is displayed along with information about the latest release.
+
+    .PARAMETER Version
+        Specifies the version number to check from the script.
+
+    .PARAMETER Days
+        Specifies the number of days past a module release date at which to consider the release "out of date".
+        The default value is 60 days.
+
+    .OUTPUTS
+        System.Boolean
+        Returns $true if the installed version is up to date, and $false if it is out of date.
+
+    .EXAMPLE
+        PS C:\> Test-IsRecentVersion -Version "2024.1" -Days 30
+        True
+
+        PS C:\> Test-IsRecentVersion -Version "2023.10" -Days 60
+        WARNING: Your currently installed version of Locksmith (2.5) is more than 60 days old. We recommend that you update to ensure the latest findings are included.
+        Locksmith Module Details:
+        Latest Version:          v2024.1
+        Published at:            01/28/2024 12:47:18
+        Install Module:     Install-Module -Name Locksmith
+        Standalone Script:  https://github.com/trimarcjake/locksmith/releases/download/v2.6/Invoke-Locksmith.zip
+
+    .NOTES
+        Author: Sam Erde
+        Date:   02/10/2024
+    #>
     [CmdletBinding()]
     param (
         # Check a specific version number from the script
