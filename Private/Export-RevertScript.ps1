@@ -1,7 +1,7 @@
 ﻿function Export-RevertScript {
     <#
     .SYNOPSIS
-        Reverts changes performed by Locksmith.
+        Creates a script that reverts the changes performed by Locksmith.
 
     .DESCRIPTION
         This script is used to revert changes performed by Locksmith.
