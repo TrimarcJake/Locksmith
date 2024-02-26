@@ -28,7 +28,7 @@ function Invoke-Scans {
 
     .EXAMPLE
         # Perform all scans
-        Invoke-Scans.ps1
+        Invoke-Scans
 
     .EXAMPLE
         # Perform only the 'Auditing' and 'ESC1' scans
