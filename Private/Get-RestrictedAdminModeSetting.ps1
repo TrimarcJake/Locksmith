@@ -11,7 +11,7 @@
     .PARAMETER None
 
     .EXAMPLE
-        Get-RestrictedAdminModeSetting.ps1
+        Get-RestrictedAdminModeSetting
         True
     #>
 
