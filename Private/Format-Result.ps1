@@ -13,11 +13,11 @@
         The mode to determine the formatting style. Valid values are 0 and 1.
 
     .EXAMPLE
-        Format-Result -Issue $issue -Mode 0
+        Format-Result -Issue $Issue -Mode 0
         Formats the issue result in table format.
 
     .EXAMPLE
-        Format-Result -Issue $issue -Mode 1
+        Format-Result -Issue $Issue -Mode 1
         Formats the issue result in list format.
 
     .NOTES
