@@ -20,10 +20,10 @@ function Test-IsRecentVersion {
         Returns $true if the installed version is up to date, and $false if it is out of date.
 
     .EXAMPLE
-        PS C:\> Test-IsRecentVersion -Version "2024.1" -Days 30
+        Test-IsRecentVersion -Version "2024.1" -Days 30
         True
 
-        PS C:\> Test-IsRecentVersion -Version "2023.10" -Days 60
+        Test-IsRecentVersion -Version "2023.10" -Days 60
         WARNING: Your currently installed version of Locksmith (2.5) is more than 60 days old. We recommend that you update to ensure the latest findings are included.
         Locksmith Module Details:
         Latest Version:          v2024.1
