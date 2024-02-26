@@ -259,31 +259,15 @@ function Find-ESC4 {
             $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
         }
 
-        if ( ($_.objectClass -eq 'pKICertificateTemplate') -and ($SID -match $UnsafeOwners) ) {
+        if ( ($_.objectClass -eq 'pKICertificateTemplate') -and ($SID -notmatch $SafeOwners) ) {
             $Issue = [pscustomobject]@{
-                Forest                = $_.CanonicalName.split('/')[0]
-                Name                  = $_.Name
-                DistinguishedName     = $_.DistinguishedName
-                IdentityReference     = $entry.IdentityReference
-                ActiveDirectoryRights = $entry.ActiveDirectoryRights
-                Issue                 = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
-                Fix                   = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
-                Revert                = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
-                Technique             = 'ESC4'
-            }
-            $Issue
-        }
-        elseif ( ($_.objectClass -eq 'pKICertificateTemplate') -and ($SID -notmatch $SafeOwners) ) {
-            $Issue = [pscustomobject]@{
-                Forest                = $_.CanonicalName.split('/')[0]
-                Name                  = $_.Name
-                DistinguishedName     = $_.DistinguishedName
-                IdentityReference     = $entry.IdentityReference
-                ActiveDirectoryRights = $entry.ActiveDirectoryRights
-                Issue                 = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
-                Fix                   = '[TODO]'
-                Revert                = '[TODO]'
-                Technique             = 'ESC4'
+                Forest            = $_.CanonicalName.split('/')[0]
+                Name              = $_.Name
+                DistinguishedName = $_.DistinguishedName
+                Issue             = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
+                Fix               = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
+                Revert            = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
+                Technique         = 'ESC4'
             }
             $Issue
         }
@@ -339,33 +323,15 @@ function Find-ESC5 {
         else {
             $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
         }
-        if ( ($_.objectClass -ne 'pKICertificateTemplate') -and ($SID -match $UnsafeOwners) ) {
+        
+        if ( ($_.objectClass -ne 'pKICertificateTemplate') -and ($SID -notmatch $SafeOwners) ) {
             $Issue = [pscustomobject]@{
                 Forest            = $_.CanonicalName.split('/')[0]
                 Name              = $_.Name
                 DistinguishedName = $_.DistinguishedName
-                # IdentityReference     = $entry.IdentityReference
-                # ActiveDirectoryRights = $entry.ActiveDirectoryRights
                 Issue             = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
                 Fix               = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
                 Revert            = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
-                Technique         = 'ESC5'
-            }
-            $Issue
-        }
-        elseif ( ($_.objectClass -ne 'pKICertificateTemplate') -and
-            ($SID -notmatch $SafeOwners) -and
-            ($entry.ActiveDirectoryRights.ObjectType -notmatch $SafeObjectTypes)
-        ) {
-            $Issue = [pscustomobject]@{
-                Forest            = $_.CanonicalName.split('/')[0]
-                Name              = $_.Name
-                DistinguishedName = $_.DistinguishedName
-                # IdentityReference     = $entry.IdentityReference
-                # ActiveDirectoryRights = $entry.ActiveDirectoryRights
-                Issue             = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this object"
-                Fix               = '[TODO]'
-                Revert            = '[TODO]'
                 Technique         = 'ESC5'
             }
             $Issue
