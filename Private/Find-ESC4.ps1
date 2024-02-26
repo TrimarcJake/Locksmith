@@ -55,6 +55,7 @@
             }
             if ( ($_.objectClass -eq 'pKICertificateTemplate') -and
                 ($SID -notmatch $SafeUsers) -and
+                ($entry.AccessControlType -eq 'Allow') -and
                 ($entry.ActiveDirectoryRights -match $DangerousRights) -and
                 ($entry.ActiveDirectoryRights.ObjectType -notmatch $SafeObjectTypes)
                 ) {

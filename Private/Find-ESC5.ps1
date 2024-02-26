@@ -22,8 +22,8 @@
                 Forest                = $_.CanonicalName.split('/')[0]
                 Name                  = $_.Name
                 DistinguishedName     = $_.DistinguishedName
-                IdentityReference     = $entry.IdentityReference
-                ActiveDirectoryRights = $entry.ActiveDirectoryRights
+                # IdentityReference     = $entry.IdentityReference
+                # ActiveDirectoryRights = $entry.ActiveDirectoryRights
                 Issue                 = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
                 Fix                   = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
                 Revert                = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
@@ -38,8 +38,8 @@
                 Forest                = $_.CanonicalName.split('/')[0]
                 Name                  = $_.Name
                 DistinguishedName     = $_.DistinguishedName
-                IdentityReference     = $entry.IdentityReference
-                ActiveDirectoryRights = $entry.ActiveDirectoryRights
+                # IdentityReference     = $entry.IdentityReference
+                # ActiveDirectoryRights = $entry.ActiveDirectoryRights
                 Issue                 = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this object"
                 Fix                   = '[TODO]'
                 Revert                = '[TODO]'
@@ -57,7 +57,9 @@
             }
             if ( ($_.objectClass -ne 'pKICertificateTemplate') -and
                 ($SID -notmatch $SafeUsers) -and
-                ($entry.ActiveDirectoryRights -match $DangerousRights) ) {
+                ($entry.AccessControlType -eq 'Allow') -and
+                ($entry.ActiveDirectoryRights -match $DangerousRights) -and
+                ($entry.ActiveDirectoryRights.ObjectType -notmatch $SafeObjectTypes) ) {
                 $Issue = [pscustomobject]@{
                     Forest                = $_.CanonicalName.split('/')[0]
                     Name                  = $_.Name
