@@ -11,7 +11,7 @@
     .PARAMETER None
 
     .EXAMPLE
-        PS C:\> Get-RestrictedAdminModeSetting.ps1
+        Get-RestrictedAdminModeSetting.ps1
         True
     #>
 
