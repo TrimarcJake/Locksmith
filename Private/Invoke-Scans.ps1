@@ -41,24 +41,6 @@ function Invoke-Scans {
 
     [CmdletBinding()]
     param (
-        [Parameter()]
-        [ValidateSet('Auditing','ESC1','ESC2','ESC3','ESC4','ESC5','ESC6','ESC8','All','PromptMe')]
-        [array]$Scans = 'All'
-    )
-
-    # Rest of the code...
-    
-
-    [CmdletBinding()]
-    param (
-        [Parameter()]
-        [ValidateSet('Auditing','ESC1','ESC2','ESC3','ESC4','ESC5','ESC6','ESC8','All','PromptMe')]
-        [array]$Scans = 'All'
-    )
-
-    # Rest of the code...
-    [CmdletBinding()]
-    param (
     # Could split Scans and PromptMe into separate parameter sets.
     [Parameter()]
         [ValidateSet('Auditing','ESC1','ESC2','ESC3','ESC4','ESC5','ESC6','ESC8','All','PromptMe')]

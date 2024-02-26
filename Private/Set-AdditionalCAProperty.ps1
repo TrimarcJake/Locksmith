@@ -35,17 +35,6 @@
     )
 
     process {
-        # Rest of the code...
-    }
-    [CmdletBinding(SupportsShouldProcess)]
-    param (
-        [parameter(
-            Mandatory = $true,
-            ValueFromPipeline = $true)]
-        [array]$ADCSObjects,
-        [PSCredential]$Credential
-    )
-    process {
         $ADCSObjects | Where-Object objectClass -Match 'pKIEnrollmentService' | ForEach-Object {
             [string]$CAEnrollmentEndpoint = $_.'msPKI-Enrollment-Servers' | Select-String 'http.*' | ForEach-Object { $_.Matches[0].Value }
             [string]$CAFullName = "$($_.dNSHostName)\$($_.Name)"
