@@ -1,7 +1,7 @@
 ﻿function Find-ESC5 {
     <#
     .SYNOPSIS
-        This script finds ADCS (Active Directory Certificate Services) objects that have specific security vulnerabilities.
+        This script finds AD CS (Active Directory Certificate Services) objects that have the ESC5 vulnerability.
 
     .DESCRIPTION
         The script takes an array of ADCS objects as input and filters them based on the specified conditions.
