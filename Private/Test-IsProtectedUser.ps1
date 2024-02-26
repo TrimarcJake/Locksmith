@@ -1,34 +1,37 @@
 function Test-IsMemberOfProtectedUsers {
-<#
+    <#
     .SYNOPSIS
-    Check to see if a user is a member of the Protected Users group.
+        Check to see if a user is a member of the Protected Users group.
 
     .DESCRIPTION
-    This function checks to see if a specified user or the current user is a member of the Protected Users group in AD.
+        This function checks to see if a specified user or the current user is a member of the Protected Users group in AD.
 
     .PARAMETER User
-    The user that will be checked for membership in the Protected Users group. This parameter accepts input from the pipeline.
+        The user that will be checked for membership in the Protected Users group. This parameter accepts input from the pipeline.
 
     .EXAMPLE
-    This example will check if JaneDoe is a member of the Protected Users group.
-
-        Test-IsMemberOfProtectedUsers -User JaneDoe
+        This example will check if JaneDoe is a member of the Protected Users group.
+    
+            Test-IsMemberOfProtectedUsers -User JaneDoe
 
     .EXAMPLE
-    This example will check if the current user is a member of the Protected Users group.
-
-        Test-IsMemberOfProtectedUsers
+        This example will check if the current user is a member of the Protected Users group.
+    
+            Test-IsMemberOfProtectedUsers
 
     .INPUTS
-    Active Directory user object, user SID, SamAccountName, etc
+        Active Directory user object, user SID, SamAccountName, etc
 
     .OUTPUTS
-    Boolean
+        Boolean
 
     .NOTES
-    Membership in Active Directory's Protect Users group can have implications for anything that relies on NTLM authentication.
+        Membership in Active Directory's Protected Users group can have implications for anything that relies on NTLM authentication.
 
-#>
+    .LINK
+        https://docs.microsoft.com/en-us/windows-server/security/credentials-protection-and-management/protected-users-group
+
+    #>
 
     [CmdletBinding()]
     param (
@@ -55,7 +58,7 @@ function Test-IsMemberOfProtectedUsers {
     $DomainSID = (Get-ADDomain).DomainSID.Value
     $ProtectedUsersSID = "$DomainSID-525"
 
-    # Get members of the Protected Users group for the current domain. Recuse in case groups are nested in it.
+    # Get members of the Protected Users group for the current domain. Recurse in case groups are nested in it.
     $ProtectedUsers = Get-ADGroupMember -Identity $ProtectedUsersSID -Recursive | Select-Object -Unique
 
     # Check if the current user is in the 'Protected Users' group

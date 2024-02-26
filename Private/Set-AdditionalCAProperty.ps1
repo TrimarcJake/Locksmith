@@ -1,4 +1,30 @@
 ﻿function Set-AdditionalCAProperty {
+    <#
+    .SYNOPSIS
+        Sets additional properties for a Certificate Authority (CA) object.
+
+    .DESCRIPTION
+        This script sets additional properties for a Certificate Authority (CA) object.
+        It takes an array of AD CS Objects as input, which represent the CA objects to be processed.
+        The script filters the AD CS Objects based on the objectClass property and performs the necessary operations
+        to set the additional properties.
+
+    .PARAMETER ADCSObjects
+        Specifies the array of AD CS Objects to be processed. This parameter is mandatory and supports pipeline input.
+
+    .PARAMETER Credential
+        Specifies the PSCredential object to be used for authentication when accessing the CA objects.
+        If not provided, the script will use the current user's credentials.
+
+    .EXAMPLE
+        $ADCSObjects = Get-ADObject -Filter { objectClass -eq 'pKIEnrollmentService' }
+        Set-AdditionalCAProperty -ADCSObjects $ADCSObjects
+
+    .NOTES
+        Author: Jake Hildreth
+        Date: July 15, 2022
+    #>
+
     [CmdletBinding(SupportsShouldProcess)]
     param (
         [parameter(
@@ -7,6 +33,7 @@
         [array]$ADCSObjects,
         [PSCredential]$Credential
     )
+
     process {
         $ADCSObjects | Where-Object objectClass -Match 'pKIEnrollmentService' | ForEach-Object {
             [string]$CAEnrollmentEndpoint = $_.'msPKI-Enrollment-Servers' | Select-String 'http.*' | ForEach-Object { $_.Matches[0].Value }
