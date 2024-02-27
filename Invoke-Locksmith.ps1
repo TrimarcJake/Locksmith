@@ -5,6 +5,27 @@
     [array]$Scans = 'All'
 )
 function ConvertFrom-IdentityReference {
+    <#
+    .SYNOPSIS
+        Converts an identity reference to a security identifier (SID).
+
+    .DESCRIPTION
+        The ConvertFrom-IdentityReference function takes an identity reference as input and
+        converts it to a security identifier (SID). It supports both SID strings and NTAccount objects.
+
+    .PARAMETER Object
+        Specifies the identity reference to be converted. This parameter is mandatory.
+
+    .EXAMPLE
+        $object = "S-1-5-21-3623811015-3361044348-30300820-1013"
+        ConvertFrom-IdentityReference -Object $object
+        # Returns "S-1-5-21-3623811015-3361044348-30300820-1013"
+
+    .EXAMPLE
+        $object = New-Object System.Security.Principal.NTAccount("DOMAIN\User")
+        ConvertFrom-IdentityReference -Object $object
+        # Returns "S-1-5-21-3623811015-3361044348-30300820-1013"
+    #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -20,7 +41,44 @@ function ConvertFrom-IdentityReference {
     }
     return $SID
 }
+
 function Export-RevertScript {
+    <#
+    .SYNOPSIS
+        Creates a script that reverts the changes performed by Locksmith.
+
+    .DESCRIPTION
+        This script is used to revert changes performed by Locksmith.
+        It takes in various arrays of objects representing auditing issues and ESC misconfirugrations.
+        It creates a new script called 'Invoke-RevertLocksmith.ps1' and adds the necessary commands
+        to revert the changes made by Locksmith.
+
+    .PARAMETER AuditingIssues
+        An array of auditing issues to be reverted.
+
+    .PARAMETER ESC1
+        An array of ESC1 changes to be reverted.
+
+    .PARAMETER ESC2
+        An array of ESC2 changes to be reverted.
+
+    .PARAMETER ESC3
+        An array of ESC3 changes to be reverted.
+
+    .PARAMETER ESC4
+        An array of ESC4 changes to be reverted.
+
+    .PARAMETER ESC5
+        An array of ESC5 changes to be reverted.
+
+    .PARAMETER ESC6
+        An array of ESC6 changes to be reverted.
+
+    .EXAMPLE
+        Export-RevertScript -AuditingIssues $auditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC3 $ESC3 -ESC4 $ESC4 -ESC5 $ESC5 -ESC6 $ESC6
+        Reverts the changes performed by Locksmith using the specified arrays of objects.
+    #>
+
     [CmdletBinding()]
     param(
         [array]$AuditingIssues,
@@ -47,11 +105,43 @@ function Export-RevertScript {
 }
 
 function Find-AuditingIssue {
+    <#
+    .SYNOPSIS
+        A function to find auditing issues on AD CS CAs.
+
+    .DESCRIPTION
+        This script takes an array of AD CS objects and filters them based on specific criteria to identify auditing issues.
+        It checks if the object's objectClass is 'pKIEnrollmentService' and if the AuditFilter is not equal to '127'.
+        For each matching object, it creates a custom object with information about the issue, fix, and revert actions.
+
+    .PARAMETER ADCSObjects
+        Specifies an array of ADCS objects to be checked for auditing issues.
+
+    .OUTPUTS
+        System.Management.Automation.PSCustomObject
+        A custom object is created for each ADCS object that matches the criteria, containing the following properties:
+        - Forest: The forest name of the object.
+        - Name: The name of the object.
+        - DistinguishedName: The distinguished name of the object.
+        - Technique: The technique used to detect the issue (always 'DETECT').
+        - Issue: The description of the auditing issue.
+        - Fix: The command to fix the auditing issue.
+        - Revert: The command to revert the auditing issue.
+
+    .EXAMPLE
+        $ADCSObjects = Get-ADObject -Filter * -SearchBase 'CN=Enrollment Services,CN=Public Key Services,CN=Services,CN=Configuration,DC=contoso,DC=com'
+        $AuditingIssues = Find-AuditingIssue -ADCSObjects $ADCSObjects
+        $AuditingIssues
+        This example retrieves ADCS objects from the specified search base and passes them to the Find-AuditingIssue function.
+        It then returns the auditing issues for later use.
+    #>
+
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
         [array]$ADCSObjects
     )
+
     $ADCSObjects | Where-Object {
         ($_.objectClass -eq 'pKIEnrollmentService') -and
         ($_.AuditFilter -ne '127')
@@ -75,6 +165,30 @@ function Find-AuditingIssue {
 }
 
 function Find-ESC1 {
+    <#
+    .SYNOPSIS
+        This script finds AD CS (Active Directory Certificate Services) objects that have the ESC1 vulnerability.
+
+    .DESCRIPTION
+        The script takes an array of ADCS objects as input and filters them based on the specified conditions.
+        For each matching object, it creates a custom object with properties representing various information about
+        the object, such as Forest, Name, DistinguishedName, IdentityReference, ActiveDirectoryRights, Issue, Fix, Revert, and Technique.
+
+    .PARAMETER ADCSObjects
+        Specifies the array of ADCS objects to be processed. This parameter is mandatory.
+
+    .PARAMETER SafeUsers
+        Specifies the list of SIDs of safe users who are allowed to have specific rights on the objects. This parameter is mandatory.
+
+    .OUTPUTS
+        The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
+
+    .EXAMPLE
+        $ADCSObjects = Get-ADCSObjects
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $Results = $ADCSObjects | Find-ESC1 -SafeUsers $SafeUsers
+        $Results
+    #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -116,6 +230,30 @@ function Find-ESC1 {
 }
 
 function Find-ESC2 {
+    <#
+    .SYNOPSIS
+        This script finds AD CS (Active Directory Certificate Services) objects that have the ESC2 vulnerability.
+
+    .DESCRIPTION
+        The script takes an array of ADCS objects as input and filters them based on the specified conditions.
+        For each matching object, it creates a custom object with properties representing various information about
+        the object, such as Forest, Name, DistinguishedName, IdentityReference, ActiveDirectoryRights, Issue, Fix, Revert, and Technique.
+
+    .PARAMETER ADCSObjects
+        Specifies the array of ADCS objects to be processed. This parameter is mandatory.
+
+    .PARAMETER SafeUsers
+        Specifies the list of SIDs of safe users who are allowed to have specific rights on the objects. This parameter is mandatory.
+
+    .OUTPUTS
+        The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
+
+    .EXAMPLE
+        $ADCSObjects = Get-ADCSObjects
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $Results = $ADCSObjects | Find-ESC2 -SafeUsers $SafeUsers
+        $Results
+    #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -157,6 +295,30 @@ function Find-ESC2 {
 }
 
 function Find-ESC3Condition1 {
+    <#
+    .SYNOPSIS
+        This script finds AD CS (Active Directory Certificate Services) objects that match the first condition required for ESC3 vulnerability.
+
+    .DESCRIPTION
+        The script takes an array of ADCS objects as input and filters them based on the specified conditions.
+        For each matching object, it creates a custom object with properties representing various information about
+        the object, such as Forest, Name, DistinguishedName, IdentityReference, ActiveDirectoryRights, Issue, Fix, Revert, and Technique.
+
+    .PARAMETER ADCSObjects
+        Specifies the array of ADCS objects to be processed. This parameter is mandatory.
+
+    .PARAMETER SafeUsers
+        Specifies the list of SIDs of safe users who are allowed to have specific rights on the objects. This parameter is mandatory.
+
+    .OUTPUTS
+        The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
+
+    .EXAMPLE
+        $ADCSObjects = Get-ADCSObjects
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $Results = $ADCSObjects | Find-ESC3Condition1 -SafeUsers $SafeUsers
+        $Results
+    #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -197,6 +359,30 @@ function Find-ESC3Condition1 {
 }
 
 function Find-ESC3Condition2 {
+    <#
+    .SYNOPSIS
+        This script finds AD CS (Active Directory Certificate Services) objects that match the second condition required for ESC3 vulnerability.
+
+    .DESCRIPTION
+        The script takes an array of ADCS objects as input and filters them based on the specified conditions.
+        For each matching object, it creates a custom object with properties representing various information about
+        the object, such as Forest, Name, DistinguishedName, IdentityReference, ActiveDirectoryRights, Issue, Fix, Revert, and Technique.
+
+    .PARAMETER ADCSObjects
+        Specifies the array of ADCS objects to be processed. This parameter is mandatory.
+
+    .PARAMETER SafeUsers
+        Specifies the list of SIDs of safe users who are allowed to have specific rights on the objects. This parameter is mandatory.
+
+    .OUTPUTS
+        The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
+
+    .EXAMPLE
+        $ADCSObjects = Get-ADCSObjects
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $Results = $ADCSObjects | Find-ESC3Condition2 -SafeUsers $SafeUsers
+        $Results
+    #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -239,6 +425,38 @@ function Find-ESC3Condition2 {
 }
 
 function Find-ESC4 {
+    <#
+    .SYNOPSIS
+        This script finds AD CS (Active Directory Certificate Services) objects that have the ESC4 vulnerability.
+
+    .DESCRIPTION
+        The script takes an array of ADCS objects as input and filters them based on the specified conditions.
+        For each matching object, it creates a custom object with properties representing various information about
+        the object, such as Forest, Name, DistinguishedName, IdentityReference, ActiveDirectoryRights, Issue, Fix, Revert, and Technique.
+
+    .PARAMETER ADCSObjects
+        Specifies the array of ADCS objects to be processed. This parameter is mandatory.
+
+    .PARAMETER DangerousRights
+        Specifies the list of dangerous rights that should not be assigned to users. This parameter is mandatory.
+
+    .PARAMETER SafeOwners
+        Specifies the list of SIDs of safe owners who are allowed to have owner rights on the objects. This parameter is mandatory.
+
+    .PARAMETER SafeUsers
+        Specifies the list of SIDs of safe users who are allowed to have specific rights on the objects. This parameter is mandatory.
+
+    .OUTPUTS
+        The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
+
+    .EXAMPLE
+        $ADCSObjects = Get-ADCSObjects
+        $DangerousRights = @('GenericAll', 'WriteProperty', 'WriteOwner', 'WriteDacl')
+        $SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$'
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $Results = $ADCSObjects | Find-ESC4 -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeUsers $SafeUsers
+        $Results
+    #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -259,31 +477,15 @@ function Find-ESC4 {
             $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
         }
 
-        if ( ($_.objectClass -eq 'pKICertificateTemplate') -and ($SID -match $UnsafeOwners) ) {
+        if ( ($_.objectClass -eq 'pKICertificateTemplate') -and ($SID -notmatch $SafeOwners) ) {
             $Issue = [pscustomobject]@{
-                Forest                = $_.CanonicalName.split('/')[0]
-                Name                  = $_.Name
-                DistinguishedName     = $_.DistinguishedName
-                IdentityReference     = $entry.IdentityReference
-                ActiveDirectoryRights = $entry.ActiveDirectoryRights
-                Issue                 = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
-                Fix                   = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
-                Revert                = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
-                Technique             = 'ESC4'
-            }
-            $Issue
-        }
-        elseif ( ($_.objectClass -eq 'pKICertificateTemplate') -and ($SID -notmatch $SafeOwners) ) {
-            $Issue = [pscustomobject]@{
-                Forest                = $_.CanonicalName.split('/')[0]
-                Name                  = $_.Name
-                DistinguishedName     = $_.DistinguishedName
-                IdentityReference     = $entry.IdentityReference
-                ActiveDirectoryRights = $entry.ActiveDirectoryRights
-                Issue                 = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
-                Fix                   = '[TODO]'
-                Revert                = '[TODO]'
-                Technique             = 'ESC4'
+                Forest            = $_.CanonicalName.split('/')[0]
+                Name              = $_.Name
+                DistinguishedName = $_.DistinguishedName
+                Issue             = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
+                Fix               = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
+                Revert            = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
+                Technique         = 'ESC4'
             }
             $Issue
         }
@@ -298,6 +500,7 @@ function Find-ESC4 {
             }
             if ( ($_.objectClass -eq 'pKICertificateTemplate') -and
                 ($SID -notmatch $SafeUsers) -and
+                ($entry.AccessControlType -eq 'Allow') -and
                 ($entry.ActiveDirectoryRights -match $DangerousRights) -and
                 ($entry.ActiveDirectoryRights.ObjectType -notmatch $SafeObjectTypes)
             ) {
@@ -319,6 +522,38 @@ function Find-ESC4 {
 }
 
 function Find-ESC5 {
+    <#
+    .SYNOPSIS
+        This script finds AD CS (Active Directory Certificate Services) objects that have the ESC5 vulnerability.
+
+    .DESCRIPTION
+        The script takes an array of ADCS objects as input and filters them based on the specified conditions.
+        For each matching object, it creates a custom object with properties representing various information about
+        the object, such as Forest, Name, DistinguishedName, IdentityReference, ActiveDirectoryRights, Issue, Fix, Revert, and Technique.
+
+    .PARAMETER ADCSObjects
+        Specifies the array of ADCS objects to be processed. This parameter is mandatory.
+
+    .PARAMETER DangerousRights
+        Specifies the list of dangerous rights that should not be assigned to users. This parameter is mandatory.
+
+    .PARAMETER SafeOwners
+        Specifies the list of SIDs of safe owners who are allowed to have owner rights on the objects. This parameter is mandatory.
+
+    .PARAMETER SafeUsers
+        Specifies the list of SIDs of safe users who are allowed to have specific rights on the objects. This parameter is mandatory.
+
+    .OUTPUTS
+        The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
+
+    .EXAMPLE
+        $ADCSObjects = Get-ADCSObjects
+        $DangerousRights = @('GenericAll', 'WriteProperty', 'WriteOwner', 'WriteDacl')
+        $SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$'
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $Results = $ADCSObjects | Find-ESC5 -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeUsers $SafeUsers
+        $Results
+    #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -338,34 +573,16 @@ function Find-ESC5 {
         else {
             $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
         }
-        if ( ($_.objectClass -ne 'pKICertificateTemplate') -and ($SID -match $UnsafeOwners) ) {
+
+        if ( ($_.objectClass -ne 'pKICertificateTemplate') -and ($SID -notmatch $SafeOwners) ) {
             $Issue = [pscustomobject]@{
-                Forest                = $_.CanonicalName.split('/')[0]
-                Name                  = $_.Name
-                DistinguishedName     = $_.DistinguishedName
-                IdentityReference     = $entry.IdentityReference
-                ActiveDirectoryRights = $entry.ActiveDirectoryRights
-                Issue                 = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
-                Fix                   = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
-                Revert                = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
-                Technique             = 'ESC5'
-            }
-            $Issue
-        }
-        elseif ( ($_.objectClass -ne 'pKICertificateTemplate') -and
-            ($SID -notmatch $SafeOwners) -and
-            ($entry.ActiveDirectoryRights.ObjectType -notmatch $SafeObjectTypes)
-        ) {
-            $Issue = [pscustomobject]@{
-                Forest                = $_.CanonicalName.split('/')[0]
-                Name                  = $_.Name
-                DistinguishedName     = $_.DistinguishedName
-                IdentityReference     = $entry.IdentityReference
-                ActiveDirectoryRights = $entry.ActiveDirectoryRights
-                Issue                 = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this object"
-                Fix                   = '[TODO]'
-                Revert                = '[TODO]'
-                Technique             = 'ESC5'
+                Forest            = $_.CanonicalName.split('/')[0]
+                Name              = $_.Name
+                DistinguishedName = $_.DistinguishedName
+                Issue             = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
+                Fix               = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
+                Revert            = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
+                Technique         = 'ESC5'
             }
             $Issue
         }
@@ -380,7 +597,9 @@ function Find-ESC5 {
             }
             if ( ($_.objectClass -ne 'pKICertificateTemplate') -and
                 ($SID -notmatch $SafeUsers) -and
-                ($entry.ActiveDirectoryRights -match $DangerousRights) ) {
+                ($entry.AccessControlType -eq 'Allow') -and
+                ($entry.ActiveDirectoryRights -match $DangerousRights) -and
+                ($entry.ActiveDirectoryRights.ObjectType -notmatch $SafeObjectTypes) ) {
                 $Issue = [pscustomobject]@{
                     Forest                = $_.CanonicalName.split('/')[0]
                     Name                  = $_.Name
@@ -399,6 +618,27 @@ function Find-ESC5 {
 }
 
 function Find-ESC6 {
+    <#
+    .SYNOPSIS
+        This script finds AD CS (Active Directory Certificate Services) objects that have the ESC6 vulnerability.
+
+    .DESCRIPTION
+        The script takes an array of ADCS objects as input and filters them based on objects that have the objectClass 
+        'pKIEnrollmentService' and the SANFlag set to 'Yes'. For each matching object, it creates a custom object with
+        properties representing various information about the object, such as Forest, Name, DistinguishedName, Technique, 
+        Issue, Fix, and Revert.
+
+    .PARAMETER ADCSObjects
+        Specifies the array of ADCS objects to be processed. This parameter is mandatory.
+
+    .OUTPUTS
+        The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
+
+    .EXAMPLE
+        $ADCSObjects = Get-ADCSObjects
+        $Results = $ADCSObjects | Find-ESC6
+        $Results
+    #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -430,11 +670,40 @@ function Find-ESC6 {
 }
 
 function Find-ESC8 {
+    <#
+    .SYNOPSIS
+        Finds ADCS objects with enrollment endpoints and identifies the enrollment type.
+
+    .DESCRIPTION
+        This script takes an array of ADCS objects and filters them based on the presence of a CA enrollment endpoint.
+        It then determines the enrollment type (HTTP or HTTPS) for each object and returns the results.
+
+    .PARAMETER ADCSObjects
+        Specifies the array of ADCS objects to process. This parameter is mandatory.
+
+    .OUTPUTS
+        An object representing the ADCS object with the following properties:
+        - Forest: The forest name of the object.
+        - Name: The name of the object.
+        - DistinguishedName: The distinguished name of the object.
+        - CAEnrollmentEndpoint: The CA enrollment endpoint of the object.
+        - Issue: The identified issue with the enrollment type.
+        - Fix: The recommended fix for the issue.
+        - Revert: The recommended revert action for the issue.
+        - Technique: The technique used to identify the issue.
+
+    .EXAMPLE
+        $ADCSObjects = Get-ADCSObjects
+        $Results = $ADCSObjects | Find-ESC8
+        $Results
+    #>
+
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
         $ADCSObjects
     )
+
     process {
         $ADCSObjects | Where-Object {
             $_.CAEnrollmentEndpoint
@@ -457,7 +726,145 @@ function Find-ESC8 {
     }
 }
 
+<#
+    This is a working POC. I need to test both checks and possibly blend pieces of them.
+    Then I need to fold this function into the Locksmith workflow.
+#>
+
+function Find-ESC9 {
+    <#
+    .SYNOPSIS
+        Checks for ESC9 (No Security Extension) Vulnerability
+
+    .DESCRIPTION
+        This function checks for certificate templates that contain the flag CT_CLAG_NO_SECURITY_EXTENSION (0x80000),
+        which will likely make them vulnerable to ESC9. Another factor to check for ESC9 is the registry values on AD
+        domain controllers that can help harden certificate based authentication for Kerberos and SChannel.
+
+    .NOTES
+        An ESC9 condition exists when:
+
+        - the new msPKI-Enrollment-Flag value on a certificate contains the flag CT_FLAG_NO_SECURITY_EXTENSION (0x80000)
+        - AND an insecure regstry value is set on domain controllers:
+
+          - the StrongCertificateBindingEnforcement registry value for Kerberos is not set to 2 (the default is 1) on domain controllers
+            at HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Kdc
+          - OR the CertificateMappingMethods registry value for SCHANNEL contains the UPN flag on domain controllers at
+            HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\SecurityProviders\Schannel
+
+        When the CT_FLAG_NO_SECURITY_EXTENSION (0x80000) flag is set on a certificate template, the new szOID_NTDS_CA_SECURITY_EXT
+        security extension will not be embedded in issued certificates. This security extension was added by Microsoft's
+        patch KB5014754 ("Certificate-based authentication changes on Windows domain controllers") on May 10, 2022.
+
+        The patch applies to all servers that run Active Directory Certificate Services and Windows domain controllers that
+        service certificate-based authentication.
+        https://support.microsoft.com/en-us/topic/kb5014754-certificate-based-authentication-changes-on-windows-domain-controllers-ad2c23b0-15d8-4340-a468-4d4f3b188f16
+
+        Based on research from
+        https://research.ifcr.dk/certipy-4-0-esc9-esc10-bloodhound-gui-new-authentication-and-request-methods-and-more-7237d88061f7,
+        https://support.microsoft.com/en-us/topic/kb5014754-certificate-based-authentication-changes-on-windows-domain-controllers-ad2c23b0-15d8-4340-a468-4d4f3b188f16,
+        and on a very long conversation with Bing Chat.
+
+        Additional notes from Cortana -- Bing when I pressed her to  tell me whether both conditions were required for ESC9 or only one of them:
+            A certificate template can still be vulnerable to ESC9 even if the msPKI-Enrollment-Flag does not include
+            CT_FLAG_NO_SECURITY_EXTENSION. This is because the vulnerability primarily arises from the ability of a
+            requester to specify the subjectAltName in a Certificate Signing Request (CSR). If a requester can specify
+            the subjectAltName in a CSR, they can request a certificate as anyone, including a domain admin user.
+            Therefore, if a certificate template allows requesters to specify a subjectAltName and
+            StrongCertificateBindingEnforcement is not set to 2, it could potentially be vulnerable to ESC9. However,
+            the presence of CT_FLAG_NO_SECURITY_EXTENSION in msPKI-Enrollment-Flag is a clear indicator of a template
+            being vulnerable to ESC9.
+#>
+
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        $ADCSObjects
+    )
+
+    # Import the required module
+    Import-Module ActiveDirectory
+
+    # Get the configuration naming context
+    $configNC = (Get-ADRootDSE).configurationNamingContext
+
+    # Define the path to the Certificate Templates container
+    $path = "CN=Certificate Templates,CN=Public Key Services,CN=Services,$configNC"
+
+    # Get all certificate templates
+    $templates = Get-ADObject -Filter * -SearchBase $path -Properties msPKI-Enrollment-Flag, msPKI-Certificate-Name-Flag
+
+    foreach ($template in $templates) {
+        # Check if msPKI-Enrollment-Flag contains the CT_FLAG_NO_SECURITY_EXTENSION (0x80000) flag
+        if ($template.'msPKI-Enrollment-Flag' -band 0x80000) {
+            # Check if msPKI-Certificate-Name-Flag contains the CT_FLAG_ENROLLEE_SUPPLIES_SUBJECT_ALT_NAME (0x2) flag
+            if ($template.'msPKI-Certificate-Name-Flag' -band 0x2) {
+                # Output the template name
+                Write-Output "Template Name: $($template.Name), Vulnerable to ESC9"
+            }
+        }
+    }
+
+    # AND / OR / ALSO
+
+    Import-Module ActiveDirectory
+
+    $templates = Get-ADObject -Filter { ObjectClass -eq "pKICertificateTemplate" } -Properties *
+    foreach ($template in $templates) {
+        $name = $template.Name
+
+        $subjectNameFlag = $template.'msPKI-Cert-Template-OID'
+        $subjectType = $template.'msPKI-Certificate-Application-Policy'
+        $enrollmentFlag = $template.'msPKI-Enrollment-Flag'
+        $certificateNameFlag = $template.'msPKI-Certificate-Name-Flag'
+
+        # Check if the template is vulnerable to ESC9
+        if ($subjectNameFlag -eq "Supply in the request" -and
+                ($subjectType -eq "User" -or $subjectType -eq "Computer") -and
+            # 0x200 means a certificate needs to include a template name certificate extension
+            # 0x220 instructs the client to perform autoenrollment for the specified template
+                ($enrollmentFlag -eq 0x200 -or $enrollmentFlag -eq 0x220) -and
+            # 0x2 instructs the client to supply subject information in the certificate request (CT_FLAG_ENROLLEE_SUPPLIES_SUBJECT).
+            #   This means that any user who is allowed to enroll in a certificate with this setting can request a certificate as any
+            #   user in the network, including a privileged user.
+            # 0x3 instructs the client to supply both the subject and subject alternate name information in the certificate request
+                ($certificateNameFlag -eq 0x2 -or $certificateNameFlag -eq 0x3)) {
+
+            # Print the template name and the vulnerability
+            Write-Output "$name is vulnerable to ESC9"
+        }
+        else {
+            # Print the template name and the status
+            Write-Output "$name is not vulnerable to ESC9"
+        }
+    }
+}
+
 function Format-Result {
+    <#
+    .SYNOPSIS
+        Formats the result of an issue for display.
+
+    .DESCRIPTION
+        This script formats the result of an issue for display based on the specified mode.
+
+    .PARAMETER Issue
+        The issue object containing information about the detected issue.
+
+    .PARAMETER Mode
+        The mode to determine the formatting style. Valid values are 0 and 1.
+
+    .EXAMPLE
+        Format-Result -Issue $Issue -Mode 0
+        Formats the issue result in table format.
+
+    .EXAMPLE
+        Format-Result -Issue $Issue -Mode 1
+        Formats the issue result in list format.
+
+    .NOTES
+        Author: Spencer Alessi
+    #>
     [CmdletBinding()]
     param(
         $Issue,
@@ -499,6 +906,26 @@ function Format-Result {
 }
 
 function Get-ADCSObject {
+    <#
+    .SYNOPSIS
+        Retrieves Active Directory Certificate Services (AD CS) objects.
+
+    .DESCRIPTION
+        This script retrieves AD CS objects from the specified forests.
+        It can be used to gather information about Public Key Services in Active Directory.
+
+    .PARAMETER Targets
+        Specifies the forest(s) from which to retrieve AD CS objects.
+
+    .PARAMETER Credential
+        Specifies the credentials to use for authentication when retrieving ADCS objects.
+
+    .EXAMPLE
+        Get-ADCSObject -Targets forest1.lan -Credential $cred
+        This example retrieves ADCS objects from forest1.lan using the specified credentials.
+
+    #>
+
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
@@ -516,7 +943,37 @@ function Get-ADCSObject {
         }
     }
 }
+
 function Get-CAHostObject {
+    <#
+    .SYNOPSIS
+        Retrieves Certificate Authority (CA) host object(s) from Active Directory.
+
+    .DESCRIPTION
+        This script retrieves CA host object(s) associated with every CA configured in the target Active Directory forest.
+        If a Credential is provided, the script retrieves the CA host object(s) using the specified credentials.
+        If no Credential is provided, the script retrieves the CA host object(s) using the current credentials.
+
+    .PARAMETER ADCSObjects
+        Specifies an array of AD CS objects to retrieve the CA host object for.
+
+    .PARAMETER Credential
+        Specifies the credentials to use for retrieving the CA host object(s). If not provided, current credentials will be used.
+
+    .EXAMPLE
+        $ADCSObjects = Get-ADCSObjects
+        $Credential = Get-Credential
+        Get-CAHostObject -ADCSObjects $ADCSObjects -Credential $Credential
+    
+        This example retrieves the CA host object(s) associated with every CA in the target forest using the provided credentials.
+
+    .INPUTS
+        System.Array
+
+    .OUTPUTS
+        System.Object
+
+    #>
     [CmdletBinding()]
     param (
         [parameter(
@@ -538,7 +995,24 @@ function Get-CAHostObject {
         }
     }
 }
+
 function Get-RestrictedAdminModeSetting {
+    <#
+    .SYNOPSIS
+        Retrieves the current configuration of the Restricted Admin Mode setting.
+
+    .DESCRIPTION
+        This script retrieves the current configuration of the Restricted Admin Mode setting from the registry. 
+        It checks if the DisableRestrictedAdmin value is set to '0' and the DisableRestrictedAdminOutboundCreds value is set to '1'.
+        If both conditions are met, it returns $true; otherwise, it returns $false.
+
+    .PARAMETER None
+
+    .EXAMPLE
+        Get-RestrictedAdminModeSetting
+        True
+    #>
+
     $Path = 'HKLM:SYSTEM\CurrentControlSet\Control\Lsa'
     try {
         $RAM = (Get-ItemProperty -Path $Path).DisableRestrictedAdmin
@@ -554,7 +1028,46 @@ function Get-RestrictedAdminModeSetting {
         return $false
     }
 }
+
 function Get-Target {
+    <#
+    .SYNOPSIS
+        Retrieves the target forest(s) based on a provided forest name, input file, or current Active Directory forest.
+
+    .DESCRIPTION
+        This script retrieves the target forest(s) based on the provided forest name, input file, or current Active Directory forest.
+        If the $Forest parameter is specified, the script sets the target to the provided forest.
+        If the $InputPath parameter is specified, the script reads the target forest(s) from the file specified by the input path.
+        If neither $Forest nor $InputPath is specified, the script retrieves objects from the current Active Directory forest.
+        If the $Credential parameter is specified, the script retrieves the target(s) using the provided credentials.
+
+    .PARAMETER Forest
+        Specifies a single forest to retrieve objects from.
+
+    .PARAMETER InputPath
+        Specifies the path to the file containing the target forest(s).
+
+    .PARAMETER Credential
+        Specifies the credentials to use for retrieving the target(s) from the Active Directory forest.
+
+    .EXAMPLE
+        Get-Target -Forest "example.com"
+        Sets the target forest to "example.com".
+
+    .EXAMPLE
+        Get-Target -InputPath "C:\targets.txt"
+        Retrieves the target forest(s) from the file located at "C:\targets.txt".
+
+    .EXAMPLE
+        Get-Target -Credential $cred
+        Sets the target forest to the current Active Directory forest using the provided credentials.
+
+    .OUTPUTS
+        System.String
+        The target(s) retrieved based on the specified parameters.
+
+    #>
+
     param (
         [string]$Forest,
         [string]$InputPath,
@@ -925,6 +1438,46 @@ or reach out to the Locksmith team for assistance. We'd love to help!`n
 }
 
 function Invoke-Scans {
+    <#
+    .SYNOPSIS
+        Invoke-Scans.ps1 is a script that performs various scans on ADCS (Active Directory Certificate Services) objects.
+
+    .DESCRIPTION
+        This script accepts a parameter named $Scans, which specifies the type of scans to perform. The available scan options are:
+        - Auditing
+        - ESC1
+        - ESC2
+        - ESC3
+        - ESC4
+        - ESC5
+        - ESC6
+        - ESC8
+        - All
+        - PromptMe
+
+    .PARAMETER Scans
+        Specifies the type of scans to perform. Multiple scan options can be provided as an array. The default value is 'All'.
+        The available scan options are: 'Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'All', 'PromptMe'.
+
+    .NOTES
+        - The script requires the following functions to be defined: Find-AuditingIssue, Find-ESC1, Find-ESC2, Find-ESC3Condition1,
+          Find-ESC3Condition2, Find-ESC4, Find-ESC5, Find-ESC6, Find-ESC8.
+        - The script uses Out-GridView or Out-ConsoleGridView for interactive selection when the 'PromptMe' scan option is chosen.
+        - The script returns a hash table containing the results of the scans.
+
+    .EXAMPLE
+        # Perform all scans
+        Invoke-Scans
+
+    .EXAMPLE
+        # Perform only the 'Auditing' and 'ESC1' scans
+        Invoke-Scans -Scans 'Auditing', 'ESC1'
+
+    .EXAMPLE
+        # Prompt the user to select the scans to perform
+        Invoke-Scans -Scans 'PromptMe'
+    #>
+
     [CmdletBinding()]
     param (
         # Could split Scans and PromptMe into separate parameter sets.
@@ -1003,7 +1556,7 @@ function Invoke-Scans {
             [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
             Write-Host 'Identifying AD CS template and other objects with poor access control (ESC5)...'
             [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
-            Write-Host 'Identifying AD CS template and other objects with poor access control (ESC6)...'
+            Write-Host 'Identifying Certificate Authorities configured with dangerous flags (ESC6)...'
             [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects
             Write-Host 'Identifying HTTP-based certificate enrollment interfaces (ESC8)...'
             [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects
@@ -1182,6 +1735,26 @@ function New-Dictionary {
 }
 
 function New-OutputPath {
+    <#
+    .SYNOPSIS
+        Creates output directories for each forest.
+
+    .DESCRIPTION
+        This script creates one output directory per forest specified in the $Targets variable.
+        The output directories are created under the $OutputPath directory.
+
+    .PARAMETER Targets
+        Specifies the forests for which output directories need to be created.
+
+    .PARAMETER OutputPath
+        Specifies the base path where the output directories will be created.
+
+    .EXAMPLE
+        New-OutputPath -Targets "Forest1", "Forest2" -OutputPath "C:\Output"
+        This example creates two output directories named "Forest1" and "Forest2" under the "C:\Output" directory.
+
+    #>
+
     [CmdletBinding(SupportsShouldProcess)]
     param ()
     # Create one output directory per forest
@@ -1190,7 +1763,34 @@ function New-OutputPath {
         New-Item -Path $ForestPath -ItemType Directory -Force  | Out-Null
     }
 }
+
 function Set-AdditionalCAProperty {
+    <#
+    .SYNOPSIS
+        Sets additional properties for a Certificate Authority (CA) object.
+
+    .DESCRIPTION
+        This script sets additional properties for a Certificate Authority (CA) object.
+        It takes an array of AD CS Objects as input, which represent the CA objects to be processed.
+        The script filters the AD CS Objects based on the objectClass property and performs the necessary operations
+        to set the additional properties.
+
+    .PARAMETER ADCSObjects
+        Specifies the array of AD CS Objects to be processed. This parameter is mandatory and supports pipeline input.
+
+    .PARAMETER Credential
+        Specifies the PSCredential object to be used for authentication when accessing the CA objects.
+        If not provided, the script will use the current user's credentials.
+
+    .EXAMPLE
+        $ADCSObjects = Get-ADObject -Filter { objectClass -eq 'pKIEnrollmentService' }
+        Set-AdditionalCAProperty -ADCSObjects $ADCSObjects
+
+    .NOTES
+        Author: Jake Hildreth
+        Date: July 15, 2022
+    #>
+
     [CmdletBinding(SupportsShouldProcess)]
     param (
         [parameter(
@@ -1199,6 +1799,7 @@ function Set-AdditionalCAProperty {
         [array]$ADCSObjects,
         [PSCredential]$Credential
     )
+
     process {
         $ADCSObjects | Where-Object objectClass -Match 'pKIEnrollmentService' | ForEach-Object {
             [string]$CAEnrollmentEndpoint = $_.'msPKI-Enrollment-Servers' | Select-String 'http.*' | ForEach-Object { $_.Matches[0].Value }
@@ -1381,34 +1982,37 @@ function Test-IsLocalAccountSession {
 function Test-IsMemberOfProtectedUsers {
     <#
     .SYNOPSIS
-    Check to see if a user is a member of the Protected Users group.
+        Check to see if a user is a member of the Protected Users group.
 
     .DESCRIPTION
-    This function checks to see if a specified user or the current user is a member of the Protected Users group in AD.
+        This function checks to see if a specified user or the current user is a member of the Protected Users group in AD.
 
     .PARAMETER User
-    The user that will be checked for membership in the Protected Users group. This parameter accepts input from the pipeline.
+        The user that will be checked for membership in the Protected Users group. This parameter accepts input from the pipeline.
 
     .EXAMPLE
-    This example will check if JaneDoe is a member of the Protected Users group.
-
-        Test-IsMemberOfProtectedUsers -User JaneDoe
+        This example will check if JaneDoe is a member of the Protected Users group.
+    
+            Test-IsMemberOfProtectedUsers -User JaneDoe
 
     .EXAMPLE
-    This example will check if the current user is a member of the Protected Users group.
-
-        Test-IsMemberOfProtectedUsers
+        This example will check if the current user is a member of the Protected Users group.
+    
+            Test-IsMemberOfProtectedUsers
 
     .INPUTS
-    Active Directory user object, user SID, SamAccountName, etc
+        Active Directory user object, user SID, SamAccountName, etc
 
     .OUTPUTS
-    Boolean
+        Boolean
 
     .NOTES
-    Membership in Active Directory's Protect Users group can have implications for anything that relies on NTLM authentication.
+        Membership in Active Directory's Protected Users group can have implications for anything that relies on NTLM authentication.
 
-#>
+    .LINK
+        https://docs.microsoft.com/en-us/windows-server/security/credentials-protection-and-management/protected-users-group
+
+    #>
 
     [CmdletBinding()]
     param (
@@ -1435,7 +2039,7 @@ function Test-IsMemberOfProtectedUsers {
     $DomainSID = (Get-ADDomain).DomainSID.Value
     $ProtectedUsersSID = "$DomainSID-525"
 
-    # Get members of the Protected Users group for the current domain. Recuse in case groups are nested in it.
+    # Get members of the Protected Users group for the current domain. Recurse in case groups are nested in it.
     $ProtectedUsers = Get-ADGroupMember -Identity $ProtectedUsersSID -Recursive | Select-Object -Unique
 
     # Check if the current user is in the 'Protected Users' group
@@ -1447,6 +2051,108 @@ function Test-IsMemberOfProtectedUsers {
         Write-Verbose "$($CheckUser.Name) ($($CheckUser.DistinguishedName)) is not a member of the Protected Users group."
         $false
     }
+}
+
+function Test-IsRecentVersion {
+    <#
+    .SYNOPSIS
+        Check if the installed version of the Locksmith module is up to date.
+
+    .DESCRIPTION
+        This script checks the installed version of the Locksmith module against the latest release on GitHub.
+        It determines if the installed version is considered "out of date" based on the number of days specified.
+        If the installed version is out of date, a warning message is displayed along with information about the latest release.
+
+    .PARAMETER Version
+        Specifies the version number to check from the script.
+
+    .PARAMETER Days
+        Specifies the number of days past a module release date at which to consider the release "out of date".
+        The default value is 60 days.
+
+    .OUTPUTS
+        System.Boolean
+        Returns $true if the installed version is up to date, and $false if it is out of date.
+
+    .EXAMPLE
+        Test-IsRecentVersion -Version "2024.1" -Days 30
+        True
+
+        Test-IsRecentVersion -Version "2023.10" -Days 60
+        WARNING: Your currently installed version of Locksmith (2.5) is more than 60 days old. We recommend that you update to ensure the latest findings are included.
+        Locksmith Module Details:
+        Latest Version:          v2024.1
+        Published at:            01/28/2024 12:47:18
+        Install Module:     Install-Module -Name Locksmith
+        Standalone Script:  https://github.com/trimarcjake/locksmith/releases/download/v2.6/Invoke-Locksmith.zip
+
+    .NOTES
+        Author: Sam Erde
+        Date:   02/10/2024
+    #>
+    [CmdletBinding()]
+    param (
+        # Check a specific version number from the script
+        [Parameter(Mandatory)]
+        [string]$Version,
+        # Define the number of days past a module release date at which to consider the release "out of date."
+        [Parameter()]
+        [int16]$Days = 60
+    )
+
+    # Strip the 'v' if it was used so the script can work with or without it in the input
+    $Version = $Version.Replace('v', '')
+    try {
+        # Checking the most recent release in GitHub, but we could also use PowerShell Gallery.
+        $Uri = "https://api.github.com/repos/trimarcjake/locksmith/releases"
+        $Releases = Invoke-RestMethod -Uri $uri -Method Get -DisableKeepAlive -ErrorAction Stop
+        $LatestRelease = $Releases | Sort-Object -Property Published_At -Descending | Select-Object -First 1
+        # Get the release date of the currently running version via the version parameter
+        [datetime]$InstalledVersionReleaseDate = ($Releases | Where-Object { $_.tag_name -like "?$Version" }).published_at
+        [datetime]$LatestReleaseDate = $LatestRelease.published_at
+        # $ModuleDownloadLink   = ( ($LatestRelease.Assets).Where({$_.Name -like "Locksmith-v*.zip"}) ).browser_download_url
+        $ScriptDownloadLink = ( ($LatestRelease.Assets).Where({ $_.Name -eq 'Invoke-Locksmith.zip' }) ).browser_download_url
+
+        $LatestReleaseInfo = @"
+Locksmith Module Details:
+
+Latest Version:`t`t $($LatestRelease.name)
+Published at: `t`t $LatestReleaseDate
+Install Module:`t`t Install-Module -Name Locksmith
+Standalone Script:`t $ScriptDownloadLink
+"@
+    }
+    catch {
+        Write-Warning "Unable to find the latest available version of the Locksmith module on GitHub." -WarningAction Continue
+        # Find the approximate release date of the installed version. Handles version with or without 'v' prefix.
+        $InstalledVersionMonth = [datetime]::Parse(($Version.Replace('v', '')).Replace('.', '-') + "-01")
+        # Release date is typically the first Saturday of the month. Let's guess as close as possible!
+        $InstalledVersionReleaseDate = $InstalledVersionMonth.AddDays( 6 - ($InstallVersionMonth.DayOfWeek) )
+    }
+
+    # The date at which to consider this module "out of date" is based on the $Days parameter
+    $OutOfDateDate = (Get-Date).Date.AddDays(-$Days)
+    $OutOfDateMessage = "Your currently installed version of Locksmith ($Version) is more than $Days days old. We recommend that you update to ensure the latest findings are included."
+
+    # Compare the installed version release date to the latest release date
+    if ( ($LatestReleaseDate) -and ($InstalledVersionReleaseDate -le ($LatestReleaseDate.AddDays(-$Days))) ) {
+        # If we found the latest release date online and the installed version is more than [x] days older than it:
+        Write-Warning -Verbose -Message $OutOfDateMessage -WarningAction Continue
+        Write-Information -MessageData $LatestReleaseInfo -InformationAction Continue
+        $IsRecentVersion = $false
+    }
+    elseif ( $InstalledVersionReleaseDate -le $OutOfDateDate ) {
+        # If we didn't get the latest release date online, use the estimated release date to check age.
+        Write-Warning -Verbose -Message $OutOfDateMessage -WarningAction Continue
+        $IsRecentVersion = $false
+    }
+    else {
+        # The installed version has not been found to be out of date.
+        $IsRecentVersion = $True
+    }
+
+    # Return true/false
+    $IsRecentVersion
 }
 
 function Test-IsRSATInstalled {
