@@ -1,33 +1,59 @@
 ﻿function Find-AuditingIssue {
+    <#
+    .SYNOPSIS
+        A function to find auditing issues on AD CS CAs.
+
+    .DESCRIPTION
+        This script takes an array of AD CS objects and filters them based on specific criteria to identify auditing issues.
+        It checks if the object's objectClass is 'pKIEnrollmentService' and if the AuditFilter is not equal to '127'.
+        For each matching object, it creates a custom object with information about the issue, fix, and revert actions.
+
+    .PARAMETER ADCSObjects
+        Specifies an array of ADCS objects to be checked for auditing issues.
+
+    .OUTPUTS
+        System.Management.Automation.PSCustomObject
+        A custom object is created for each ADCS object that matches the criteria, containing the following properties:
+        - Forest: The forest name of the object.
+        - Name: The name of the object.
+        - DistinguishedName: The distinguished name of the object.
+        - Technique: The technique used to detect the issue (always 'DETECT').
+        - Issue: The description of the auditing issue.
+        - Fix: The command to fix the auditing issue.
+        - Revert: The command to revert the auditing issue.
+
+    .EXAMPLE
+        $ADCSObjects = Get-ADObject -Filter * -SearchBase 'CN=Enrollment Services,CN=Public Key Services,CN=Services,CN=Configuration,DC=contoso,DC=com'
+        $AuditingIssues = Find-AuditingIssue -ADCSObjects $ADCSObjects
+        $AuditingIssues
+        This example retrieves ADCS objects from the specified search base and passes them to the Find-AuditingIssue function.
+        It then returns the auditing issues for later use.
+    #>
+
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
         [array]$ADCSObjects
     )
+
     $ADCSObjects | Where-Object {
         ($_.objectClass -eq 'pKIEnrollmentService') -and
         ($_.AuditFilter -ne '127')
     } | ForEach-Object {
-        $Issue = New-Object -TypeName pscustomobject
-            $Issue | Add-Member -MemberType NoteProperty -Name 'Forest' -Value $_.CanonicalName.split('/')[0] -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name 'Name' -Value $_.Name -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name 'DistinguishedName' -Value $_.DistinguishedName -Force
+        $Issue = [pscustomobject]@{
+            Forest            = $_.CanonicalName.split('/')[0]
+            Name              = $_.Name
+            DistinguishedName = $_.DistinguishedName
+            Technique         = 'DETECT'
+            Issue             = "Auditing is not fully enabled on $($_.CAFullName). Current value is $($_.AuditFilter)"
+            Fix               = "certutil.exe -config `'$($_.CAFullname)`' -setreg `'CA\AuditFilter`' 127; Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }"
+            Revert            = "certutil.exe -config $($_.CAFullname) -setreg CA\AuditFilter  $($_.AuditFilter); Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }"
+        }
         if ($_.AuditFilter -match 'CA Unavailable') {
-            $Issue | Add-Member -MemberType NoteProperty -Name 'Issue' -Value $_.AuditFilter -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name 'Fix' -Value 'N/A' -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name 'Revert' -Value 'N/A' -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name 'Technique' -Value 'DETECT' -Force
+            $Issue.Issue  = $_.AuditFilter
+            $Issue.Fix    = 'N/A'
+            $Issue.Revert = 'N/A'
         }
-        else {
-            $Issue | Add-Member -MemberType NoteProperty -Name 'Issue' -Value "Auditing is not fully enabled on $($_.CAFullName). Current value is $($_.AuditFilter)" -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name 'Fix' `
-                -Value "certutil.exe -config `'$($_.CAFullname)`' -setreg `'CA\AuditFilter`' 127; Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name 'Revert' `
-                -Value "certutil.exe -config $($_.CAFullname) -setreg CA\AuditFilter  $($_.AuditFilter); Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name 'Technique' -Value 'DETECT' -Force
-        }
-        $Severity = Set-Severity -Issue $Issue
-        $Issue | Add-Member -MemberType NoteProperty -Name 'Severity' -Value $Severity
         $Issue
     }
 }

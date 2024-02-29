@@ -1,4 +1,25 @@
 ﻿function Find-ESC6 {
+    <#
+    .SYNOPSIS
+        This script finds AD CS (Active Directory Certificate Services) objects that have the ESC6 vulnerability.
+
+    .DESCRIPTION
+        The script takes an array of ADCS objects as input and filters them based on objects that have the objectClass 
+        'pKIEnrollmentService' and the SANFlag set to 'Yes'. For each matching object, it creates a custom object with
+        properties representing various information about the object, such as Forest, Name, DistinguishedName, Technique, 
+        Issue, Fix, and Revert.
+
+    .PARAMETER ADCSObjects
+        Specifies the array of ADCS objects to be processed. This parameter is mandatory.
+
+    .OUTPUTS
+        The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
+
+    .EXAMPLE
+        $ADCSObjects = Get-ADCSObjects
+        $Results = $ADCSObjects | Find-ESC6
+        $Results
+    #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -10,25 +31,20 @@
             ($_.SANFlag -ne 'No')
         } | ForEach-Object {
             [string]$CAFullName = "$($_.dNSHostName)\$($_.Name)"
-            $Issue = New-Object -TypeName pscustomobject
-            $Issue | Add-Member -MemberType NoteProperty -Name Forest -Value $_.CanonicalName.split('/')[0] -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name Name -Value $_.Name -Force
-            $Issue | Add-Member -MemberType NoteProperty -Name DistinguishedName -Value $_.DistinguishedName -Force
+            $Issue = [pscustomobject]@{
+                Forest            = $_.CanonicalName.split('/')[0]
+                Name              = $_.Name
+                DistinguishedName = $_.DistinguishedName
+                Technique         = 'ESC6'
+                Issue             = $_.AuditFilter
+                Fix               = 'N/A'
+                Revert            = 'N/A'
+            }
             if ($_.SANFlag -eq 'Yes') {
-                $Issue | Add-Member -MemberType NoteProperty -Name Issue -Value 'EDITF_ATTRIBUTESUBJECTALTNAME2 is enabled.' -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Fix `
-                    -Value "certutil -config $CAFullname -setreg policy\EditFlags -EDITF_ATTRIBUTESUBJECTALTNAME2; Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Revert `
-                    -Value "certutil -config $CAFullname -setreg policy\EditFlags +EDITF_ATTRIBUTESUBJECTALTNAME2; Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }" -Force
+                $Issue.Issue  = 'EDITF_ATTRIBUTESUBJECTALTNAME2 is enabled.'
+                $Issue.Fix    = "certutil -config $CAFullname -setreg policy\EditFlags -EDITF_ATTRIBUTESUBJECTALTNAME2; Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }"
+                $Issue.Revert = "certutil -config $CAFullname -setreg policy\EditFlags +EDITF_ATTRIBUTESUBJECTALTNAME2; Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }"
             }
-            else {
-                $Issue | Add-Member -MemberType NoteProperty -Name Issue -Value $_.AuditFilter -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Fix -Value 'N/A' -Force
-                $Issue | Add-Member -MemberType NoteProperty -Name Revert -Value 'N/A' -Force
-            }
-            $Issue | Add-Member -MemberType NoteProperty -Name Technique -Value 'ESC6'
-            $Severity = Set-Severity -Issue $Issue
-            $Issue | Add-Member -MemberType NoteProperty -Name Severity -Value $Severity
             $Issue
         }
     }
