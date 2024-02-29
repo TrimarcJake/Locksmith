@@ -1,6 +1,6 @@
 ```mermaid
 ---
-title: ESC3 Condition 1 - Enrollment Agent 
+title: ESC3 Condition 1 - Enrollment Agent
 ---
 flowchart LR
     PrincipalType -->|User| UserType["User Type"];
