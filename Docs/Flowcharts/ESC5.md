@@ -1,6 +1,6 @@
 ```mermaid
 ---
-title: ESC3 Condition 1 - Enrollment Agent
+title: ESC5 - Objects w/Dangerous ACLs or Ownership
 ---
 flowchart LR
     PrincipalType -->|User| UserType["User Type"];
@@ -13,8 +13,11 @@ flowchart LR
                 BIASize -- Empty/Small --> BIAEGPriority(Info);
                 BIASize -- Medium/Large --> BIAMGPriority(Low);
             GroupType -- Regular Users --> UsersSize(User Group Size);
-                UsersSize -- Empty/Small --> UsersEGPriority(Low);
-                UsersSize -- Medium/Large --> UsersMGPriority(Medium);
+                UsersSize -- Empty/Small --> UsersEGPriority(Medium);
+                UsersSize -- Medium/Large --> UsersMGPriority(High);
     PrincipalType -->|gMSA| gMSAType(gMSA Type);
-            gMSAType -- Any --> gMSAPriority(Info);
+            gMSAType -- Any --> gMSAPriority(No Finding);
+```
+```
+Note: The severity of this check is highly dependent on the object with the issue.
 ```

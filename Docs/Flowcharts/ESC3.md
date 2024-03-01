@@ -1,6 +1,6 @@
 ```mermaid
 ---
-title: ESC1 - Subject Alternative Name (SAN)
+title: ESC3 Condition 1 - Enrollment Agent
 ---
 flowchart LR
     PrincipalType -->|User| UserType["User Type"];
@@ -10,11 +10,11 @@ flowchart LR
     PrincipalType -->|Group| GroupType("Group Type");
             GroupType -- AD Admins --> ADASize(No Finding);
             GroupType -- Builtin/PKI Admins --> BIASize(BIA Group Size);
-                BIASize -- Empty/Small --> BIAEGPriority(Low);
-                BIASize -- Medium/Large --> BIAMGPriority(Medium);
+                BIASize -- Empty/Small --> BIAEGPriority(No Info);
+                BIASize -- Medium/Large --> BIAMGPriority(Low);
             GroupType -- Regular Users --> UsersSize(User Group Size);
-                UsersSize -- Empty/Small --> UsersEGPriority(High);
-                UsersSize -- Medium/Large --> UsersMGPriority(Critical);
+                UsersSize -- Empty/Small --> UsersEGPriority(Low);
+                UsersSize -- Medium/Large --> UsersMGPriority(Medium);
     PrincipalType -->|gMSA| gMSAType(gMSA Type);
             gMSAType -- Any --> gMSAPriority(No Finding);
 ```

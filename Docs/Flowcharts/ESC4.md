@@ -16,5 +16,5 @@ flowchart LR
                 UsersSize -- Empty/Small --> UsersEGPriority(Medium);
                 UsersSize -- Medium/Large --> UsersMGPriority(High);
     PrincipalType -->|gMSA| gMSAType(gMSA Type);
-            gMSAType -- Any --> gMSAPriority(Info);
+            gMSAType -- Any --> gMSAPriority(No Finding);
 ```
