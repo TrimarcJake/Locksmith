@@ -1,4 +1,28 @@
 ﻿function Find-ESC3Condition2 {
+    <#
+    .SYNOPSIS
+        This script finds AD CS (Active Directory Certificate Services) objects that match the second condition required for ESC3 vulnerability.
+
+    .DESCRIPTION
+        The script takes an array of ADCS objects as input and filters them based on the specified conditions.
+        For each matching object, it creates a custom object with properties representing various information about
+        the object, such as Forest, Name, DistinguishedName, IdentityReference, ActiveDirectoryRights, Issue, Fix, Revert, and Technique.
+
+    .PARAMETER ADCSObjects
+        Specifies the array of ADCS objects to be processed. This parameter is mandatory.
+
+    .PARAMETER SafeUsers
+        Specifies the list of SIDs of safe users who are allowed to have specific rights on the objects. This parameter is mandatory.
+
+    .OUTPUTS
+        The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
+
+    .EXAMPLE
+        $ADCSObjects = Get-ADCSObjects
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $Results = $ADCSObjects | Find-ESC3Condition2 -SafeUsers $SafeUsers
+        $Results
+    #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]

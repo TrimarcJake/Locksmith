@@ -1,4 +1,44 @@
 function Invoke-Scans {
+    <#
+    .SYNOPSIS
+        Invoke-Scans.ps1 is a script that performs various scans on ADCS (Active Directory Certificate Services) objects.
+
+    .DESCRIPTION
+        This script accepts a parameter named $Scans, which specifies the type of scans to perform. The available scan options are:
+        - Auditing
+        - ESC1
+        - ESC2
+        - ESC3
+        - ESC4
+        - ESC5
+        - ESC6
+        - ESC8
+        - All
+        - PromptMe
+
+    .PARAMETER Scans
+        Specifies the type of scans to perform. Multiple scan options can be provided as an array. The default value is 'All'.
+        The available scan options are: 'Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'All', 'PromptMe'.
+
+    .NOTES
+        - The script requires the following functions to be defined: Find-AuditingIssue, Find-ESC1, Find-ESC2, Find-ESC3Condition1,
+          Find-ESC3Condition2, Find-ESC4, Find-ESC5, Find-ESC6, Find-ESC8.
+        - The script uses Out-GridView or Out-ConsoleGridView for interactive selection when the 'PromptMe' scan option is chosen.
+        - The script returns a hash table containing the results of the scans.
+
+    .EXAMPLE
+        # Perform all scans
+        Invoke-Scans
+
+    .EXAMPLE
+        # Perform only the 'Auditing' and 'ESC1' scans
+        Invoke-Scans -Scans 'Auditing', 'ESC1'
+
+    .EXAMPLE
+        # Prompt the user to select the scans to perform
+        Invoke-Scans -Scans 'PromptMe'
+    #>
+
     [CmdletBinding()]
     param (
     # Could split Scans and PromptMe into separate parameter sets.
@@ -77,7 +117,7 @@ function Invoke-Scans {
             [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
             Write-Host 'Identifying AD CS template and other objects with poor access control (ESC5)...'
             [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
-            Write-Host 'Identifying AD CS template and other objects with poor access control (ESC6)...'
+            Write-Host 'Identifying Certificate Authorities configured with dangerous flags (ESC6)...'
             [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects
             Write-Host 'Identifying HTTP-based certificate enrollment interfaces (ESC8)...'
             [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects

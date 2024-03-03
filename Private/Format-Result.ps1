@@ -1,4 +1,28 @@
 ﻿function Format-Result {
+    <#
+    .SYNOPSIS
+        Formats the result of an issue for display.
+
+    .DESCRIPTION
+        This script formats the result of an issue for display based on the specified mode.
+
+    .PARAMETER Issue
+        The issue object containing information about the detected issue.
+
+    .PARAMETER Mode
+        The mode to determine the formatting style. Valid values are 0 and 1.
+
+    .EXAMPLE
+        Format-Result -Issue $Issue -Mode 0
+        Formats the issue result in table format.
+
+    .EXAMPLE
+        Format-Result -Issue $Issue -Mode 1
+        Formats the issue result in list format.
+
+    .NOTES
+        Author: Spencer Alessi
+    #>
     [CmdletBinding()]
     param(
         $Issue,
