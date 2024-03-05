@@ -718,7 +718,7 @@ function Find-ESC8 {
                 Revert               = '[TODO]'
                 Technique            = 'ESC8'
             }
-            if ($_.CAEnrollmentEndpoint -like '^https*') {
+            if ($_.CAEnrollmentEndpoint -match '^https') {
                 $Issue.Issue = 'HTTPS enrollment is enabled.'
             }
             $Issue
