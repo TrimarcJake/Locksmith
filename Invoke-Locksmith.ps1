@@ -199,7 +199,7 @@ function Find-ESC1 {
     $ADCSObjects | Where-Object {
         ($_.objectClass -eq 'pKICertificateTemplate') -and
         ($_.pkiExtendedKeyUsage -match $ClientAuthEKUs) -and
-        ($_.'msPKI-Certificate-Name-Flag' -eq 1) -and
+        ($_.'msPKI-Certificate-Name-Flag' -band 1) -and
         !($_.'msPKI-Enrollment-Flag' -band 2) -and
         ( ($_.'msPKI-RA-Signature' -eq 0) -or ($null -eq $_.'msPKI-RA-Signature') )
     } | ForEach-Object {
@@ -264,7 +264,7 @@ function Find-ESC2 {
     $ADCSObjects | Where-Object {
         ($_.ObjectClass -eq 'pKICertificateTemplate') -and
         ( (!$_.pkiExtendedKeyUsage) -or ($_.pkiExtendedKeyUsage -match '2.5.29.37.0') ) -and
-        ($_.'msPKI-Certificate-Name-Flag' -eq 1) -and
+        ($_.'msPKI-Certificate-Name-Flag' -band 1) -and
         !($_.'msPKI-Enrollment-Flag' -band 2) -and
         ( ($_.'msPKI-RA-Signature' -eq 0) -or ($null -eq $_.'msPKI-RA-Signature') )
     } | ForEach-Object {
@@ -393,7 +393,7 @@ function Find-ESC3Condition2 {
     $ADCSObjects | Where-Object {
         ($_.objectClass -eq 'pKICertificateTemplate') -and
         ($_.pkiExtendedKeyUsage -match $ClientAuthEKU) -and
-        ($_.'msPKI-Certificate-Name-Flag' -eq 1) -and
+        ($_.'msPKI-Certificate-Name-Flag' -band 1) -and
         !($_.'msPKI-Enrollment-Flag' -band 2) -and
         ($_.'msPKI-RA-Application-Policies' -eq '1.3.6.1.4.1.311.20.2.1') -and
         ( ($_.'msPKI-RA-Signature' -eq 1) )
