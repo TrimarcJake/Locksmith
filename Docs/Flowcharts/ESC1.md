@@ -12,7 +12,7 @@ flowchart LR
             GroupType -- Builtin/PKI Admins --> BIASize(Group Size);
                 BIASize -- Empty/Small --> BIAEGPriority(Low);
                 BIASize -- Medium/Large --> BIAMGPriority(Medium);
-            GroupType -- Regular Users --> UsersSize(User Group Size);
+            GroupType -- Regular Users --> UsersSize(Group Size);
                 UsersSize -- Empty/Small --> UsersEGPriority(High);
                 UsersSize -- Medium/Large --> UsersMGPriority(Critical);
     PrincipalType -->|gMSA| gMSAType(gMSA Type);
