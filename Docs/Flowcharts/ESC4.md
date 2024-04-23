@@ -9,7 +9,7 @@ flowchart LR
             UserType -- User --> UserPriority(High);
     PrincipalType -->|Group| GroupType("Group Type");
             GroupType -- AD Admins --> ADASize(No Finding);
-            GroupType -- Builtin/PKI Admins --> BIASize(BIA Group Size);
+            GroupType -- Builtin/PKI Admins --> BIASize(Group Size);
                 BIASize -- Empty/Small --> BIAEGPriority(Info);
                 BIASize -- Medium/Large --> BIAMGPriority(Low);
             GroupType -- Regular Users --> UsersSize(User Group Size);
