@@ -20,6 +20,9 @@
     .PARAMETER SafeUsers
         Specifies the list of SIDs of safe users who are allowed to have specific rights on the objects. This parameter is mandatory.
 
+    .PARAMETER SafeObjectTypes
+        Specifices a list of ObjectTypes which are not a security concern. This parameter is mandatory.
+
     .OUTPUTS
         The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
 
@@ -28,7 +31,8 @@
         $DangerousRights = @('GenericAll', 'WriteProperty', 'WriteOwner', 'WriteDacl')
         $SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$'
         $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
-        $Results = $ADCSObjects | Find-ESC5 -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeUsers $SafeUsers
+        $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
+        $Results = $ADCSObjects | Find-ESC5 -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeUsers $SafeUsers  -SafeObjectTypes $SafeObjectTypes
         $Results
     #>
     [CmdletBinding()]
@@ -40,7 +44,9 @@
         [Parameter(Mandatory = $true)]
         $SafeOwners,
         [Parameter(Mandatory = $true)]
-        $SafeUsers
+        $SafeUsers,
+        [Parameter(Mandatory = $true)]
+        $SafeObjectTypes
     )
     $ADCSObjects | ForEach-Object {
         $Principal = New-Object System.Security.Principal.NTAccount($_.nTSecurityDescriptor.Owner)
@@ -74,7 +80,7 @@
                 ($SID -notmatch $SafeUsers) -and
                 ($entry.AccessControlType -eq 'Allow') -and
                 ($entry.ActiveDirectoryRights -match $DangerousRights) -and
-                ($entry.ActiveDirectoryRights.ObjectType -notmatch $SafeObjectTypes) ) {
+                ($entry.ObjectType -notmatch $SafeObjectTypes) ) {
                 $Issue = [pscustomobject]@{
                     Forest                = $_.CanonicalName.split('/')[0]
                     Name                  = $_.Name
