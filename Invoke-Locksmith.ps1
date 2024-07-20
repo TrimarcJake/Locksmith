@@ -2250,7 +2250,7 @@ function Update-ESC4Remediation {
     )
 
     $ESC4Issues | ForEach-Object {
-        $_ | Format-List -Width 1000
+        $_
     }
 }
 
