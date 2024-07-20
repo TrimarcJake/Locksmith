@@ -88,6 +88,20 @@ Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
                 ($entry.ActiveDirectoryRights -match $DangerousRights) -and
                 ($entry.ObjectType -notmatch $SafeObjectTypes)
                 ) {
+
+                $BlockFix = [scriptblock]@"
+`$Path = 'AD:$($_.DistinguishedName)'
+`$Principal = '$($Principal.Value)'
+`$ACL = Get-Acl -Path `$Path
+foreach ( `$ace in `$ACL.access ) {
+    if ( (`$ace.IdentityReference.Value -like `$Principal ) -and
+        ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) {
+            `$ACL.RemoveAccessRule(`$ace) | Out-Null
+            Set-Acl -Path `$Path -AclObject `$ACL
+    }
+}
+"@
+
                 $Issue = [pscustomobject]@{
                     Forest                = $_.CanonicalName.split('/')[0]
                     Name                  = $_.Name
@@ -108,6 +122,7 @@ foreach ( `$ace in `$ACL.access ) {
     }
 }
 "@
+                    BlockFix              = $BlockFix
                     Revert                = '[TODO]'
                     Technique             = 'ESC4'
                 }
