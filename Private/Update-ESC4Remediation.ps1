@@ -27,9 +27,7 @@ function Update-ESC4Remediation {
     #>
     [CmdletBinding()]
     param(
-        $ESC4Issues,
-        [Parameter(Mandatory = $true)]
-        [int]$Mode
+        $ESC4Issues
     )
 
     $ESC4Issues | ForEach-Object -PipelineVariable Issue {
