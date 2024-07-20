@@ -188,8 +188,6 @@
             $ESC8           = $Results['ESC8']
     }
 
-    Update-ESC4Remediation -ESC4Issues $ESC4
-
     # If these are all empty = no issues found, exit
     if ($null -eq $Results) {
         Write-Host "`n$(Get-Date) : No ADCS issues were found.`n" -ForegroundColor Green
@@ -245,4 +243,7 @@
     }
     Write-Host 'Thank you for using ' -NoNewline
     Write-Host "❤ Locksmith ❤`n" -ForegroundColor Magenta
+
+    Write-Host 'TEST STUFF'
+    Update-ESC4Remediation -ESC4Issues $ESC4
 }

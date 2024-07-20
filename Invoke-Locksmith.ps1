@@ -525,11 +525,14 @@ Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
                     Issue                 = "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this template"
                     Fix                   = "`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; foreach ( `$ace in `$ACL.access ) { if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) { `$ACL.RemoveAccessRule(`$ace) | Out-Null ; Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL } }"
                     HereFix               = @"
-$ACL = Get-Acl -Path 'AD:$($_.DistinguishedName)'
+`$Path = 'AD:$($_.DistinguishedName)'
+`$Principal = '$($Principal.Value)'
+`$ACL = Get-Acl -Path `$Path
 foreach ( `$ace in `$ACL.access ) {
-    if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) {
-        `$ACL.RemoveAccessRule(`$ace) | Out-Null
-        Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
+    if ( (`$ace.IdentityReference.Value -like `$Principal ) -and
+        ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) {
+            `$ACL.RemoveAccessRule(`$ace) | Out-Null
+            Set-Acl -Path `$Path -AclObject `$ACL
     }
 }
 "@
@@ -2429,8 +2432,6 @@ function Invoke-Locksmith {
         $ESC8 = $Results['ESC8']
     }
 
-    Update-ESC4Remediation -ESC4Issues $ESC4
-
     # If these are all empty = no issues found, exit
     if ($null -eq $Results) {
         Write-Host "`n$(Get-Date) : No ADCS issues were found.`n" -ForegroundColor Green
@@ -2488,6 +2489,9 @@ function Invoke-Locksmith {
     }
     Write-Host 'Thank you for using ' -NoNewline
     Write-Host "❤ Locksmith ❤`n" -ForegroundColor Magenta
+
+    Write-Host 'TEST STUFF'
+    Update-ESC4Remediation -ESC4Issues $ESC4
 }
 
 
