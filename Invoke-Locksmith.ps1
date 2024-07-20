@@ -490,6 +490,12 @@ function Find-ESC4 {
                 DistinguishedName = $_.DistinguishedName
                 Issue             = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
                 Fix               = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
+                HereFix           = @"
+`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`')
+`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
+`$ACL.SetOwner(`$Owner)
+Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
+"@
                 Revert            = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
                 Technique         = 'ESC4'
             }
