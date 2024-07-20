@@ -1,4 +1,4 @@
-function Update-ESC4Remediation.ps1 {
+function Update-ESC4Remediation {
     <#
     .SYNOPSIS
         This function asks the user a set of questions to provide the most appropriate remediation for ESC4 issues.
