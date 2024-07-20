@@ -524,6 +524,15 @@ Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Issue                 = "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this template"
                     Fix                   = "`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; foreach ( `$ace in `$ACL.access ) { if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) { `$ACL.RemoveAccessRule(`$ace) | Out-Null ; Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL } }"
+                    HereFix               = @"
+`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
+foreach ( `$ace in `$ACL.access ) {
+    if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) {
+        `$ACL.RemoveAccessRule(`$ace) | Out-Null
+        Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
+    }
+}
+"@
                     Revert                = '[TODO]'
                     Technique             = 'ESC4'
                 }
