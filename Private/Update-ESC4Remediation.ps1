@@ -30,7 +30,7 @@ function Update-ESC4Remediation {
         $ESC4Issues
     )
 
-    $ESC4Issues | ForEach-Object -PipelineVariable Issue {
-        $Issue
+    $ESC4Issues | ForEach-Object {
+        $_
     }
 }

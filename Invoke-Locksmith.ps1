@@ -2216,8 +2216,8 @@ function Update-ESC4Remediation {
         $ESC4Issues
     )
 
-    $ESC4Issues | ForEach-Object -PipelineVariable Issue {
-        $Issue
+    $ESC4Issues | ForEach-Object {
+        $_
     }
 }
 
@@ -2414,7 +2414,7 @@ function Invoke-Locksmith {
         $ESC8 = $Results['ESC8']
     }
 
-    Update-ESC4Remediation -ESC4Issues $ES4
+    Update-ESC4Remediation -ESC4Issues $ESC4
 
     # If these are all empty = no issues found, exit
     if ($null -eq $Results) {
