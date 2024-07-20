@@ -188,6 +188,8 @@
             $ESC8           = $Results['ESC8']
     }
 
+    
+
     # If these are all empty = no issues found, exit
     if ($null -eq $Results) {
         Write-Host "`n$(Get-Date) : No ADCS issues were found.`n" -ForegroundColor Green
