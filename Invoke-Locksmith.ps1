@@ -517,7 +517,7 @@ Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
                 ($entry.ObjectType -notmatch $SafeObjectTypes)
             ) {
 
-                $BlockFix = [scriptblock]@"
+                $HereFix = @"
 `$Path = 'AD:$($_.DistinguishedName)'
 `$Principal = '$($Principal.Value)'
 `$ACL = Get-Acl -Path `$Path
@@ -528,7 +528,8 @@ foreach ( `$ace in `$ACL.access ) {
             Set-Acl -Path `$Path -AclObject `$ACL
     }
 }
-"@
+"@              
+                $BlockFix = [scriptblock]::Create($HereFix)
 
                 $Issue = [pscustomobject]@{
                     Forest                = $_.CanonicalName.split('/')[0]
@@ -538,18 +539,7 @@ foreach ( `$ace in `$ACL.access ) {
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Issue                 = "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this template"
                     Fix                   = "`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; foreach ( `$ace in `$ACL.access ) { if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) { `$ACL.RemoveAccessRule(`$ace) | Out-Null ; Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL } }"
-                    HereFix               = @"
-`$Path = 'AD:$($_.DistinguishedName)'
-`$Principal = '$($Principal.Value)'
-`$ACL = Get-Acl -Path `$Path
-foreach ( `$ace in `$ACL.access ) {
-    if ( (`$ace.IdentityReference.Value -like `$Principal ) -and
-        ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) {
-            `$ACL.RemoveAccessRule(`$ace) | Out-Null
-            Set-Acl -Path `$Path -AclObject `$ACL
-    }
-}
-"@
+                    HereFix               = $HereFix
                     BlockFix              = $BlockFix
                     Revert                = '[TODO]'
                     Technique             = 'ESC4'
