@@ -2416,7 +2416,7 @@ function Invoke-Locksmith {
         $ESC8 = $Results['ESC8']
     }
 
-    
+    Update-ESC4Remediation -ESC4Issues $ES4
 
     # If these are all empty = no issues found, exit
     if ($null -eq $Results) {
