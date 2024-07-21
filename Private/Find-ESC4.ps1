@@ -46,7 +46,8 @@
         [Parameter(Mandatory = $true)]
         $SafeUsers,
         [Parameter(Mandatory = $true)]
-        $SafeObjectTypes
+        $SafeObjectTypes,
+        $Mode
     )
     $ADCSObjects | ForEach-Object {
         $Principal = New-Object System.Security.Principal.NTAccount($_.nTSecurityDescriptor.Owner)
@@ -63,12 +64,6 @@
                 DistinguishedName     = $_.DistinguishedName
                 Issue                 = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
                 Fix                   = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
-                HereFix               = @"
-`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`')
-`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
-`$ACL.SetOwner(`$Owner)
-Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
-"@
                 Revert                = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
                 Technique             = 'ESC4'
             }
@@ -89,18 +84,6 @@ Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
                 ($entry.ObjectType -notmatch $SafeObjectTypes)
                 ) {
 
-                $HereFix = @"
-`$Path = 'AD:$($_.DistinguishedName)'
-`$Principal = '$($Principal.Value)'
-`$ACL = Get-Acl -Path `$Path
-foreach ( `$ace in `$ACL.access ) {
-    if ( (`$ace.IdentityReference.Value -like `$Principal ) -and
-        ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) {
-            `$ACL.RemoveAccessRule(`$ace) | Out-Null
-            Set-Acl -Path `$Path -AclObject `$ACL
-    }
-}
-"@              
                 $BlockFix = [scriptblock]::Create($HereFix)
 
                 $Issue = [pscustomobject]@{
@@ -111,8 +94,6 @@ foreach ( `$ace in `$ACL.access ) {
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Issue                 = "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this template"
                     Fix                   = "`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; foreach ( `$ace in `$ACL.access ) { if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) { `$ACL.RemoveAccessRule(`$ace) | Out-Null ; Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL } }"
-                    HereFix               = $HereFix
-                    BlockFix              = $BlockFix
                     Revert                = '[TODO]'
                     Technique             = 'ESC4'
                 }
