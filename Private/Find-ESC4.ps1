@@ -97,6 +97,9 @@
                     Revert                = '[TODO]'
                     Technique             = 'ESC4'
                 }
+
+                Write-Host '[!] ESC4 Issues have been detected. To provide the best remediation for your environment, Locksmith will now ask you a few questions.'
+                Update-ESC4Remediation -Issue $Issue
                 $Issue
             }
         }

@@ -472,7 +472,8 @@ function Find-ESC4 {
         [Parameter(Mandatory = $true)]
         $SafeUsers,
         [Parameter(Mandatory = $true)]
-        $SafeObjectTypes
+        $SafeObjectTypes,
+        $Mode
     )
     $ADCSObjects | ForEach-Object {
         $Principal = New-Object System.Security.Principal.NTAccount($_.nTSecurityDescriptor.Owner)
@@ -490,12 +491,6 @@ function Find-ESC4 {
                 DistinguishedName = $_.DistinguishedName
                 Issue             = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
                 Fix               = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
-                HereFix           = @"
-`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`')
-`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
-`$ACL.SetOwner(`$Owner)
-Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
-"@
                 Revert            = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
                 Technique         = 'ESC4'
             }
@@ -517,18 +512,6 @@ Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
                 ($entry.ObjectType -notmatch $SafeObjectTypes)
             ) {
 
-                $HereFix = @"
-`$Path = 'AD:$($_.DistinguishedName)'
-`$Principal = '$($Principal.Value)'
-`$ACL = Get-Acl -Path `$Path
-foreach ( `$ace in `$ACL.access ) {
-    if ( (`$ace.IdentityReference.Value -like `$Principal ) -and
-        ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) {
-            `$ACL.RemoveAccessRule(`$ace) | Out-Null
-            Set-Acl -Path `$Path -AclObject `$ACL
-    }
-}
-"@              
                 $BlockFix = [scriptblock]::Create($HereFix)
 
                 $Issue = [pscustomobject]@{
@@ -539,11 +522,12 @@ foreach ( `$ace in `$ACL.access ) {
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Issue                 = "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this template"
                     Fix                   = "`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; foreach ( `$ace in `$ACL.access ) { if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) { `$ACL.RemoveAccessRule(`$ace) | Out-Null ; Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL } }"
-                    HereFix               = $HereFix
-                    BlockFix              = $BlockFix
                     Revert                = '[TODO]'
                     Technique             = 'ESC4'
                 }
+
+                Write-Host '[!] ESC4 Issues have been detected. To provide the best remediation for your environment, Locksmith will now ask you a few questions.'
+                Update-ESC4Remediation -Issue $Issue
                 $Issue
             }
         }
@@ -2236,11 +2220,65 @@ function Update-ESC4Remediation {
     #>
     [CmdletBinding()]
     param(
-        $ESC4Issues
+        $Issue
     )
 
-    $ESC4Issues | ForEach-Object {
-        $_
+    Write-Host $Issue.Issue
+    $Admin = ''
+    while ( ($Admin -ne 'y') -and ($Admin -ne 'n') ) {
+        $Admin = Read-Host "Does $($Issue.IdentityReference) administer and/or maintain this template? [y/n]"
+    }
+
+    if ($Admin -eq 'y') {
+        $Issue.Issue = "$($Issue.IdentityReference) has $($Issue.ActiveDirectoryRights) rights on this template, but this is expected"
+        $Issue.Fix = "No immediate remediation required."
+    }
+    else {
+        if ($Issue.Issue -match 'GenericAll') {
+            $RightsToRestore = 0
+            while ($RightsToRestore -in 1..5) {
+                [string]$Question = @"
+Does $($Issue.IdentityReference) need to Enroll and/or AutoEnroll in this template? [1-5]"
+`t1. Enroll
+`t2. AutoEnroll
+`t3. Both
+`t4. Neither
+`t5. Unsure
+"@
+                $RightsToRestore = Read-Host $Question
+            }
+
+            switch ($RightsToRestore) {
+                1 {
+                    $Issue.Fix = @"
+`$Path = $($Issue.DistinguishedName)
+`$ACL = Get-Acl -Path `$Path
+`IdentityReference = [System.Principal.NTAccount]::New($($Issue.IdentityReference))
+`$EnrollGuid = [System.Guid]::New('0e10c968-78fb-11d2-90d4-00c04f79dc55')
+`$ExtendedRight = [System.DirectoryServices.ActiveDirectoryRights]::ExtendedRight
+`$AccessType = [System.Security.AccessControl.AccessControlType]::Allow
+`$InheritanceType = [System.DirectoryServices.ActiveDirectorySecurityInheritance]::All
+`$NewRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $identity, $adRights, $accessType, $enrollGuid, $inheritanceType
+foreach ( `$ace in `$ACL.access )
+    if ( (`$ace.IdentityReference.Value -like '$($Issue.IdentityReference)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) {
+        `$ACL.RemoveAccessRule(`$ace) | Out-Null
+    }
+}
+$ACL.AddAccessRule(`$NewRule)
+Set-Acl -Path `$Path -AclObject $ACL
+"@
+                }
+                2 {
+                }
+                3 {
+                }
+                4 {
+                    break 
+                }
+                5 {
+                }
+            }
+        }
     }
 }
 
