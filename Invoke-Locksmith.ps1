@@ -2265,14 +2265,14 @@ Enter your selection [1-5]
 `$ExtendedRight = [System.DirectoryServices.ActiveDirectoryRights]::ExtendedRight
 `$AccessType = [System.Security.AccessControl.AccessControlType]::Allow
 `$InheritanceType = [System.DirectoryServices.ActiveDirectorySecurityInheritance]::All
-`$NewRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $identity, $adRights, $accessType, $enrollGuid, $inheritanceType
+`$NewRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `$IdentityReference, `$ExtendedRight, `$AccessType, `$EnrollGuid, `$InheritanceType
 foreach ( `$ace in `$ACL.access )
     if ( (`$ace.IdentityReference.Value -like '$($Issue.IdentityReference)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) {
         `$ACL.RemoveAccessRule(`$ace) | Out-Null
     }
 }
-$ACL.AddAccessRule(`$NewRule)
-Set-Acl -Path `$Path -AclObject $ACL
+`$ACL.AddAccessRule(`$NewRule)
+Set-Acl -Path `$Path -AclObject `$ACL
 "@
             }
             2 {
