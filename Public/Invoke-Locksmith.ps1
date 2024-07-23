@@ -175,7 +175,7 @@
 
     if ( $Scans ) {
     # If the Scans parameter was used, Invoke-Scans with the specified checks.
-        $Results = Invoke-Scans -Scans $Scans
+        $Results = Invoke-Scans -Scans $Scans -Mode $Mode
             # Re-hydrate the findings arrays from the Results hash table
             $AllIssues      = $Results['AllIssues']
             $AuditingIssues = $Results['AuditingIssues']

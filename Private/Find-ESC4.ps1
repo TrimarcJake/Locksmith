@@ -46,7 +46,8 @@
         [Parameter(Mandatory = $true)]
         $SafeUsers,
         [Parameter(Mandatory = $true)]
-        $SafeObjectTypes
+        $SafeObjectTypes,
+        [int]$Mode
     )
     $ADCSObjects | ForEach-Object {
         $Principal = New-Object System.Security.Principal.NTAccount($_.nTSecurityDescriptor.Owner)
@@ -93,6 +94,11 @@
                     Revert                = '[TODO]'
                     Technique             = 'ESC4'
                 }
+
+                if ( $Mode -in @(1,3,4) ) {
+                    Update-ESC4Remediation -Issue $Issue
+                }
+
                 $Issue
             }
         }
