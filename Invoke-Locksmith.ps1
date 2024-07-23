@@ -511,9 +511,6 @@ function Find-ESC4 {
                 ($entry.ActiveDirectoryRights -match $DangerousRights) -and
                 ($entry.ObjectType -notmatch $SafeObjectTypes)
             ) {
-
-                $BlockFix = [scriptblock]::Create($HereFix)
-
                 $Issue = [pscustomobject]@{
                     Forest                = $_.CanonicalName.split('/')[0]
                     Name                  = $_.Name
