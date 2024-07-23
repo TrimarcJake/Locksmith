@@ -164,13 +164,13 @@
         Set-AdditionalCAProperty -ADCSObjects $ADCSObjects -Credential $Credential
         $ADCSObjects += Get-CAHostObject -ADCSObjects $ADCSObjects -Credential $Credential
         $CAHosts = Get-CAHostObject -ADCSObjects $ADCSObjects -Credential $Credential
-        $CAHosts | ForEach-Object { $SafeUsers += '|' + $_.Name }
+        $CAHosts | ForEach-Object { $SafeUsers += '|' + $_.objectSid }
     } else {
         $ADCSObjects = Get-ADCSObject -Targets $Targets
         Set-AdditionalCAProperty -ADCSObjects $ADCSObjects
         $ADCSObjects += Get-CAHostObject -ADCSObjects $ADCSObjects
         $CAHosts = Get-CAHostObject -ADCSObjects $ADCSObjects
-        $CAHosts | ForEach-Object { $SafeUsers += '|' + $_.Name }
+        $CAHosts | ForEach-Object { $SafeUsers += '|' + $_.objectSid }
     }
 
     if ( $Scans ) {
