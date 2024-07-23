@@ -39,11 +39,10 @@ function Update-ESC4Remediation {
     if ($Admin -eq 'y') {
         $Issue.Issue = "$($Issue.IdentityReference) has $($Issue.ActiveDirectoryRights) rights on this template, but this is expected"
         $Issue.Fix = "No immediate remediation required."
-    } else {
-        if ($Issue.Issue -match 'GenericAll') {
-            $RightsToRestore = 0
-            while ($RightsToRestore -in 1..5) {
-                [string]$Question = @"
+    } elseif ($Issue.Issue -match 'GenericAll') {
+        $RightsToRestore = 0
+        while ($RightsToRestore -in 1..5) {
+            [string]$Question = @"
 Does $($Issue.IdentityReference) need to Enroll and/or AutoEnroll in this template? [1-5]"
 `t1. Enroll
 `t2. AutoEnroll
@@ -51,12 +50,12 @@ Does $($Issue.IdentityReference) need to Enroll and/or AutoEnroll in this templa
 `t4. Neither
 `t5. Unsure
 "@
-                $RightsToRestore = Read-Host $Question
-            }
+            $RightsToRestore = Read-Host $Question
+        }
 
-            switch ($RightsToRestore) {
-                1 {
-                    $Issue.Fix = @"
+        switch ($RightsToRestore) {
+            1 {
+                $Issue.Fix = @"
 `$Path = $($Issue.DistinguishedName)
 `$ACL = Get-Acl -Path `$Path
 `IdentityReference = [System.Principal.NTAccount]::New($($Issue.IdentityReference))
@@ -73,16 +72,15 @@ foreach ( `$ace in `$ACL.access )
 $ACL.AddAccessRule(`$NewRule)
 Set-Acl -Path `$Path -AclObject $ACL
 "@
-                }
-                2 {
+            }
+            2 {
 
-                }
-                3 {
+            }
+            3 {
 
-                }
-                4 { break }
-                5 {
-                }
+            }
+            4 { break }
+            5 {
             }
         }
     }
