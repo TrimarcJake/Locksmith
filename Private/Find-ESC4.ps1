@@ -99,8 +99,6 @@
                 }
 
                 if ( ($Mode -ne 0) -and ($Mode -ne 1) ) {
-                    Write-Host "`n[!] ESC4 Issue detected in $($Issue.Name)" -ForegroundColor Yellow
-                    Write-Host 'To provide the most appropriate remediation for your environment, Locksmith will now ask you a few questions.'
                     Update-ESC4Remediation -Issue $Issue
                 }
 
