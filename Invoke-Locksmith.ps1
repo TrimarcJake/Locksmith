@@ -527,8 +527,6 @@ function Find-ESC4 {
                 }
 
                 if ( ($Mode -ne 0) -and ($Mode -ne 1) ) {
-                    Write-Host "`n[!] ESC4 Issue detected in $($Issue.Name)" -ForegroundColor Yellow
-                    Write-Host 'To provide the most appropriate remediation for your environment, Locksmith will now ask you a few questions.'
                     Update-ESC4Remediation -Issue $Issue
                 }
 
@@ -2227,10 +2225,14 @@ function Update-ESC4Remediation {
         $Issue
     )
 
-    Write-Host $Issue.Issue
+    $Header = "`n[!] ESC4 Issue detected in $($Issue.Name)"
+    Write-Host $Header -ForegroundColor Yellow
+    Write-Host $('-' * $Header.Length) -ForegroundColor Yellow
+    Write-Host 'To provide the most appropriate remediation for this issue, Locksmith will now ask you a few questions.'
+
     $Admin = ''
     do {
-        $Admin = Read-Host "Does $($Issue.IdentityReference) administer and/or maintain this template? [y/n]"
+        $Admin = Read-Host "`nDoes $($Issue.IdentityReference) administer and/or maintain this template? [y/n]"
     } while ( ($Admin -ne 'y') -and ($Admin -ne 'n') )
 
     if ($Admin -eq 'y') {
@@ -2241,12 +2243,13 @@ function Update-ESC4Remediation {
         $RightsToRestore = 0
         while ($RightsToRestore -notin 1..5) {
             [string]$Question = @"
-Does $($Issue.IdentityReference) need to Enroll and/or AutoEnroll in this template? [1-5]"
+Does $($Issue.IdentityReference) need to Enroll and/or AutoEnroll in this template?"
 `t1. Enroll
 `t2. AutoEnroll
 `t3. Both
 `t4. Neither
 `t5. Unsure
+Enter your selection [1-5]
 "@
             $RightsToRestore = Read-Host $Question
         }
@@ -2256,7 +2259,7 @@ Does $($Issue.IdentityReference) need to Enroll and/or AutoEnroll in this templa
                 $Issue.Fix = @"
 `$Path = $($Issue.DistinguishedName)
 `$ACL = Get-Acl -Path `$Path
-`IdentityReference = [System.Principal.NTAccount]::New($($Issue.IdentityReference))
+`$IdentityReference = [System.Principal.NTAccount]::New($($Issue.IdentityReference))
 `$EnrollGuid = [System.Guid]::New('0e10c968-78fb-11d2-90d4-00c04f79dc55')
 `$ExtendedRight = [System.DirectoryServices.ActiveDirectoryRights]::ExtendedRight
 `$AccessType = [System.Security.AccessControl.AccessControlType]::Allow
