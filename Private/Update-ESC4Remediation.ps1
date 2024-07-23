@@ -32,9 +32,9 @@ function Update-ESC4Remediation {
 
     Write-Host $Issue.Issue
     $Admin = ''
-    while ( ($Admin -ne 'y') -and ($Admin -ne 'n') ) {
+    do {
         $Admin = Read-Host "Does $($Issue.IdentityReference) administer and/or maintain this template? [y/n]"
-    }
+    } while ( ($Admin -ne 'y') -and ($Admin -ne 'n') )
 
     if ($Admin -eq 'y') {
         $Issue.Issue = "$($Issue.IdentityReference) has $($Issue.ActiveDirectoryRights) rights on this template, but this is expected"

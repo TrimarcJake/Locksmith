@@ -243,7 +243,4 @@
     }
     Write-Host 'Thank you for using ' -NoNewline
     Write-Host "❤ Locksmith ❤`n" -ForegroundColor Magenta
-
-    Write-Host 'TEST STUFF'
-    Update-ESC4Remediation -ESC4Issues $ESC4
 }
