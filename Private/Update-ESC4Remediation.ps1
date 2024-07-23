@@ -80,13 +80,68 @@ Set-Acl -Path `$Path -AclObject `$ACL
 "@
             }
             2 {
-
+                $Issue.Fix = @"
+`$Path = 'AD:$($Issue.DistinguishedName)'
+`$ACL = Get-Acl -Path `$Path
+`$IdentityReference = [System.Security.Principal.NTAccount]::New('$($Issue.IdentityReference)')
+`$AutoEnrollGuid = [System.Guid]::New('a05b8cc2-17bc-4802-a710-e7c15ab866a2')
+`$ExtendedRight = [System.DirectoryServices.ActiveDirectoryRights]::ExtendedRight
+`$AccessType = [System.Security.AccessControl.AccessControlType]::Allow
+`$InheritanceType = [System.DirectoryServices.ActiveDirectorySecurityInheritance]::All
+`$AutoEnrollRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `$IdentityReference, `$ExtendedRight, `$AccessType, `$AutoEnrollGuid, `$InheritanceType
+foreach ( `$ace in `$ACL.access ) {
+    if ( (`$ace.IdentityReference.Value -like '$($Issue.IdentityReference)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) {
+        `$ACL.RemoveAccessRule(`$ace) | Out-Null
+    }
+}
+`$ACL.AddAccessRule(`$AutoEnrollRule)
+Set-Acl -Path `$Path -AclObject `$ACL
+"@
             }
             3 {
-
+                $Issue.Fix = @"
+`$Path = 'AD:$($Issue.DistinguishedName)'
+`$ACL = Get-Acl -Path `$Path
+`$IdentityReference = [System.Security.Principal.NTAccount]::New('$($Issue.IdentityReference)')
+`$EnrollGuid = [System.Guid]::New('0e10c968-78fb-11d2-90d4-00c04f79dc55')
+`$AutoEnrollGuid = [System.Guid]::New('a05b8cc2-17bc-4802-a710-e7c15ab866a2')
+`$ExtendedRight = [System.DirectoryServices.ActiveDirectoryRights]::ExtendedRight
+`$AccessType = [System.Security.AccessControl.AccessControlType]::Allow
+`$InheritanceType = [System.DirectoryServices.ActiveDirectorySecurityInheritance]::All
+`$EnrollRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `$IdentityReference, `$ExtendedRight, `$AccessType, `$EnrollGuid, `$InheritanceType
+`$AutoEnrollRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `$IdentityReference, `$ExtendedRight, `$AccessType, `$AutoEnrollGuid, `$InheritanceType
+foreach ( `$ace in `$ACL.access ) {
+    if ( (`$ace.IdentityReference.Value -like '$($Issue.IdentityReference)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) {
+        `$ACL.RemoveAccessRule(`$ace) | Out-Null
+    }
+}
+`$ACL.AddAccessRule(`$EnrollRule)
+`$ACL.AddAccessRule(`$AutoEnrollRule)
+Set-Acl -Path `$Path -AclObject `$ACL
+"@
             }
             4 { break }
             5 {
+                $Issue.Fix = @"
+`$Path = 'AD:$($Issue.DistinguishedName)'
+`$ACL = Get-Acl -Path `$Path
+`$IdentityReference = [System.Security.Principal.NTAccount]::New('$($Issue.IdentityReference)')
+`$EnrollGuid = [System.Guid]::New('0e10c968-78fb-11d2-90d4-00c04f79dc55')
+`$AutoEnrollGuid = [System.Guid]::New('a05b8cc2-17bc-4802-a710-e7c15ab866a2')
+`$ExtendedRight = [System.DirectoryServices.ActiveDirectoryRights]::ExtendedRight
+`$AccessType = [System.Security.AccessControl.AccessControlType]::Allow
+`$InheritanceType = [System.DirectoryServices.ActiveDirectorySecurityInheritance]::All
+`$EnrollRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `$IdentityReference, `$ExtendedRight, `$AccessType, `$EnrollGuid, `$InheritanceType
+`$AutoEnrollRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `$IdentityReference, `$ExtendedRight, `$AccessType, `$AutoEnrollGuid, `$InheritanceType
+foreach ( `$ace in `$ACL.access ) {
+    if ( (`$ace.IdentityReference.Value -like '$($Issue.IdentityReference)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) {
+        `$ACL.RemoveAccessRule(`$ace) | Out-Null
+    }
+}
+`$ACL.AddAccessRule(`$EnrollRule)
+`$ACL.AddAccessRule(`$AutoEnrollRule)
+Set-Acl -Path `$Path -AclObject `$ACL
+"@
             }
         }
     }
