@@ -62,15 +62,15 @@ Enter your selection [1-5]
         switch ($RightsToRestore) {
             1 {
                 $Issue.Fix = @"
-`$Path = '$($Issue.DistinguishedName)'
+`$Path = 'AD:$($Issue.DistinguishedName)'
 `$ACL = Get-Acl -Path `$Path
-`$IdentityReference = [System.Principal.NTAccount]::New('$($Issue.IdentityReference)')
+`$IdentityReference = [System.Security.Principal.NTAccount]::New('$($Issue.IdentityReference)')
 `$EnrollGuid = [System.Guid]::New('0e10c968-78fb-11d2-90d4-00c04f79dc55')
 `$ExtendedRight = [System.DirectoryServices.ActiveDirectoryRights]::ExtendedRight
 `$AccessType = [System.Security.AccessControl.AccessControlType]::Allow
 `$InheritanceType = [System.DirectoryServices.ActiveDirectorySecurityInheritance]::All
 `$NewRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `$IdentityReference, `$ExtendedRight, `$AccessType, `$EnrollGuid, `$InheritanceType
-foreach ( `$ace in `$ACL.access )
+foreach ( `$ace in `$ACL.access ) {
     if ( (`$ace.IdentityReference.Value -like '$($Issue.IdentityReference)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) {
         `$ACL.RemoveAccessRule(`$ace) | Out-Null
     }
