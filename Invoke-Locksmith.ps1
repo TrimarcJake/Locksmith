@@ -2233,7 +2233,7 @@ function Update-ESC4Remediation {
 
     $Admin = ''
     do {
-        $Admin = Read-Host "`nDoes $($Issue.IdentityReference) administer and/or maintain this template? [y/n]"
+        $Admin = Read-Host "`nDoes $($Issue.IdentityReference) administer and/or maintain the $($Issue.Name) template? [y/n]"
     } while ( ($Admin -ne 'y') -and ($Admin -ne 'n') )
 
     if ($Admin -eq 'y') {
@@ -2244,7 +2244,8 @@ function Update-ESC4Remediation {
         $RightsToRestore = 0
         while ($RightsToRestore -notin 1..5) {
             [string]$Question = @"
-Does $($Issue.IdentityReference) need to Enroll and/or AutoEnroll in this template?"
+
+Does $($Issue.IdentityReference) need to Enroll and/or AutoEnroll in the $($Issue.Name) template?"
 `t1. Enroll
 `t2. AutoEnroll
 `t3. Both
@@ -2304,7 +2305,7 @@ Set-Acl -Path `$Path -AclObject `$ACL
 `$ExtendedRight = [System.DirectoryServices.ActiveDirectoryRights]::ExtendedRight
 `$AccessType = [System.Security.AccessControl.AccessControlType]::Allow
 `$InheritanceType = [System.DirectoryServices.ActiveDirectorySecurityInheritance]::All
-`$AutoEnrollRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `$IdentityReference, `$ExtendedRight, `$AccessType, `$EnrollGuid, `$InheritanceType
+`$EnrollRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `$IdentityReference, `$ExtendedRight, `$AccessType, `$EnrollGuid, `$InheritanceType
 `$AutoEnrollRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `$IdentityReference, `$ExtendedRight, `$AccessType, `$AutoEnrollGuid, `$InheritanceType
 foreach ( `$ace in `$ACL.access ) {
     if ( (`$ace.IdentityReference.Value -like '$($Issue.IdentityReference)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) {
@@ -2329,7 +2330,7 @@ Set-Acl -Path `$Path -AclObject `$ACL
 `$ExtendedRight = [System.DirectoryServices.ActiveDirectoryRights]::ExtendedRight
 `$AccessType = [System.Security.AccessControl.AccessControlType]::Allow
 `$InheritanceType = [System.DirectoryServices.ActiveDirectorySecurityInheritance]::All
-`$AutoEnrollRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `$IdentityReference, `$ExtendedRight, `$AccessType, `$EnrollGuid, `$InheritanceType
+`$EnrollRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `$IdentityReference, `$ExtendedRight, `$AccessType, `$EnrollGuid, `$InheritanceType
 `$AutoEnrollRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `$IdentityReference, `$ExtendedRight, `$AccessType, `$AutoEnrollGuid, `$InheritanceType
 foreach ( `$ace in `$ACL.access ) {
     if ( (`$ace.IdentityReference.Value -like '$($Issue.IdentityReference)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) {

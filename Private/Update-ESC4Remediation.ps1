@@ -38,7 +38,7 @@ function Update-ESC4Remediation {
 
     $Admin = ''
     do {
-        $Admin = Read-Host "`nDoes $($Issue.IdentityReference) administer and/or maintain this template? [y/n]"
+        $Admin = Read-Host "`nDoes $($Issue.IdentityReference) administer and/or maintain the $($Issue.Name) template? [y/n]"
     } while ( ($Admin -ne 'y') -and ($Admin -ne 'n') )
 
     if ($Admin -eq 'y') {
@@ -48,7 +48,8 @@ function Update-ESC4Remediation {
         $RightsToRestore = 0
         while ($RightsToRestore -notin 1..5) {
             [string]$Question = @"
-Does $($Issue.IdentityReference) need to Enroll and/or AutoEnroll in this template?"
+
+Does $($Issue.IdentityReference) need to Enroll and/or AutoEnroll in the $($Issue.Name) template?"
 `t1. Enroll
 `t2. AutoEnroll
 `t3. Both
