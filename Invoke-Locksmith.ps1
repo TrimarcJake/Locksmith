@@ -2228,6 +2228,7 @@ function Update-ESC4Remediation {
     $Header = "`n[!] ESC4 Issue detected in $($Issue.Name)"
     Write-Host $Header -ForegroundColor Yellow
     Write-Host $('-' * $Header.Length) -ForegroundColor Yellow
+    Write-Host "$($Issue.IdentityReference) has $($Issue.ActiveDirectoryRights) rights on this template.`n"
     Write-Host 'To provide the most appropriate remediation for this issue, Locksmith will now ask you a few questions.'
 
     $Admin = ''
@@ -2236,7 +2237,7 @@ function Update-ESC4Remediation {
     } while ( ($Admin -ne 'y') -and ($Admin -ne 'n') )
 
     if ($Admin -eq 'y') {
-        $Issue.Issue = "$($Issue.IdentityReference) has $($Issue.ActiveDirectoryRights) rights on this template, but this is expected"
+        $Issue.Issue = "$($Issue.IdentityReference) has $($Issue.ActiveDirectoryRights) rights on this template, but this is expected."
         $Issue.Fix = "No immediate remediation required."
     }
     elseif ($Issue.Issue -match 'GenericAll') {
