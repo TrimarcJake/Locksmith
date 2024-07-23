@@ -2239,7 +2239,7 @@ function Update-ESC4Remediation {
     }
     elseif ($Issue.Issue -match 'GenericAll') {
         $RightsToRestore = 0
-        while ($RightsToRestore -in 1..5) {
+        while ($RightsToRestore -notin 1..5) {
             [string]$Question = @"
 Does $($Issue.IdentityReference) need to Enroll and/or AutoEnroll in this template? [1-5]"
 `t1. Enroll
