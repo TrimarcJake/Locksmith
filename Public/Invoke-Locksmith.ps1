@@ -76,7 +76,7 @@
         [System.Management.Automation.PSCredential]$Credential
     )
 
-    $Version = '2024.3'
+    $Version = '2024.8'
     $LogoPart1 = @"
     _       _____  _______ _     _ _______ _______ _____ _______ _     _
     |      |     | |       |____/  |______ |  |  |   |      |    |_____|
