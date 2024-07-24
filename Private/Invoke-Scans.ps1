@@ -28,7 +28,7 @@ function Invoke-Scans {
 
     .EXAMPLE
         # Perform all scans
-        Invoke-Scans
+        Invoke-Scans 
 
     .EXAMPLE
         # Perform only the 'Auditing' and 'ESC1' scans
@@ -43,9 +43,17 @@ function Invoke-Scans {
     param (
     # Could split Scans and PromptMe into separate parameter sets.
     [Parameter()]
+        $ClientAuthEkus,
+        $DangerousRights,
+        $EnrollmentAgentEKU,
+        [int]$Mode,
+        $SafeObjectTypes,
+        $SafeOwners,
         [ValidateSet('Auditing','ESC1','ESC2','ESC3','ESC4','ESC5','ESC6','ESC8','All','PromptMe')]
         [array]$Scans = 'All',
-        [int]$Mode
+        $UnsafeOwners,
+        $UnsafeUsers,
+        $PreferredOwner
     )
 
     # Is this needed?

@@ -453,11 +453,36 @@ function Find-ESC4 {
         The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
 
     .EXAMPLE
-        $ADCSObjects = Get-ADCSObjects
+        $ADCSObjects = Get-ADCSObject
+
+        # GenericAll, WriteDacl, and WriteOwner all permit full control of an AD object.
+        # WriteProperty may or may not permit full control depending the specific property and AD object type.
         $DangerousRights = @('GenericAll', 'WriteProperty', 'WriteOwner', 'WriteDacl')
+
+        # -512$ = Domain Admins group
+        # -519$ = Enterprise Admins group
+        # -544$ = Administrators group
+        # -18$  = SYSTEM
+        # -517$ = Cert Publishers
+        # -500$ = Built-in Administrator
         $SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$'
+
+        # -512$    = Domain Admins group
+        # -519$    = Enterprise Admins group
+        # -544$    = Administrators group
+        # -18$     = SYSTEM
+        # -517$    = Cert Publishers
+        # -500$    = Built-in Administrator
+        # -516$    = Domain Controllers
+        # -9$      = Enterprise Domain Controllers
+        # -526$    = Key Admins
+        # -527$    = Enterprise Key Admins
+        # S-1-5-10 = SELF
         $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+
+        # The well-known GUIDs for Enroll and AutoEnroll rights on AD CS templates.
         $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
+        
         $Results = $ADCSObjects | Find-ESC4 -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeUsers $SafeUsers -SafeObjectTypes $SafeObjectTypes
         $Results
     #>
@@ -562,10 +587,34 @@ function Find-ESC5 {
         The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
 
     .EXAMPLE
-        $ADCSObjects = Get-ADCSObjects
+        $ADCSObjects = Get-ADCSObject
+        
+        # GenericAll, WriteDacl, and WriteOwner all permit full control of an AD object.
+        # WriteProperty may or may not permit full control depending the specific property and AD object type.
         $DangerousRights = @('GenericAll', 'WriteProperty', 'WriteOwner', 'WriteDacl')
+
+        # -512$ = Domain Admins group
+        # -519$ = Enterprise Admins group
+        # -544$ = Administrators group
+        # -18$  = SYSTEM
+        # -517$ = Cert Publishers
+        # -500$ = Built-in Administrator
         $SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$'
+
+        # -512$    = Domain Admins group
+        # -519$    = Enterprise Admins group
+        # -544$    = Administrators group
+        # -18$     = SYSTEM
+        # -517$    = Cert Publishers
+        # -500$    = Built-in Administrator
+        # -516$    = Domain Controllers
+        # -9$      = Enterprise Domain Controllers
+        # -526$    = Key Admins
+        # -527$    = Enterprise Key Admins
+        # S-1-5-10 = SELF
         $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+
+        # The well-known GUIDs for Enroll and AutoEnroll rights on AD CS templates.
         $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
         $Results = $ADCSObjects | Find-ESC5 -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeUsers $SafeUsers  -SafeObjectTypes $SafeObjectTypes
         $Results
@@ -939,8 +988,8 @@ function Get-ADCSObject {
         Specifies the credentials to use for authentication when retrieving ADCS objects.
 
     .EXAMPLE
-        Get-ADCSObject -Targets forest1.lan -Credential $cred
-        This example retrieves ADCS objects from forest1.lan using the specified credentials.
+        Get-ADCSObject -Credential $cred
+        This example retrieves ADCS objects from the local forest using the specified credentials.
 
     #>
 
@@ -982,7 +1031,7 @@ function Get-CAHostObject {
         $ADCSObjects = Get-ADCSObjects
         $Credential = Get-Credential
         Get-CAHostObject -ADCSObjects $ADCSObjects -Credential $Credential
-    
+
         This example retrieves the CA host object(s) associated with every CA in the target forest using the provided credentials.
 
     .INPUTS
@@ -998,7 +1047,8 @@ function Get-CAHostObject {
             Mandatory = $true,
             ValueFromPipeline = $true)]
         [array]$ADCSObjects,
-        [System.Management.Automation.PSCredential]$Credential
+        [System.Management.Automation.PSCredential]$Credential,
+        $ForestGC
     )
     process {
         if ($Credential) {
@@ -1485,7 +1535,7 @@ function Invoke-Scans {
 
     .EXAMPLE
         # Perform all scans
-        Invoke-Scans
+        Invoke-Scans 
 
     .EXAMPLE
         # Perform only the 'Auditing' and 'ESC1' scans
@@ -1500,9 +1550,17 @@ function Invoke-Scans {
     param (
         # Could split Scans and PromptMe into separate parameter sets.
         [Parameter()]
+        $ClientAuthEkus,
+        $DangerousRights,
+        $EnrollmentAgentEKU,
+        [int]$Mode,
+        $SafeObjectTypes,
+        $SafeOwners,
         [ValidateSet('Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'All', 'PromptMe')]
         [array]$Scans = 'All',
-        [int]$Mode
+        $UnsafeOwners,
+        $UnsafeUsers,
+        $PreferredOwner
     )
 
     # Is this needed?
@@ -1802,8 +1860,8 @@ function Set-AdditionalCAProperty {
         If not provided, the script will use the current user's credentials.
 
     .EXAMPLE
-        $ADCSObjects = Get-ADObject -Filter { objectClass -eq 'pKIEnrollmentService' }
-        Set-AdditionalCAProperty -ADCSObjects $ADCSObjects
+        $ADCSObjects = Get-ADCSObject -Filter
+        Set-AdditionalCAProperty -ADCSObjects $ADCSObjects -ForestGC 'dc1.ad.dotdot.horse:3268'
 
     .NOTES
         Author: Jake Hildreth
@@ -1816,7 +1874,8 @@ function Set-AdditionalCAProperty {
             Mandatory = $true,
             ValueFromPipeline = $true)]
         [array]$ADCSObjects,
-        [PSCredential]$Credential
+        [PSCredential]$Credential,
+        $ForestGC
     )
 
     process {
@@ -2457,29 +2516,61 @@ function Invoke-Locksmith {
         break;
     }
 
-    # Initial variables
-    $AllDomainsCertPublishersSIDs = @()
-    $AllDomainsDomainAdminSIDs = @()
+    ### Initial variables
+    # Extended Key Usages for client authentication. A requirement for ESC1
     $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
+
+    # GenericAll, WriteDacl, and WriteOwner all permit full control of an AD object.
+    # WriteProperty may or may not permit full control depending the specific property and AD object type.
     $DangerousRights = 'GenericAll|WriteDacl|WriteOwner|WriteProperty'
+
+    # Extended Key Usage for client authentication. A requirement for ESC3.
     $EnrollmentAgentEKU = '1\.3\.6\.1\.4\.1\.311\.20\.2\.1'
+
+    # The well-known GUIDs for Enroll and AutoEnroll rights on AD CS templates.
     $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
+
+    <#
+        -512$ = Domain Admins group
+        -519$ = Enterprise Admins group
+        -544$ = Administrators group
+        -18$  = SYSTEM
+        -517$ = Cert Publishers
+        -500$ = Built-in Administrator
+    #>
     $SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$'
+
+    <#
+        -512$    = Domain Admins group
+        -519$    = Enterprise Admins group
+        -544$    = Administrators group
+        -18$     = SYSTEM
+        -517$    = Cert Publishers
+        -500$    = Built-in Administrator
+        -516$    = Domain Controllers
+        -9$      = Enterprise Domain Controllers
+        -526$    = Key Admins
+        -527$    = Enterprise Key Admins
+        S-1-5-10 = SELF
+    #>
     $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+
+    <#
+        S-1-1-0 = Everyone
+        -11$    = Authenticated Users
+        -513$   = Domain Users
+        -515$   = Domain Computers
+    #>
     $UnsafeOwners = 'S-1-1-0|-11$|-513$|-515$'
     $UnsafeUsers = 'S-1-1-0|-11$|-513$|-515$'
 
-    # Generated variables
-    $Dictionary = New-Dictionary
+    ### Generated variables
+    # $Dictionary = New-Dictionary
     $ForestGC = $(Get-ADDomainController -Discover -Service GlobalCatalog -ForceDiscover | Select-Object -ExpandProperty Hostname) + ":3268"
-    $DNSRoot = [string]((Get-ADForest).RootDomain | Get-ADDomain).DNSRoot
+    # $DNSRoot = [string]((Get-ADForest).RootDomain | Get-ADDomain).DNSRoot
     $EnterpriseAdminsSID = ([string]((Get-ADForest).RootDomain | Get-ADDomain).DomainSID) + '-519'
-    $PreferredOwner = New-Object System.Security.Principal.SecurityIdentifier($EnterpriseAdminsSID)
-    $DomainSIDs = (Get-ADForest).Domains | ForEach-Object { (Get-ADDomain $_).DomainSID.Value }
-    $DomainSIDs | ForEach-Object {
-        $AllDomainsCertPublishersSIDs += $_ + '-517'
-        $AllDomainsDomainAdminSIDs += $_ + '-512'
-    }
+    $PreferredOwner = [System.Security.Principal.SecurityIdentifier]::New($EnterpriseAdminsSID)
+    # $DomainSIDs = (Get-ADForest).Domains | ForEach-Object { (Get-ADDomain $_).DomainSID.Value }
 
     # Add SIDs of (probably) Safe Users to $SafeUsers
     Get-ADGroupMember $EnterpriseAdminsSID | ForEach-Object {
@@ -2488,7 +2579,13 @@ function Invoke-Locksmith {
 
     (Get-ADForest).Domains | ForEach-Object {
         $DomainSID = (Get-ADDomain $_).DomainSID.Value
+        <#
+            -517 = Cert Publishers
+            -512 = Domain Admins group
+        #>
         $SafeGroupRIDs = @('-517', '-512')
+
+        # Administrators group
         $SafeGroupSIDs = @('S-1-5-32-544')
         foreach ($rid in $SafeGroupRIDs ) {
             $SafeGroupSIDs += $DomainSID + $rid
@@ -2511,33 +2608,46 @@ function Invoke-Locksmith {
     Write-Host "Gathering AD CS Objects from $($Targets)..."
     if ($Credential) {
         $ADCSObjects = Get-ADCSObject -Targets $Targets -Credential $Credential
-        Set-AdditionalCAProperty -ADCSObjects $ADCSObjects -Credential $Credential
-        $ADCSObjects += Get-CAHostObject -ADCSObjects $ADCSObjects -Credential $Credential
-        $CAHosts = Get-CAHostObject -ADCSObjects $ADCSObjects -Credential $Credential
-        $CAHosts | ForEach-Object { $SafeUsers += '|' + $_.objectSid }
+        Set-AdditionalCAProperty -ADCSObjects $ADCSObjects -Credential $Credential -ForestGC $ForestGC
+        $ADCSObjects += Get-CAHostObject -ADCSObjects $ADCSObjects -Credential $Credential -ForestGC $ForestGC
+        $CAHosts = Get-CAHostObject -ADCSObjects $ADCSObjects -Credential $Credential -ForestGC $ForestGC
     }
     else {
         $ADCSObjects = Get-ADCSObject -Targets $Targets
-        Set-AdditionalCAProperty -ADCSObjects $ADCSObjects
-        $ADCSObjects += Get-CAHostObject -ADCSObjects $ADCSObjects
-        $CAHosts = Get-CAHostObject -ADCSObjects $ADCSObjects
-        $CAHosts | ForEach-Object { $SafeUsers += '|' + $_.objectSid }
+        Set-AdditionalCAProperty -ADCSObjects $ADCSObjects -ForestGC $ForestGC
+        $ADCSObjects += Get-CAHostObject -ADCSObjects $ADCSObjects -ForestGC $ForestGC
+        $CAHosts = Get-CAHostObject -ADCSObjects $ADCSObjects -ForestGC $ForestGC
     }
 
-    if ( $Scans ) {
-        # If the Scans parameter was used, Invoke-Scans with the specified checks.
-        $Results = Invoke-Scans -Scans $Scans -Mode $Mode
-        # Re-hydrate the findings arrays from the Results hash table
-        $AllIssues = $Results['AllIssues']
-        $AuditingIssues = $Results['AuditingIssues']
-        $ESC1 = $Results['ESC1']
-        $ESC2 = $Results['ESC2']
-        $ESC3 = $Results['ESC3']
-        $ESC4 = $Results['ESC4']
-        $ESC5 = $Results['ESC5']
-        $ESC6 = $Results['ESC6']
-        $ESC8 = $Results['ESC8']
+    # Add SIDs of CA Hosts to $SafeUsers
+    $CAHosts | ForEach-Object { $SafeUsers += '|' + $_.objectSid }
+
+    #if ( $Scans ) {
+    # If the Scans parameter was used, Invoke-Scans with the specified checks.
+    $ScansParameters = @{
+        ClientAuthEkus     = $ClientAuthEKUs
+        DangerousRights    = $DangerousRights
+        EnrollmentAgentEKU = $EnrollmentAgentEKU
+        Mode               = $Mode
+        SafeObjectTypes    = $SafeObjectTypes
+        SafeOwners         = $SafeOwners
+        Scans              = $Scans
+        UnsafeOwners       = $UnsafeOwners
+        UnsafeUsers        = $UnsafeUsers
+        PreferredOwner     = $PreferredOwner
     }
+    $Results = Invoke-Scans @ScansParameters
+    # Re-hydrate the findings arrays from the Results hash table
+    $AllIssues = $Results['AllIssues']
+    $AuditingIssues = $Results['AuditingIssues']
+    $ESC1 = $Results['ESC1']
+    $ESC2 = $Results['ESC2']
+    $ESC3 = $Results['ESC3']
+    $ESC4 = $Results['ESC4']
+    $ESC5 = $Results['ESC5']
+    $ESC6 = $Results['ESC6']
+    $ESC8 = $Results['ESC8']
+    #}
 
     # If these are all empty = no issues found, exit
     if ($null -eq $Results) {
