@@ -152,8 +152,18 @@ function Find-AuditingIssue {
             DistinguishedName = $_.DistinguishedName
             Technique         = 'DETECT'
             Issue             = "Auditing is not fully enabled on $($_.CAFullName). Current value is $($_.AuditFilter)"
-            Fix               = "certutil.exe -config `'$($_.CAFullname)`' -setreg `'CA\AuditFilter`' 127; Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }"
-            Revert            = "certutil.exe -config $($_.CAFullname) -setreg CA\AuditFilter  $($_.AuditFilter); Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }"
+            Fix               = @"
+certutil.exe -config `'$($_.CAFullname)`' -setreg `'CA\AuditFilter`' 127
+Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
+    Get-Service -Name `'certsvc`' | Restart-Service -Force
+}
+"@
+            Revert            = @"
+certutil.exe -config $($_.CAFullname) -setreg CA\AuditFilter  $($_.AuditFilter)
+Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
+    Get-Service -Name `'certsvc`' | Restart-Service -Force
+}
+"@
         }
         if ($_.AuditFilter -match 'CA Unavailable') {
             $Issue.Issue = $_.AuditFilter
@@ -482,7 +492,7 @@ function Find-ESC4 {
 
         # The well-known GUIDs for Enroll and AutoEnroll rights on AD CS templates.
         $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
-        
+
         $Results = $ADCSObjects | Find-ESC4 -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeUsers $SafeUsers -SafeObjectTypes $SafeObjectTypes
         $Results
     #>
@@ -515,8 +525,18 @@ function Find-ESC4 {
                 Name              = $_.Name
                 DistinguishedName = $_.DistinguishedName
                 Issue             = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
-                Fix               = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
-                Revert            = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
+                Fix               = @"
+`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`')
+`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
+`$ACL.SetOwner(`$Owner)
+Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
+"@
+                Revert            = @"
+`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`')
+`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
+`$ACL.SetOwner(`$Owner)
+Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
+"@
                 Technique         = 'ESC4'
             }
             $Issue
@@ -543,7 +563,15 @@ function Find-ESC4 {
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Issue                 = "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this template"
-                    Fix                   = "`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; foreach ( `$ace in `$ACL.access ) { if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) { `$ACL.RemoveAccessRule(`$ace) | Out-Null ; Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL } }"
+                    Fix                   = @"
+`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
+foreach ( `$ace in `$ACL.access ) {
+    if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) {
+        `$ACL.RemoveAccessRule(`$ace) | Out-Null
+    }
+}
+Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
+"@
                     Revert                = '[TODO]'
                     Technique             = 'ESC4'
                 }
@@ -588,7 +616,7 @@ function Find-ESC5 {
 
     .EXAMPLE
         $ADCSObjects = Get-ADCSObject
-        
+
         # GenericAll, WriteDacl, and WriteOwner all permit full control of an AD object.
         # WriteProperty may or may not permit full control depending the specific property and AD object type.
         $DangerousRights = @('GenericAll', 'WriteProperty', 'WriteOwner', 'WriteDacl')
@@ -647,8 +675,17 @@ function Find-ESC5 {
                 Name              = $_.Name
                 DistinguishedName = $_.DistinguishedName
                 Issue             = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
-                Fix               = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
-                Revert            = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
+                Fix               = @"
+`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`')
+`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
+`$ACL.SetOwner(`$Owner)
+Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
+"@
+                Revert            = "
+`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`')
+`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
+`$ACL.SetOwner(`$Owner)
+Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
                 Technique         = 'ESC5'
             }
             $Issue
@@ -674,7 +711,15 @@ function Find-ESC5 {
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Issue                 = "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this object"
-                    Fix                   = "`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; foreach ( `$ace in `$ACL.access ) { if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) { `$ACL.RemoveAccessRule(`$ace) | Out-Null ; Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL } }"
+                    Fix                   = @"
+`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
+foreach ( `$ace in `$ACL.access ) {
+    if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) {
+        `$ACL.RemoveAccessRule(`$ace) | Out-Null
+    }
+}
+Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
+"@
                     Revert                = '[TODO]'
                     Technique             = 'ESC5'
                 }
@@ -690,9 +735,9 @@ function Find-ESC6 {
         This script finds AD CS (Active Directory Certificate Services) objects that have the ESC6 vulnerability.
 
     .DESCRIPTION
-        The script takes an array of ADCS objects as input and filters them based on objects that have the objectClass 
+        The script takes an array of ADCS objects as input and filters them based on objects that have the objectClass
         'pKIEnrollmentService' and the SANFlag set to 'Yes'. For each matching object, it creates a custom object with
-        properties representing various information about the object, such as Forest, Name, DistinguishedName, Technique, 
+        properties representing various information about the object, such as Forest, Name, DistinguishedName, Technique,
         Issue, Fix, and Revert.
 
     .PARAMETER ADCSObjects
@@ -728,8 +773,18 @@ function Find-ESC6 {
             }
             if ($_.SANFlag -eq 'Yes') {
                 $Issue.Issue = 'EDITF_ATTRIBUTESUBJECTALTNAME2 is enabled.'
-                $Issue.Fix = "certutil -config $CAFullname -setreg policy\EditFlags -EDITF_ATTRIBUTESUBJECTALTNAME2; Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }"
-                $Issue.Revert = "certutil -config $CAFullname -setreg policy\EditFlags +EDITF_ATTRIBUTESUBJECTALTNAME2; Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }"
+                $Issue.Fix = @"
+certutil -config $CAFullname -setreg policy\EditFlags -EDITF_ATTRIBUTESUBJECTALTNAME2
+Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock {
+    Get-Service -Name `'certsvc`' | Restart-Service -Force
+}
+"@
+                $Issue.Revert = @"
+certutil -config $CAFullname -setreg policy\EditFlags +EDITF_ATTRIBUTESUBJECTALTNAME2
+Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock {
+    Get-Service -Name `'certsvc`' | Restart-Service -Force
+}
+"@
             }
             $Issue
         }
@@ -2256,13 +2311,16 @@ function Update-ESC4Remediation {
         This function asks the user a set of questions to provide the most appropriate remediation for ESC4 issues.
 
     .DESCRIPTION
-
+        This function takes a single ESC4 issue as input. It then prompts the user if the principal with the ESC4 rights
+        administers the template in question.
+        If the principal is an admin of the template, the Issue attribute to indicate this configuration is expected, and
+        the Fix attribute for the issue is updated to indicate no remediation is needed.
+        If the the principal is not an admin of the template AND the rights assigned is GenericAll, Locksmith will ask
+        if Enroll or AutoEnroll rights are needed.
+        Depending on the answers to the listed questions, the Fix attribute is updated accordingly.
 
     .PARAMETER Issue
-
-
-    .PARAMETER Mode
-
+        A pscustomobject that includes all pertinent information about the ESC4 issue.
 
     .OUTPUTS
         This function updates ESC4 remediations customized to the user's needs.
@@ -2275,7 +2333,7 @@ function Update-ESC4Remediation {
         $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
         $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
         $ESC4Issues = Find-ESC4 -ADCSObjects $ADCSObjects -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeUsers $SafeUsers -SafeObjectTypes $SafeObjectTypes
-        Update-ESC4Remediation -ESC4Issues $ESC4Issues
+        foreach ($issue in $ESCIssues) { Update-ESC4Remediation -Issue $Issue }
     #>
     [CmdletBinding()]
     param(
