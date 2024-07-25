@@ -17,8 +17,8 @@
         If not provided, the script will use the current user's credentials.
 
     .EXAMPLE
-        $ADCSObjects = Get-ADObject -Filter { objectClass -eq 'pKIEnrollmentService' }
-        Set-AdditionalCAProperty -ADCSObjects $ADCSObjects
+        $ADCSObjects = Get-ADCSObject -Filter
+        Set-AdditionalCAProperty -ADCSObjects $ADCSObjects -ForestGC 'dc1.ad.dotdot.horse:3268'
 
     .NOTES
         Author: Jake Hildreth
@@ -31,7 +31,8 @@
             Mandatory = $true,
             ValueFromPipeline = $true)]
         [array]$ADCSObjects,
-        [PSCredential]$Credential
+        [PSCredential]$Credential,
+        $ForestGC
     )
 
     process {
