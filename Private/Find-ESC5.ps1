@@ -28,7 +28,7 @@
 
     .EXAMPLE
         $ADCSObjects = Get-ADCSObject
-        
+
         # GenericAll, WriteDacl, and WriteOwner all permit full control of an AD object.
         # WriteProperty may or may not permit full control depending the specific property and AD object type.
         $DangerousRights = @('GenericAll', 'WriteProperty', 'WriteOwner', 'WriteDacl')
@@ -86,8 +86,17 @@
                 Name                  = $_.Name
                 DistinguishedName     = $_.DistinguishedName
                 Issue                 = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
-                Fix                   = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
-                Revert                = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
+                Fix                   = @"
+`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`')
+`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
+`$ACL.SetOwner(`$Owner)
+Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
+"@
+                Revert                = "
+`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`')
+`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
+`$ACL.SetOwner(`$Owner)
+Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
                 Technique             = 'ESC5'
             }
             $Issue
@@ -112,7 +121,15 @@
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Issue                 = "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this object"
-                    Fix                   = "`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; foreach ( `$ace in `$ACL.access ) { if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) { `$ACL.RemoveAccessRule(`$ace) | Out-Null ; Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL } }"
+                    Fix                   = @"
+`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
+foreach ( `$ace in `$ACL.access ) {
+    if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) {
+        `$ACL.RemoveAccessRule(`$ace) | Out-Null
+    }
+}
+Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
+"@
                     Revert                = '[TODO]'
                     Technique             = 'ESC5'
                 }
