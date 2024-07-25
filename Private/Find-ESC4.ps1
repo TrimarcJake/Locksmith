@@ -56,7 +56,7 @@
 
         # The well-known GUIDs for Enroll and AutoEnroll rights on AD CS templates.
         $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
-        
+
         $Results = $ADCSObjects | Find-ESC4 -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeUsers $SafeUsers -SafeObjectTypes $SafeObjectTypes
         $Results
     #>
@@ -88,8 +88,18 @@
                 Name                  = $_.Name
                 DistinguishedName     = $_.DistinguishedName
                 Issue                 = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
-                Fix                   = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
-                Revert                = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
+                Fix                   = @"
+`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`')
+`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
+`$ACL.SetOwner(`$Owner)
+Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
+"@
+                Revert                = @"
+`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`')
+`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
+`$ACL.SetOwner(`$Owner)
+Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
+"@
                 Technique             = 'ESC4'
             }
             $Issue
@@ -115,7 +125,15 @@
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Issue                 = "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this template"
-                    Fix                   = "`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; foreach ( `$ace in `$ACL.access ) { if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) { `$ACL.RemoveAccessRule(`$ace) | Out-Null ; Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL } }"
+                    Fix                   = @"
+`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
+foreach ( `$ace in `$ACL.access ) {
+    if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) {
+        `$ACL.RemoveAccessRule(`$ace) | Out-Null
+    }
+}
+Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
+"@
                     Revert                = '[TODO]'
                     Technique             = 'ESC4'
                 }
