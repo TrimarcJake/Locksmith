@@ -44,6 +44,7 @@ Build-Module -ModuleName 'Locksmith' {
         'Microsoft.PowerShell.Utility'
         'Microsoft.PowerShell.LocalAccounts'
         'Microsoft.PowerShell.Management'
+        'Microsoft.PowerShell.Security'
         'CimCmdlets'
         'Dism'
     )
