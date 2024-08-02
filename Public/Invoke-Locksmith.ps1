@@ -189,6 +189,7 @@
             $SafeUsers += '|' + $user
         }
     }
+    $SafeUsers = $SafeUsers.Replace('||','|')
 
     if ($Credential) {
         $Targets = Get-Target -Credential $Credential
