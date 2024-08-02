@@ -623,9 +623,9 @@ function Find-ESC6 {
         This script finds AD CS (Active Directory Certificate Services) objects that have the ESC6 vulnerability.
 
     .DESCRIPTION
-        The script takes an array of ADCS objects as input and filters them based on objects that have the objectClass 
+        The script takes an array of ADCS objects as input and filters them based on objects that have the objectClass
         'pKIEnrollmentService' and the SANFlag set to 'Yes'. For each matching object, it creates a custom object with
-        properties representing various information about the object, such as Forest, Name, DistinguishedName, Technique, 
+        properties representing various information about the object, such as Forest, Name, DistinguishedName, Technique,
         Issue, Fix, and Revert.
 
     .PARAMETER ADCSObjects
@@ -964,7 +964,7 @@ function Get-CAHostObject {
         $ADCSObjects = Get-ADCSObjects
         $Credential = Get-Credential
         Get-CAHostObject -ADCSObjects $ADCSObjects -Credential $Credential
-    
+
         This example retrieves the CA host object(s) associated with every CA in the target forest using the provided credentials.
 
     .INPUTS
@@ -1002,7 +1002,7 @@ function Get-RestrictedAdminModeSetting {
         Retrieves the current configuration of the Restricted Admin Mode setting.
 
     .DESCRIPTION
-        This script retrieves the current configuration of the Restricted Admin Mode setting from the registry. 
+        This script retrieves the current configuration of the Restricted Admin Mode setting from the registry.
         It checks if the DisableRestrictedAdmin value is set to '0' and the DisableRestrictedAdminOutboundCreds value is set to '1'.
         If both conditions are met, it returns $true; otherwise, it returns $false.
 
@@ -2421,7 +2421,7 @@ function Invoke-Locksmith {
         }
     }
     Write-Host 'Thank you for using ' -NoNewline
-    Write-Host "❤ Locksmith ❤`n" -ForegroundColor Magenta
+    Write-Host "❤  Locksmith ❤`n" -ForegroundColor Magenta
 }
 
 
