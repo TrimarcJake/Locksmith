@@ -2384,7 +2384,7 @@ function Update-ESC4Remediation {
         while ($RightsToRestore -notin 1..5) {
             [string]$Question = @"
 
-Does $($Issue.IdentityReference) need to Enroll and/or AutoEnroll in the $($Issue.Name) template?"
+Does $($Issue.IdentityReference) need to Enroll and/or AutoEnroll in the $($Issue.Name) template?
 
   1. Enroll
   2. AutoEnroll
@@ -2392,7 +2392,7 @@ Does $($Issue.IdentityReference) need to Enroll and/or AutoEnroll in the $($Issu
   4. Neither
   5. Unsure
 
-  Enter your selection [1-5]
+Enter your selection [1-5]
 "@
             $RightsToRestore = Read-Host $Question
         }
