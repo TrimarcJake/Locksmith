@@ -33,7 +33,7 @@
     $ADCSObjects | Where-Object {
         ($_.objectClass -eq 'pKICertificateTemplate') -and
         ($_.pkiExtendedKeyUsage -match $ClientAuthEKU) -and
-        ($_.'msPKI-Certificate-Name-Flag' -eq 1) -and
+        ($_.'msPKI-Certificate-Name-Flag' -band 1) -and
         !($_.'msPKI-Enrollment-Flag' -band 2) -and
         ($_.'msPKI-RA-Application-Policies' -eq '1.3.6.1.4.1.311.20.2.1') -and
         ( ($_.'msPKI-RA-Signature' -eq 1) )
@@ -53,8 +53,14 @@
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Issue                 = "$($entry.IdentityReference) can enroll in this Client Authentication template using a SAN without Manager Approval"
-                    Fix                   = "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}"
-                    Revert                = "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"
+                    Fix = @"
+`$Object = `'$($_.DistinguishedName)`'
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}
+"@
+                    Revert = @"
+`$Object = `'$($_.DistinguishedName)`'
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}
+"@
                     Technique             = 'ESC3'
                 }
                 $Issue

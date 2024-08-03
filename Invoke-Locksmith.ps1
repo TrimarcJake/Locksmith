@@ -152,8 +152,18 @@ function Find-AuditingIssue {
             DistinguishedName = $_.DistinguishedName
             Technique         = 'DETECT'
             Issue             = "Auditing is not fully enabled on $($_.CAFullName). Current value is $($_.AuditFilter)"
-            Fix               = "certutil.exe -config `'$($_.CAFullname)`' -setreg `'CA\AuditFilter`' 127; Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }"
-            Revert            = "certutil.exe -config $($_.CAFullname) -setreg CA\AuditFilter  $($_.AuditFilter); Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }"
+            Fix               = @"
+certutil.exe -config `'$($_.CAFullname)`' -setreg `'CA\AuditFilter`' 127
+Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
+    Get-Service -Name `'certsvc`' | Restart-Service -Force
+}
+"@
+            Revert            = @"
+certutil.exe -config $($_.CAFullname) -setreg CA\AuditFilter  $($_.AuditFilter)
+Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
+    Get-Service -Name `'certsvc`' | Restart-Service -Force
+}
+"@
         }
         if ($_.AuditFilter -match 'CA Unavailable') {
             $Issue.Issue = $_.AuditFilter
@@ -199,7 +209,7 @@ function Find-ESC1 {
     $ADCSObjects | Where-Object {
         ($_.objectClass -eq 'pKICertificateTemplate') -and
         ($_.pkiExtendedKeyUsage -match $ClientAuthEKUs) -and
-        ($_.'msPKI-Certificate-Name-Flag' -eq 1) -and
+        ($_.'msPKI-Certificate-Name-Flag' -band 1) -and
         !($_.'msPKI-Enrollment-Flag' -band 2) -and
         ( ($_.'msPKI-RA-Signature' -eq 0) -or ($null -eq $_.'msPKI-RA-Signature') )
     } | ForEach-Object {
@@ -219,8 +229,14 @@ function Find-ESC1 {
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Issue                 = "$($entry.IdentityReference) can enroll in this Client Authentication template using a SAN without Manager Approval"
-                    Fix                   = "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}"
-                    Revert                = "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"
+                    Fix                   = @"
+`$Object = `'$($_.DistinguishedName)`'
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}
+"@
+                    Revert                = @"
+`$Object = `'$($_.DistinguishedName)`'
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}
+"@
                     Technique             = 'ESC1'
                 }
                 $Issue
@@ -264,7 +280,7 @@ function Find-ESC2 {
     $ADCSObjects | Where-Object {
         ($_.ObjectClass -eq 'pKICertificateTemplate') -and
         ( (!$_.pkiExtendedKeyUsage) -or ($_.pkiExtendedKeyUsage -match '2.5.29.37.0') ) -and
-        ($_.'msPKI-Certificate-Name-Flag' -eq 1) -and
+        ($_.'msPKI-Certificate-Name-Flag' -band 1) -and
         !($_.'msPKI-Enrollment-Flag' -band 2) -and
         ( ($_.'msPKI-RA-Signature' -eq 0) -or ($null -eq $_.'msPKI-RA-Signature') )
     } | ForEach-Object {
@@ -284,8 +300,14 @@ function Find-ESC2 {
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Issue                 = "$($entry.IdentityReference) can request a SubCA certificate without Manager Approval"
-                    Fix                   = "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}"
-                    Revert                = "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"
+                    Fix                   = @"
+`$Object = `'$($_.DistinguishedName)`'
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}
+"@
+                    Revert                = @"
+`$Object = `'$($_.DistinguishedName)`'
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}
+"@
                     Technique             = 'ESC2'
                 }
                 $Issue
@@ -348,8 +370,14 @@ function Find-ESC3Condition1 {
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Issue                 = "$($entry.IdentityReference) can enroll in this Enrollment Agent template without Manager Approval"
-                    Fix                   = "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}"
-                    Revert                = "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"
+                    Fix                   = @"
+`$Object = `'$($_.DistinguishedName)`'
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}
+"@
+                    Revert                = @"
+`$Object = `'$($_.DistinguishedName)`'
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}
+"@
                     Technique             = 'ESC3'
                 }
                 $Issue
@@ -393,7 +421,7 @@ function Find-ESC3Condition2 {
     $ADCSObjects | Where-Object {
         ($_.objectClass -eq 'pKICertificateTemplate') -and
         ($_.pkiExtendedKeyUsage -match $ClientAuthEKU) -and
-        ($_.'msPKI-Certificate-Name-Flag' -eq 1) -and
+        ($_.'msPKI-Certificate-Name-Flag' -band 1) -and
         !($_.'msPKI-Enrollment-Flag' -band 2) -and
         ($_.'msPKI-RA-Application-Policies' -eq '1.3.6.1.4.1.311.20.2.1') -and
         ( ($_.'msPKI-RA-Signature' -eq 1) )
@@ -414,8 +442,14 @@ function Find-ESC3Condition2 {
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Issue                 = "$($entry.IdentityReference) can enroll in this Client Authentication template using a SAN without Manager Approval"
-                    Fix                   = "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}"
-                    Revert                = "Get-ADObject `'$($_.DistinguishedName)`' | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}"
+                    Fix                   = @"
+`$Object = `'$($_.DistinguishedName)`'
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}
+"@
+                    Revert                = @"
+`$Object = `'$($_.DistinguishedName)`'
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}
+"@
                     Technique             = 'ESC3'
                 }
                 $Issue
@@ -446,15 +480,44 @@ function Find-ESC4 {
     .PARAMETER SafeUsers
         Specifies the list of SIDs of safe users who are allowed to have specific rights on the objects. This parameter is mandatory.
 
+    .PARAMETER SafeObjectTypes
+        Specifices a list of ObjectTypes which are not a security concern. This parameter is mandatory.
+
     .OUTPUTS
         The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
 
     .EXAMPLE
-        $ADCSObjects = Get-ADCSObjects
+        $ADCSObjects = Get-ADCSObject
+
+        # GenericAll, WriteDacl, and WriteOwner all permit full control of an AD object.
+        # WriteProperty may or may not permit full control depending the specific property and AD object type.
         $DangerousRights = @('GenericAll', 'WriteProperty', 'WriteOwner', 'WriteDacl')
+
+        # -512$ = Domain Admins group
+        # -519$ = Enterprise Admins group
+        # -544$ = Administrators group
+        # -18$  = SYSTEM
+        # -517$ = Cert Publishers
+        # -500$ = Built-in Administrator
         $SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$'
+
+        # -512$    = Domain Admins group
+        # -519$    = Enterprise Admins group
+        # -544$    = Administrators group
+        # -18$     = SYSTEM
+        # -517$    = Cert Publishers
+        # -500$    = Built-in Administrator
+        # -516$    = Domain Controllers
+        # -9$      = Enterprise Domain Controllers
+        # -526$    = Key Admins
+        # -527$    = Enterprise Key Admins
+        # S-1-5-10 = SELF
         $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
-        $Results = $ADCSObjects | Find-ESC4 -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeUsers $SafeUsers
+
+        # The well-known GUIDs for Enroll and AutoEnroll rights on AD CS templates.
+        $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
+
+        $Results = $ADCSObjects | Find-ESC4 -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeUsers $SafeUsers -SafeObjectTypes $SafeObjectTypes
         $Results
     #>
     [CmdletBinding()]
@@ -466,7 +529,10 @@ function Find-ESC4 {
         [Parameter(Mandatory = $true)]
         $SafeOwners,
         [Parameter(Mandatory = $true)]
-        $SafeUsers
+        $SafeUsers,
+        [Parameter(Mandatory = $true)]
+        $SafeObjectTypes,
+        [int]$Mode
     )
     $ADCSObjects | ForEach-Object {
         $Principal = New-Object System.Security.Principal.NTAccount($_.nTSecurityDescriptor.Owner)
@@ -483,8 +549,18 @@ function Find-ESC4 {
                 Name              = $_.Name
                 DistinguishedName = $_.DistinguishedName
                 Issue             = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
-                Fix               = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
-                Revert            = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
+                Fix               = @"
+`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`')
+`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
+`$ACL.SetOwner(`$Owner)
+Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
+"@
+                Revert            = @"
+`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`')
+`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
+`$ACL.SetOwner(`$Owner)
+Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
+"@
                 Technique         = 'ESC4'
             }
             $Issue
@@ -502,7 +578,7 @@ function Find-ESC4 {
                 ($SID -notmatch $SafeUsers) -and
                 ($entry.AccessControlType -eq 'Allow') -and
                 ($entry.ActiveDirectoryRights -match $DangerousRights) -and
-                ($entry.ActiveDirectoryRights.ObjectType -notmatch $SafeObjectTypes)
+                ($entry.ObjectType -notmatch $SafeObjectTypes)
             ) {
                 $Issue = [pscustomobject]@{
                     Forest                = $_.CanonicalName.split('/')[0]
@@ -511,10 +587,23 @@ function Find-ESC4 {
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Issue                 = "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this template"
-                    Fix                   = "`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; foreach ( `$ace in `$ACL.access ) { if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) { `$ACL.RemoveAccessRule(`$ace) | Out-Null ; Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL } }"
+                    Fix                   = @"
+`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
+foreach ( `$ace in `$ACL.access ) {
+    if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) {
+        `$ACL.RemoveAccessRule(`$ace) | Out-Null
+    }
+}
+Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
+"@
                     Revert                = '[TODO]'
                     Technique             = 'ESC4'
                 }
+
+                if ( $Mode -in @(1, 3, 4) ) {
+                    Update-ESC4Remediation -Issue $Issue
+                }
+
                 $Issue
             }
         }
@@ -543,15 +632,43 @@ function Find-ESC5 {
     .PARAMETER SafeUsers
         Specifies the list of SIDs of safe users who are allowed to have specific rights on the objects. This parameter is mandatory.
 
+    .PARAMETER SafeObjectTypes
+        Specifices a list of ObjectTypes which are not a security concern. This parameter is mandatory.
+
     .OUTPUTS
         The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
 
     .EXAMPLE
-        $ADCSObjects = Get-ADCSObjects
+        $ADCSObjects = Get-ADCSObject
+
+        # GenericAll, WriteDacl, and WriteOwner all permit full control of an AD object.
+        # WriteProperty may or may not permit full control depending the specific property and AD object type.
         $DangerousRights = @('GenericAll', 'WriteProperty', 'WriteOwner', 'WriteDacl')
+
+        # -512$ = Domain Admins group
+        # -519$ = Enterprise Admins group
+        # -544$ = Administrators group
+        # -18$  = SYSTEM
+        # -517$ = Cert Publishers
+        # -500$ = Built-in Administrator
         $SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$'
+
+        # -512$    = Domain Admins group
+        # -519$    = Enterprise Admins group
+        # -544$    = Administrators group
+        # -18$     = SYSTEM
+        # -517$    = Cert Publishers
+        # -500$    = Built-in Administrator
+        # -516$    = Domain Controllers
+        # -9$      = Enterprise Domain Controllers
+        # -526$    = Key Admins
+        # -527$    = Enterprise Key Admins
+        # S-1-5-10 = SELF
         $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
-        $Results = $ADCSObjects | Find-ESC5 -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeUsers $SafeUsers
+
+        # The well-known GUIDs for Enroll and AutoEnroll rights on AD CS templates.
+        $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
+        $Results = $ADCSObjects | Find-ESC5 -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeUsers $SafeUsers  -SafeObjectTypes $SafeObjectTypes
         $Results
     #>
     [CmdletBinding()]
@@ -563,7 +680,9 @@ function Find-ESC5 {
         [Parameter(Mandatory = $true)]
         $SafeOwners,
         [Parameter(Mandatory = $true)]
-        $SafeUsers
+        $SafeUsers,
+        [Parameter(Mandatory = $true)]
+        $SafeObjectTypes
     )
     $ADCSObjects | ForEach-Object {
         $Principal = New-Object System.Security.Principal.NTAccount($_.nTSecurityDescriptor.Owner)
@@ -580,8 +699,17 @@ function Find-ESC5 {
                 Name              = $_.Name
                 DistinguishedName = $_.DistinguishedName
                 Issue             = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
-                Fix               = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
-                Revert            = "`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`'); `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; `$ACL.SetOwner(`$Owner); Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
+                Fix               = @"
+`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`')
+`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
+`$ACL.SetOwner(`$Owner)
+Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
+"@
+                Revert            = "
+`$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`')
+`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
+`$ACL.SetOwner(`$Owner)
+Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
                 Technique         = 'ESC5'
             }
             $Issue
@@ -599,7 +727,7 @@ function Find-ESC5 {
                 ($SID -notmatch $SafeUsers) -and
                 ($entry.AccessControlType -eq 'Allow') -and
                 ($entry.ActiveDirectoryRights -match $DangerousRights) -and
-                ($entry.ActiveDirectoryRights.ObjectType -notmatch $SafeObjectTypes) ) {
+                ($entry.ObjectType -notmatch $SafeObjectTypes) ) {
                 $Issue = [pscustomobject]@{
                     Forest                = $_.CanonicalName.split('/')[0]
                     Name                  = $_.Name
@@ -607,7 +735,15 @@ function Find-ESC5 {
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Issue                 = "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this object"
-                    Fix                   = "`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'; foreach ( `$ace in `$ACL.access ) { if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) { `$ACL.RemoveAccessRule(`$ace) | Out-Null ; Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL } }"
+                    Fix                   = @"
+`$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
+foreach ( `$ace in `$ACL.access ) {
+    if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) {
+        `$ACL.RemoveAccessRule(`$ace) | Out-Null
+    }
+}
+Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
+"@
                     Revert                = '[TODO]'
                     Technique             = 'ESC5'
                 }
@@ -623,9 +759,9 @@ function Find-ESC6 {
         This script finds AD CS (Active Directory Certificate Services) objects that have the ESC6 vulnerability.
 
     .DESCRIPTION
-        The script takes an array of ADCS objects as input and filters them based on objects that have the objectClass 
+        The script takes an array of ADCS objects as input and filters them based on objects that have the objectClass
         'pKIEnrollmentService' and the SANFlag set to 'Yes'. For each matching object, it creates a custom object with
-        properties representing various information about the object, such as Forest, Name, DistinguishedName, Technique, 
+        properties representing various information about the object, such as Forest, Name, DistinguishedName, Technique,
         Issue, Fix, and Revert.
 
     .PARAMETER ADCSObjects
@@ -661,8 +797,18 @@ function Find-ESC6 {
             }
             if ($_.SANFlag -eq 'Yes') {
                 $Issue.Issue = 'EDITF_ATTRIBUTESUBJECTALTNAME2 is enabled.'
-                $Issue.Fix = "certutil -config $CAFullname -setreg policy\EditFlags -EDITF_ATTRIBUTESUBJECTALTNAME2; Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }"
-                $Issue.Revert = "certutil -config $CAFullname -setreg policy\EditFlags +EDITF_ATTRIBUTESUBJECTALTNAME2; Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }"
+                $Issue.Fix = @"
+certutil -config $CAFullname -setreg policy\EditFlags -EDITF_ATTRIBUTESUBJECTALTNAME2
+Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock {
+    Get-Service -Name `'certsvc`' | Restart-Service -Force
+}
+"@
+                $Issue.Revert = @"
+certutil -config $CAFullname -setreg policy\EditFlags +EDITF_ATTRIBUTESUBJECTALTNAME2
+Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock {
+    Get-Service -Name `'certsvc`' | Restart-Service -Force
+}
+"@
             }
             $Issue
         }
@@ -718,7 +864,7 @@ function Find-ESC8 {
                 Revert               = '[TODO]'
                 Technique            = 'ESC8'
             }
-            if ($_.CAEnrollmentEndpoint -like '^https*') {
+            if ($_.CAEnrollmentEndpoint -match '^https') {
                 $Issue.Issue = 'HTTPS enrollment is enabled.'
             }
             $Issue
@@ -921,8 +1067,8 @@ function Get-ADCSObject {
         Specifies the credentials to use for authentication when retrieving ADCS objects.
 
     .EXAMPLE
-        Get-ADCSObject -Targets forest1.lan -Credential $cred
-        This example retrieves ADCS objects from forest1.lan using the specified credentials.
+        Get-ADCSObject -Credential $cred
+        This example retrieves ADCS objects from the local forest using the specified credentials.
 
     #>
 
@@ -964,7 +1110,7 @@ function Get-CAHostObject {
         $ADCSObjects = Get-ADCSObjects
         $Credential = Get-Credential
         Get-CAHostObject -ADCSObjects $ADCSObjects -Credential $Credential
-    
+
         This example retrieves the CA host object(s) associated with every CA in the target forest using the provided credentials.
 
     .INPUTS
@@ -980,7 +1126,8 @@ function Get-CAHostObject {
             Mandatory = $true,
             ValueFromPipeline = $true)]
         [array]$ADCSObjects,
-        [System.Management.Automation.PSCredential]$Credential
+        [System.Management.Automation.PSCredential]$Credential,
+        $ForestGC
     )
     process {
         if ($Credential) {
@@ -1467,7 +1614,7 @@ function Invoke-Scans {
 
     .EXAMPLE
         # Perform all scans
-        Invoke-Scans
+        Invoke-Scans 
 
     .EXAMPLE
         # Perform only the 'Auditing' and 'ESC1' scans
@@ -1482,8 +1629,17 @@ function Invoke-Scans {
     param (
         # Could split Scans and PromptMe into separate parameter sets.
         [Parameter()]
+        $ClientAuthEkus,
+        $DangerousRights,
+        $EnrollmentAgentEKU,
+        [int]$Mode,
+        $SafeObjectTypes,
+        $SafeOwners,
         [ValidateSet('Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'All', 'PromptMe')]
-        [array]$Scans = 'All'
+        [array]$Scans = 'All',
+        $UnsafeOwners,
+        $UnsafeUsers,
+        $PreferredOwner
     )
 
     # Is this needed?
@@ -1528,11 +1684,11 @@ function Invoke-Scans {
         }
         ESC4 {
             Write-Host 'Identifying AD CS template and other objects with poor access control (ESC4)...'
-            [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
+            [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes
         }
         ESC5 {
             Write-Host 'Identifying AD CS template and other objects with poor access control (ESC5)...'
-            [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
+            [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes
         }
         ESC6 {
             Write-Host 'Identifying AD CS template and other objects with poor access control (ESC6)...'
@@ -1553,9 +1709,9 @@ function Invoke-Scans {
             [array]$ESC3 = Find-ESC3Condition1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
             [array]$ESC3 += Find-ESC3Condition2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
             Write-Host 'Identifying AD CS template and other objects with poor access control (ESC4)...'
-            [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
+            [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes -Mode $Mode
             Write-Host 'Identifying AD CS template and other objects with poor access control (ESC5)...'
-            [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
+            [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes
             Write-Host 'Identifying Certificate Authorities configured with dangerous flags (ESC6)...'
             [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects
             Write-Host 'Identifying HTTP-based certificate enrollment interfaces (ESC8)...'
@@ -1783,8 +1939,8 @@ function Set-AdditionalCAProperty {
         If not provided, the script will use the current user's credentials.
 
     .EXAMPLE
-        $ADCSObjects = Get-ADObject -Filter { objectClass -eq 'pKIEnrollmentService' }
-        Set-AdditionalCAProperty -ADCSObjects $ADCSObjects
+        $ADCSObjects = Get-ADCSObject -Filter
+        Set-AdditionalCAProperty -ADCSObjects $ADCSObjects -ForestGC 'dc1.ad.dotdot.horse:3268'
 
     .NOTES
         Author: Jake Hildreth
@@ -1797,7 +1953,8 @@ function Set-AdditionalCAProperty {
             Mandatory = $true,
             ValueFromPipeline = $true)]
         [array]$ADCSObjects,
-        [PSCredential]$Credential
+        [PSCredential]$Credential,
+        $ForestGC
     )
 
     process {
@@ -1926,7 +2083,7 @@ function Test-IsADAdmin {
     #>
     if (
         # Need to test to make sure this checks domain groups and not local groups, particularly for 'Administrators' (reference SID instead of name?).
-         ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole("Domain Admin") -or
+         ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole("Domain Admins") -or
          ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole("Administrators") -or
          ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole("Enterprise Admins")
     ) {
@@ -2172,6 +2329,164 @@ function Test-IsRSATInstalled {
         $false
     }
 }
+function Update-ESC4Remediation {
+    <#
+    .SYNOPSIS
+        This function asks the user a set of questions to provide the most appropriate remediation for ESC4 issues.
+
+    .DESCRIPTION
+        This function takes a single ESC4 issue as input. It then prompts the user if the principal with the ESC4 rights
+        administers the template in question.
+        If the principal is an admin of the template, the Issue attribute to indicate this configuration is expected, and
+        the Fix attribute for the issue is updated to indicate no remediation is needed.
+        If the the principal is not an admin of the template AND the rights assigned is GenericAll, Locksmith will ask
+        if Enroll or AutoEnroll rights are needed.
+        Depending on the answers to the listed questions, the Fix attribute is updated accordingly.
+
+    .PARAMETER Issue
+        A pscustomobject that includes all pertinent information about the ESC4 issue.
+
+    .OUTPUTS
+        This function updates ESC4 remediations customized to the user's needs.
+
+    .EXAMPLE
+        $Target = Get-Target
+        $ADCSObjects = Get-ADCSObject -Target $Target
+        $DangerousRights = @('GenericAll', 'WriteProperty', 'WriteOwner', 'WriteDacl')
+        $SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$'
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
+        $ESC4Issues = Find-ESC4 -ADCSObjects $ADCSObjects -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeUsers $SafeUsers -SafeObjectTypes $SafeObjectTypes
+        foreach ($issue in $ESCIssues) { Update-ESC4Remediation -Issue $Issue }
+    #>
+    [CmdletBinding()]
+    param(
+        $Issue
+    )
+
+    $Header = "`n[!] ESC4 Issue detected in $($Issue.Name)"
+    Write-Host $Header -ForegroundColor Yellow
+    Write-Host $('-' * $Header.Length) -ForegroundColor Yellow
+    Write-Host "$($Issue.IdentityReference) has $($Issue.ActiveDirectoryRights) rights on this template.`n"
+    Write-Host 'To provide the most appropriate remediation for this issue, Locksmith will now ask you a few questions.'
+
+    $Admin = ''
+    do {
+        $Admin = Read-Host "`nDoes $($Issue.IdentityReference) administer and/or maintain the $($Issue.Name) template? [y/n]"
+    } while ( ($Admin -ne 'y') -and ($Admin -ne 'n') )
+
+    if ($Admin -eq 'y') {
+        $Issue.Issue = "$($Issue.IdentityReference) has $($Issue.ActiveDirectoryRights) rights on this template, but this is expected."
+        $Issue.Fix = "No immediate remediation required."
+    }
+    elseif ($Issue.Issue -match 'GenericAll') {
+        $RightsToRestore = 0
+        while ($RightsToRestore -notin 1..5) {
+            [string]$Question = @"
+
+Does $($Issue.IdentityReference) need to Enroll and/or AutoEnroll in the $($Issue.Name) template?
+
+  1. Enroll
+  2. AutoEnroll
+  3. Both
+  4. Neither
+  5. Unsure
+
+Enter your selection [1-5]
+"@
+            $RightsToRestore = Read-Host $Question
+        }
+
+        switch ($RightsToRestore) {
+            1 {
+                $Issue.Fix = @"
+`$Path = 'AD:$($Issue.DistinguishedName)'
+`$ACL = Get-Acl -Path `$Path
+`$IdentityReference = [System.Security.Principal.NTAccount]::New('$($Issue.IdentityReference)')
+`$EnrollGuid = [System.Guid]::New('0e10c968-78fb-11d2-90d4-00c04f79dc55')
+`$ExtendedRight = [System.DirectoryServices.ActiveDirectoryRights]::ExtendedRight
+`$AccessType = [System.Security.AccessControl.AccessControlType]::Allow
+`$InheritanceType = [System.DirectoryServices.ActiveDirectorySecurityInheritance]::All
+`$NewRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `$IdentityReference, `$ExtendedRight, `$AccessType, `$EnrollGuid, `$InheritanceType
+foreach ( `$ace in `$ACL.access ) {
+    if ( (`$ace.IdentityReference.Value -like '$($Issue.IdentityReference)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) {
+        `$ACL.RemoveAccessRule(`$ace) | Out-Null
+    }
+}
+`$ACL.AddAccessRule(`$NewRule)
+Set-Acl -Path `$Path -AclObject `$ACL
+"@
+            }
+            2 {
+                $Issue.Fix = @"
+`$Path = 'AD:$($Issue.DistinguishedName)'
+`$ACL = Get-Acl -Path `$Path
+`$IdentityReference = [System.Security.Principal.NTAccount]::New('$($Issue.IdentityReference)')
+`$AutoEnrollGuid = [System.Guid]::New('a05b8cc2-17bc-4802-a710-e7c15ab866a2')
+`$ExtendedRight = [System.DirectoryServices.ActiveDirectoryRights]::ExtendedRight
+`$AccessType = [System.Security.AccessControl.AccessControlType]::Allow
+`$InheritanceType = [System.DirectoryServices.ActiveDirectorySecurityInheritance]::All
+`$AutoEnrollRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `$IdentityReference, `$ExtendedRight, `$AccessType, `$AutoEnrollGuid, `$InheritanceType
+foreach ( `$ace in `$ACL.access ) {
+    if ( (`$ace.IdentityReference.Value -like '$($Issue.IdentityReference)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) {
+        `$ACL.RemoveAccessRule(`$ace) | Out-Null
+    }
+}
+`$ACL.AddAccessRule(`$AutoEnrollRule)
+Set-Acl -Path `$Path -AclObject `$ACL
+"@
+            }
+            3 {
+                $Issue.Fix = @"
+`$Path = 'AD:$($Issue.DistinguishedName)'
+`$ACL = Get-Acl -Path `$Path
+`$IdentityReference = [System.Security.Principal.NTAccount]::New('$($Issue.IdentityReference)')
+`$EnrollGuid = [System.Guid]::New('0e10c968-78fb-11d2-90d4-00c04f79dc55')
+`$AutoEnrollGuid = [System.Guid]::New('a05b8cc2-17bc-4802-a710-e7c15ab866a2')
+`$ExtendedRight = [System.DirectoryServices.ActiveDirectoryRights]::ExtendedRight
+`$AccessType = [System.Security.AccessControl.AccessControlType]::Allow
+`$InheritanceType = [System.DirectoryServices.ActiveDirectorySecurityInheritance]::All
+`$EnrollRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `$IdentityReference, `$ExtendedRight, `$AccessType, `$EnrollGuid, `$InheritanceType
+`$AutoEnrollRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `$IdentityReference, `$ExtendedRight, `$AccessType, `$AutoEnrollGuid, `$InheritanceType
+foreach ( `$ace in `$ACL.access ) {
+    if ( (`$ace.IdentityReference.Value -like '$($Issue.IdentityReference)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) {
+        `$ACL.RemoveAccessRule(`$ace) | Out-Null
+    }
+}
+`$ACL.AddAccessRule(`$EnrollRule)
+`$ACL.AddAccessRule(`$AutoEnrollRule)
+Set-Acl -Path `$Path -AclObject `$ACL
+"@
+            }
+            4 {
+                break 
+            }
+            5 {
+                $Issue.Fix = @"
+`$Path = 'AD:$($Issue.DistinguishedName)'
+`$ACL = Get-Acl -Path `$Path
+`$IdentityReference = [System.Security.Principal.NTAccount]::New('$($Issue.IdentityReference)')
+`$EnrollGuid = [System.Guid]::New('0e10c968-78fb-11d2-90d4-00c04f79dc55')
+`$AutoEnrollGuid = [System.Guid]::New('a05b8cc2-17bc-4802-a710-e7c15ab866a2')
+`$ExtendedRight = [System.DirectoryServices.ActiveDirectoryRights]::ExtendedRight
+`$AccessType = [System.Security.AccessControl.AccessControlType]::Allow
+`$InheritanceType = [System.DirectoryServices.ActiveDirectorySecurityInheritance]::All
+`$EnrollRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `$IdentityReference, `$ExtendedRight, `$AccessType, `$EnrollGuid, `$InheritanceType
+`$AutoEnrollRule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `$IdentityReference, `$ExtendedRight, `$AccessType, `$AutoEnrollGuid, `$InheritanceType
+foreach ( `$ace in `$ACL.access ) {
+    if ( (`$ace.IdentityReference.Value -like '$($Issue.IdentityReference)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) {
+        `$ACL.RemoveAccessRule(`$ace) | Out-Null
+    }
+}
+`$ACL.AddAccessRule(`$EnrollRule)
+`$ACL.AddAccessRule(`$AutoEnrollRule)
+Set-Acl -Path `$Path -AclObject `$ACL
+"@
+            }
+        }
+    }
+}
+
 function Invoke-Locksmith {
     <#
     .SYNOPSIS
@@ -2250,7 +2565,7 @@ function Invoke-Locksmith {
         [System.Management.Automation.PSCredential]$Credential
     )
 
-    $Version = '2024.3'
+    $Version = '2024.8'
     $LogoPart1 = @"
     _       _____  _______ _     _ _______ _______ _____ _______ _     _
     |      |     | |       |____/  |______ |  |  |   |      |    |_____|
@@ -2283,29 +2598,61 @@ function Invoke-Locksmith {
         break;
     }
 
-    # Initial variables
-    $AllDomainsCertPublishersSIDs = @()
-    $AllDomainsDomainAdminSIDs = @()
+    ### Initial variables
+    # Extended Key Usages for client authentication. A requirement for ESC1
     $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
+
+    # GenericAll, WriteDacl, and WriteOwner all permit full control of an AD object.
+    # WriteProperty may or may not permit full control depending the specific property and AD object type.
     $DangerousRights = 'GenericAll|WriteDacl|WriteOwner|WriteProperty'
+
+    # Extended Key Usage for client authentication. A requirement for ESC3.
     $EnrollmentAgentEKU = '1\.3\.6\.1\.4\.1\.311\.20\.2\.1'
+
+    # The well-known GUIDs for Enroll and AutoEnroll rights on AD CS templates.
     $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
+
+    <#
+        -512$ = Domain Admins group
+        -519$ = Enterprise Admins group
+        -544$ = Administrators group
+        -18$  = SYSTEM
+        -517$ = Cert Publishers
+        -500$ = Built-in Administrator
+    #>
     $SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$'
+
+    <#
+        -512$    = Domain Admins group
+        -519$    = Enterprise Admins group
+        -544$    = Administrators group
+        -18$     = SYSTEM
+        -517$    = Cert Publishers
+        -500$    = Built-in Administrator
+        -516$    = Domain Controllers
+        -9$      = Enterprise Domain Controllers
+        -526$    = Key Admins
+        -527$    = Enterprise Key Admins
+        S-1-5-10 = SELF
+    #>
     $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+
+    <#
+        S-1-1-0 = Everyone
+        -11$    = Authenticated Users
+        -513$   = Domain Users
+        -515$   = Domain Computers
+    #>
     $UnsafeOwners = 'S-1-1-0|-11$|-513$|-515$'
     $UnsafeUsers = 'S-1-1-0|-11$|-513$|-515$'
 
-    # Generated variables
-    $Dictionary = New-Dictionary
+    ### Generated variables
+    # $Dictionary = New-Dictionary
     $ForestGC = $(Get-ADDomainController -Discover -Service GlobalCatalog -ForceDiscover | Select-Object -ExpandProperty Hostname) + ":3268"
-    $DNSRoot = [string]((Get-ADForest).RootDomain | Get-ADDomain).DNSRoot
+    # $DNSRoot = [string]((Get-ADForest).RootDomain | Get-ADDomain).DNSRoot
     $EnterpriseAdminsSID = ([string]((Get-ADForest).RootDomain | Get-ADDomain).DomainSID) + '-519'
-    $PreferredOwner = New-Object System.Security.Principal.SecurityIdentifier($EnterpriseAdminsSID)
-    $DomainSIDs = (Get-ADForest).Domains | ForEach-Object { (Get-ADDomain $_).DomainSID.Value }
-    $DomainSIDs | ForEach-Object {
-        $AllDomainsCertPublishersSIDs += $_ + '-517'
-        $AllDomainsDomainAdminSIDs += $_ + '-512'
-    }
+    $PreferredOwner = [System.Security.Principal.SecurityIdentifier]::New($EnterpriseAdminsSID)
+    # $DomainSIDs = (Get-ADForest).Domains | ForEach-Object { (Get-ADDomain $_).DomainSID.Value }
 
     # Add SIDs of (probably) Safe Users to $SafeUsers
     Get-ADGroupMember $EnterpriseAdminsSID | ForEach-Object {
@@ -2314,7 +2661,13 @@ function Invoke-Locksmith {
 
     (Get-ADForest).Domains | ForEach-Object {
         $DomainSID = (Get-ADDomain $_).DomainSID.Value
+        <#
+            -517 = Cert Publishers
+            -512 = Domain Admins group
+        #>
         $SafeGroupRIDs = @('-517', '-512')
+
+        # Administrators group
         $SafeGroupSIDs = @('S-1-5-32-544')
         foreach ($rid in $SafeGroupRIDs ) {
             $SafeGroupSIDs += $DomainSID + $rid
@@ -2326,6 +2679,7 @@ function Invoke-Locksmith {
             $SafeUsers += '|' + $user
         }
     }
+    $SafeUsers = $SafeUsers.Replace('||', '|')
 
     if ($Credential) {
         $Targets = Get-Target -Credential $Credential
@@ -2337,33 +2691,46 @@ function Invoke-Locksmith {
     Write-Host "Gathering AD CS Objects from $($Targets)..."
     if ($Credential) {
         $ADCSObjects = Get-ADCSObject -Targets $Targets -Credential $Credential
-        Set-AdditionalCAProperty -ADCSObjects $ADCSObjects -Credential $Credential
-        $ADCSObjects += Get-CAHostObject -ADCSObjects $ADCSObjects -Credential $Credential
-        $CAHosts = Get-CAHostObject -ADCSObjects $ADCSObjects -Credential $Credential
-        $CAHosts | ForEach-Object { $SafeUsers += '|' + $_.Name }
+        Set-AdditionalCAProperty -ADCSObjects $ADCSObjects -Credential $Credential -ForestGC $ForestGC
+        $ADCSObjects += Get-CAHostObject -ADCSObjects $ADCSObjects -Credential $Credential -ForestGC $ForestGC
+        $CAHosts = Get-CAHostObject -ADCSObjects $ADCSObjects -Credential $Credential -ForestGC $ForestGC
     }
     else {
         $ADCSObjects = Get-ADCSObject -Targets $Targets
-        Set-AdditionalCAProperty -ADCSObjects $ADCSObjects
-        $ADCSObjects += Get-CAHostObject -ADCSObjects $ADCSObjects
-        $CAHosts = Get-CAHostObject -ADCSObjects $ADCSObjects
-        $CAHosts | ForEach-Object { $SafeUsers += '|' + $_.Name }
+        Set-AdditionalCAProperty -ADCSObjects $ADCSObjects -ForestGC $ForestGC
+        $ADCSObjects += Get-CAHostObject -ADCSObjects $ADCSObjects -ForestGC $ForestGC
+        $CAHosts = Get-CAHostObject -ADCSObjects $ADCSObjects -ForestGC $ForestGC
     }
 
-    if ( $Scans ) {
-        # If the Scans parameter was used, Invoke-Scans with the specified checks.
-        $Results = Invoke-Scans -Scans $Scans
-        # Re-hydrate the findings arrays from the Results hash table
-        $AllIssues = $Results['AllIssues']
-        $AuditingIssues = $Results['AuditingIssues']
-        $ESC1 = $Results['ESC1']
-        $ESC2 = $Results['ESC2']
-        $ESC3 = $Results['ESC3']
-        $ESC4 = $Results['ESC4']
-        $ESC5 = $Results['ESC5']
-        $ESC6 = $Results['ESC6']
-        $ESC8 = $Results['ESC8']
+    # Add SIDs of CA Hosts to $SafeUsers
+    $CAHosts | ForEach-Object { $SafeUsers += '|' + $_.objectSid }
+
+    #if ( $Scans ) {
+    # If the Scans parameter was used, Invoke-Scans with the specified checks.
+    $ScansParameters = @{
+        ClientAuthEkus     = $ClientAuthEKUs
+        DangerousRights    = $DangerousRights
+        EnrollmentAgentEKU = $EnrollmentAgentEKU
+        Mode               = $Mode
+        SafeObjectTypes    = $SafeObjectTypes
+        SafeOwners         = $SafeOwners
+        Scans              = $Scans
+        UnsafeOwners       = $UnsafeOwners
+        UnsafeUsers        = $UnsafeUsers
+        PreferredOwner     = $PreferredOwner
     }
+    $Results = Invoke-Scans @ScansParameters
+    # Re-hydrate the findings arrays from the Results hash table
+    $AllIssues = $Results['AllIssues']
+    $AuditingIssues = $Results['AuditingIssues']
+    $ESC1 = $Results['ESC1']
+    $ESC2 = $Results['ESC2']
+    $ESC3 = $Results['ESC3']
+    $ESC4 = $Results['ESC4']
+    $ESC5 = $Results['ESC5']
+    $ESC6 = $Results['ESC6']
+    $ESC8 = $Results['ESC8']
+    #}
 
     # If these are all empty = no issues found, exit
     if ($null -eq $Results) {
@@ -2425,4 +2792,5 @@ function Invoke-Locksmith {
 }
 
 
+# Export functions and aliases as required
 Invoke-Locksmith -Mode $Mode -Scans $Scans

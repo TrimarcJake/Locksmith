@@ -18,7 +18,7 @@
         $ADCSObjects = Get-ADCSObjects
         $Credential = Get-Credential
         Get-CAHostObject -ADCSObjects $ADCSObjects -Credential $Credential
-    
+
         This example retrieves the CA host object(s) associated with every CA in the target forest using the provided credentials.
 
     .INPUTS
@@ -34,7 +34,8 @@
             Mandatory = $true,
             ValueFromPipeline = $true)]
         [array]$ADCSObjects,
-        [System.Management.Automation.PSCredential]$Credential
+        [System.Management.Automation.PSCredential]$Credential,
+        $ForestGC
     )
     process {
         if ($Credential) {

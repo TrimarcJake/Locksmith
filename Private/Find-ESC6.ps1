@@ -4,9 +4,9 @@
         This script finds AD CS (Active Directory Certificate Services) objects that have the ESC6 vulnerability.
 
     .DESCRIPTION
-        The script takes an array of ADCS objects as input and filters them based on objects that have the objectClass 
+        The script takes an array of ADCS objects as input and filters them based on objects that have the objectClass
         'pKIEnrollmentService' and the SANFlag set to 'Yes'. For each matching object, it creates a custom object with
-        properties representing various information about the object, such as Forest, Name, DistinguishedName, Technique, 
+        properties representing various information about the object, such as Forest, Name, DistinguishedName, Technique,
         Issue, Fix, and Revert.
 
     .PARAMETER ADCSObjects
@@ -42,8 +42,18 @@
             }
             if ($_.SANFlag -eq 'Yes') {
                 $Issue.Issue  = 'EDITF_ATTRIBUTESUBJECTALTNAME2 is enabled.'
-                $Issue.Fix    = "certutil -config $CAFullname -setreg policy\EditFlags -EDITF_ATTRIBUTESUBJECTALTNAME2; Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }"
-                $Issue.Revert = "certutil -config $CAFullname -setreg policy\EditFlags +EDITF_ATTRIBUTESUBJECTALTNAME2; Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock { Get-Service -Name `'certsvc`' | Restart-Service -Force }"
+                $Issue.Fix    = @"
+certutil -config $CAFullname -setreg policy\EditFlags -EDITF_ATTRIBUTESUBJECTALTNAME2
+Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock {
+    Get-Service -Name `'certsvc`' | Restart-Service -Force
+}
+"@
+                $Issue.Revert = @"
+certutil -config $CAFullname -setreg policy\EditFlags +EDITF_ATTRIBUTESUBJECTALTNAME2
+Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock {
+    Get-Service -Name `'certsvc`' | Restart-Service -Force
+}
+"@
             }
             $Issue
         }

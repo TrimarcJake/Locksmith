@@ -28,7 +28,7 @@ function Invoke-Scans {
 
     .EXAMPLE
         # Perform all scans
-        Invoke-Scans
+        Invoke-Scans 
 
     .EXAMPLE
         # Perform only the 'Auditing' and 'ESC1' scans
@@ -43,8 +43,17 @@ function Invoke-Scans {
     param (
     # Could split Scans and PromptMe into separate parameter sets.
     [Parameter()]
+        $ClientAuthEkus,
+        $DangerousRights,
+        $EnrollmentAgentEKU,
+        [int]$Mode,
+        $SafeObjectTypes,
+        $SafeOwners,
         [ValidateSet('Auditing','ESC1','ESC2','ESC3','ESC4','ESC5','ESC6','ESC8','All','PromptMe')]
-        [array]$Scans = 'All'
+        [array]$Scans = 'All',
+        $UnsafeOwners,
+        $UnsafeUsers,
+        $PreferredOwner
     )
 
     # Is this needed?
@@ -89,11 +98,11 @@ function Invoke-Scans {
         }
         ESC4 {
             Write-Host 'Identifying AD CS template and other objects with poor access control (ESC4)...'
-            [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
+            [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes
         }
         ESC5 {
             Write-Host 'Identifying AD CS template and other objects with poor access control (ESC5)...'
-            [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
+            [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes
         }
         ESC6 {
             Write-Host 'Identifying AD CS template and other objects with poor access control (ESC6)...'
@@ -114,9 +123,9 @@ function Invoke-Scans {
             [array]$ESC3 = Find-ESC3Condition1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
             [array]$ESC3 += Find-ESC3Condition2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
             Write-Host 'Identifying AD CS template and other objects with poor access control (ESC4)...'
-            [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
+            [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes -Mode $Mode
             Write-Host 'Identifying AD CS template and other objects with poor access control (ESC5)...'
-            [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners
+            [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes
             Write-Host 'Identifying Certificate Authorities configured with dangerous flags (ESC6)...'
             [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects
             Write-Host 'Identifying HTTP-based certificate enrollment interfaces (ESC8)...'
