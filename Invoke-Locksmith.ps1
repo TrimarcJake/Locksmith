@@ -865,7 +865,7 @@ function Find-ESC8 {
                     Revert               = '[TODO]'
                     Technique            = 'ESC8'
                 }
-                if ($endpoint -match '^https') {
+                if ($endpoint -match 'https:') {
                     $Issue.Issue = 'HTTPS enrollment is enabled.'
                 }
                 $Issue
@@ -1965,6 +1965,10 @@ function Set-AdditionalCAProperty {
 
     process {
         $ADCSObjects | Where-Object objectClass -Match 'pKIEnrollmentService' | ForEach-Object {
+            [array]$CAEnrollmentEndpoint = $_.'msPKI-Enrollment-Servers' | Select-String 'http.*' | ForEach-Object { 
+                Write-Host $_.Matches[0].Value 
+                $_.Matches[0].Value 
+            }
             [string]$CAFullName = "$($_.dNSHostName)\$($_.Name)"
             $CAHostname = $_.dNSHostName.split('.')[0]
             if ($Credential) {
@@ -1981,14 +1985,15 @@ function Set-AdditionalCAProperty {
                     foreach ($directory in @("certsrv/", "$($_.Name)_CES_Kerberos/service.svc", "$($_.Name)_CES_Kerberos/service.svc/CES", "ADPolicyProvider_CEP_Kerberos/service.svc", "certsrv/mscep/")) {
                         $URL = "$($type)://$($_.dNSHostName)/$directory"
                         $Request = [System.Net.WebRequest]::Create($URL)
-                        $Cache = New-Object System.Net.CredentialCache
+                        $Cache = [System.Net.CredentialCache]::New()
                         $Cache.Add([System.Uri]::new($URL), 'NTLM', [System.Net.CredentialCache]::DefaultNetworkCredentials)
                         
                         $Request.Credentials = $Cache
                         $Request.Timeout = 3000
 
                         try {
-                            $Response = $Request.GetResponse()
+                            Write-Host "Testing URL: $URL"
+                            $Request.GetResponse()
                             $CAEnrollmentEndpoint += $URL
                         }
                         catch {

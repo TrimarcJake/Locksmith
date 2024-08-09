@@ -48,7 +48,7 @@
                     Revert               = '[TODO]'
                     Technique            = 'ESC8'
                 }
-                if ($endpoint -match '^https') {
+                if ($endpoint -match 'https:') {
                     $Issue.Issue = 'HTTPS enrollment is enabled.'
                 }
                 $Issue
