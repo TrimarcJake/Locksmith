@@ -52,23 +52,6 @@
             }
             $ping = Test-Connection -ComputerName $CAHostFQDN -Quiet -Count 1
             if ($ping) {
-                foreach ($type in @('http', 'https')) {
-                    foreach ($directory in @("certsrv/", "$($_.Name)_CES_Kerberos/service.svc", "$($_.Name)_CES_Kerberos/service.svc/CES", "ADPolicyProvider_CEP_Kerberos/service.svc", "certsrv/mscep/")) {
-                        $URL = "$($type)://$($_.dNSHostName)/$directory"
-                        $Request = [System.Net.WebRequest]::Create($URL)
-                        $Cache = New-Object System.Net.CredentialCache
-                        $Cache.Add([System.Uri]::new($URL), 'NTLM', [System.Net.CredentialCache]::DefaultNetworkCredentials)
-                        
-                        $Request.Credentials = $Cache
-                        $Request.Timeout = 3000
-
-                        try {
-                            $Response = $Request.GetResponse()
-                            $CAEnrollmentEndpoint += $URL
-                        }
-                        catch {}
-                    }
-                }
                 try {
                     if ($Credential) {
                         $CertutilAudit = Invoke-Command -ComputerName $CAHostname -Credential $Credential -ScriptBlock { param($CAFullName); certutil -config $CAFullName -getreg CA\AuditFilter } -ArgumentList $CAFullName

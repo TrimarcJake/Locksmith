@@ -1978,6 +1978,7 @@ function Set-AdditionalCAProperty {
                 foreach ($type in @('http', 'https')) {
                     foreach ($directory in @("certsrv/", "$($_.Name)_CES_Kerberos/service.svc", "$($_.Name)_CES_Kerberos/service.svc/CES", "ADPolicyProvider_CEP_Kerberos/service.svc", "certsrv/mscep/")) {
                         $URL = "$($type)://$($_.dNSHostName)/$directory"
+<<<<<<< HEAD
                         $Request = [System.Net.WebRequest]::Create($URL)
                         $Cache = New-Object System.Net.CredentialCache
                         $Cache.Add([System.Uri]::new($URL), 'NTLM', [System.Net.CredentialCache]::DefaultNetworkCredentials)
@@ -1991,6 +1992,12 @@ function Set-AdditionalCAProperty {
                         }
                         catch {
                         }
+=======
+                        Write-Host "Testing URL: $URL"
+                        Invoke-WebRequest $URL | Out-Null
+                        $?
+                        Read-Host 'Press any key to Continue'
+>>>>>>> 12588d80e393bb04b0755fed5c6bd082ef16b02c
                     }
                 }
                 try {
