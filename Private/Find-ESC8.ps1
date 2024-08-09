@@ -37,20 +37,22 @@
         $ADCSObjects | Where-Object {
             $_.CAEnrollmentEndpoint
         } | ForEach-Object {
-            $Issue = [pscustomobject]@{
-                Forest               = $_.CanonicalName.split('/')[0]
-                Name                 = $_.Name
-                DistinguishedName    = $_.DistinguishedName
-                CAEnrollmentEndpoint = $_.CAEnrollmentEndpoint
-                Issue                = 'HTTP enrollment is enabled.'
-                Fix                  = '[TODO]'
-                Revert               = '[TODO]'
-                Technique            = 'ESC8'
+            foreach ($endpoint in $_.CAEnrollmentEndpoint) {
+                $Issue = [pscustomobject]@{
+                    Forest               = $_.CanonicalName.split('/')[0]
+                    Name                 = $_.Name
+                    DistinguishedName    = $_.DistinguishedName
+                    CAEnrollmentEndpoint = $endpoint
+                    Issue                = 'HTTP enrollment is enabled.'
+                    Fix                  = '[TODO]'
+                    Revert               = '[TODO]'
+                    Technique            = 'ESC8'
+                }
+                if ($endpoint -match '^https') {
+                    $Issue.Issue = 'HTTPS enrollment is enabled.'
+                }
+                $Issue
             }
-            if ($_.CAEnrollmentEndpoint -match '^https') {
-                $Issue.Issue = 'HTTPS enrollment is enabled.'
-            }
-            $Issue
         }
     }
 }
