@@ -41,10 +41,7 @@
 
     process {
         $ADCSObjects | Where-Object objectClass -Match 'pKIEnrollmentService' | ForEach-Object {
-            [array]$CAEnrollmentEndpoint = $_.'msPKI-Enrollment-Servers' | Select-String 'http.*' | ForEach-Object { 
-                Write-Host $_.Matches[0].Value 
-                $_.Matches[0].Value 
-            }
+            [array]$CAEnrollmentEndpoint = $_.'msPKI-Enrollment-Servers' | Select-String 'http.*' | ForEach-Object { $_.Matches[0].Value }
             [string]$CAFullName = "$($_.dNSHostName)\$($_.Name)"
             $CAHostname = $_.dNSHostName.split('.')[0]
             if ($Credential) {
@@ -67,8 +64,7 @@
                         $Request.Timeout = 3000
 
                         try {
-                            Write-Host "Testing URL: $URL"
-                            $Request.GetResponse()
+                            $Request.GetResponse() | Out-Null
                             $CAEnrollmentEndpoint += $URL
                         }
                         catch {}
