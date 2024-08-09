@@ -1149,7 +1149,7 @@ function Get-RestrictedAdminModeSetting {
         Retrieves the current configuration of the Restricted Admin Mode setting.
 
     .DESCRIPTION
-        This script retrieves the current configuration of the Restricted Admin Mode setting from the registry.
+        This script retrieves the current configuration of the Restricted Admin Mode setting from the registry. 
         It checks if the DisableRestrictedAdmin value is set to '0' and the DisableRestrictedAdminOutboundCreds value is set to '1'.
         If both conditions are met, it returns $true; otherwise, it returns $false.
 
@@ -1957,12 +1957,14 @@ function Set-AdditionalCAProperty {
         $ForestGC
     )
 
+    begin {
+        $CAEnrollmentEndpoint = @()
+    }
+
     process {
         $ADCSObjects | Where-Object objectClass -Match 'pKIEnrollmentService' | ForEach-Object {
-            [string]$CAEnrollmentEndpoint = $_.'msPKI-Enrollment-Servers' | Select-String 'http.*' | ForEach-Object { $_.Matches[0].Value }
             [string]$CAFullName = "$($_.dNSHostName)\$($_.Name)"
             $CAHostname = $_.dNSHostName.split('.')[0]
-            # $CAName = $_.Name
             if ($Credential) {
                 $CAHostDistinguishedName = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -Server $ForestGC -Credential $Credential).DistinguishedName
                 $CAHostFQDN = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -Properties DnsHostname -Server $ForestGC -Credential $Credential).DnsHostname
@@ -1973,6 +1975,24 @@ function Set-AdditionalCAProperty {
             }
             $ping = Test-Connection -ComputerName $CAHostFQDN -Quiet -Count 1
             if ($ping) {
+                foreach ($type in @('http', 'https')) {
+                    foreach ($directory in @("certsrv/", "$($_.Name)_CES_Kerberos/service.svc", "$($_.Name)_CES_Kerberos/service.svc/CES", "ADPolicyProvider_CEP_Kerberos/service.svc", "certsrv/mscep/")) {
+                        $URL = "$($type)://$($_.dNSHostName)/$directory"
+                        $Request = [System.Net.WebRequest]::Create($URL)
+                        $Cache = New-Object System.Net.CredentialCache
+                        $Cache.Add([System.Uri]::new($URL), 'NTLM', [System.Net.CredentialCache]::DefaultNetworkCredentials)
+                        
+                        $Request.Credentials = $Cache
+                        $Request.Timeout = 3000
+
+                        try {
+                            $Response = $Request.GetResponse()
+                            $CAEnrollmentEndpoint += $URL
+                        }
+                        catch {
+                        }
+                    }
+                }
                 try {
                     if ($Credential) {
                         $CertutilAudit = Invoke-Command -ComputerName $CAHostname -Credential $Credential -ScriptBlock { param($CAFullName); certutil -config $CAFullName -getreg CA\AuditFilter } -ArgumentList $CAFullName
@@ -2788,7 +2808,7 @@ function Invoke-Locksmith {
         }
     }
     Write-Host 'Thank you for using ' -NoNewline
-    Write-Host "❤  Locksmith ❤`n" -ForegroundColor Magenta
+    Write-Host "❤ Locksmith ❤`n" -ForegroundColor Magenta
 }
 
 
