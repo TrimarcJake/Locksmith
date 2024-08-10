@@ -1989,17 +1989,12 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
             }
             $ping = Test-Connection -ComputerName $CAHostFQDN -Quiet -Count 1
             if ($ping) {
-                # foreach ($type in @('http', 'https')) {
-                # if ($type -eq 'http') {
-                #     $Auth = 'NTLM'
-                # } elseif ($type -eq 'https') {
-                #     $Auth = 'Negotiate'
-                # }
+                
                 foreach ($directory in @("certsrv/", "$($_.Name)_CES_Kerberos/service.svc", "$($_.Name)_CES_Kerberos/service.svc/CES", "ADPolicyProvider_CEP_Kerberos/service.svc", "certsrv/mscep/")) {
                     $URL = "://$($_.dNSHostName)/$directory"
-                        
+                    
 
-                        
+                    
 
                     try {
                         $FullURL = "http$URL"
@@ -2025,7 +2020,6 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
                         }
                     }
                 }
-                # }
                 try {
                     if ($Credential) {
                         $CertutilAudit = Invoke-Command -ComputerName $CAHostname -Credential $Credential -ScriptBlock { param($CAFullName); certutil -config $CAFullName -getreg CA\AuditFilter } -ArgumentList $CAFullName

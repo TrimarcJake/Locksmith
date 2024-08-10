@@ -64,41 +64,35 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
             }
             $ping = Test-Connection -ComputerName $CAHostFQDN -Quiet -Count 1
             if ($ping) {
-                # foreach ($type in @('http', 'https')) {
-                    # if ($type -eq 'http') {
-                    #     $Auth = 'NTLM'
-                    # } elseif ($type -eq 'https') {
-                    #     $Auth = 'Negotiate'
-                    # }
-                    foreach ($directory in @("certsrv/", "$($_.Name)_CES_Kerberos/service.svc", "$($_.Name)_CES_Kerberos/service.svc/CES", "ADPolicyProvider_CEP_Kerberos/service.svc", "certsrv/mscep/")) {
-                        $URL = "://$($_.dNSHostName)/$directory"
-                        
+                
+                foreach ($directory in @("certsrv/", "$($_.Name)_CES_Kerberos/service.svc", "$($_.Name)_CES_Kerberos/service.svc/CES", "ADPolicyProvider_CEP_Kerberos/service.svc", "certsrv/mscep/")) {
+                    $URL = "://$($_.dNSHostName)/$directory"
+                    
 
-                        
+                    
 
+                    try {
+                        $FullURL = "http$URL"
+                        $Request = [System.Net.WebRequest]::Create($FullURL)
+                        $Cache = [System.Net.CredentialCache]::New()
+                        $Cache.Add([System.Uri]::new($FullURL), 'NTLM', [System.Net.CredentialCache]::DefaultNetworkCredentials)
+                        $Request.Credentials = $Cache
+                        $Request.Timeout = 3000
+                        $Request.GetResponse() | Out-Null
+                        $CAEnrollmentEndpoint += $FullURL
+                    } catch {
                         try {
-                            $FullURL = "http$URL"
+                            $FullURL = "https$URL"
                             $Request = [System.Net.WebRequest]::Create($FullURL)
                             $Cache = [System.Net.CredentialCache]::New()
-                            $Cache.Add([System.Uri]::new($FullURL), 'NTLM', [System.Net.CredentialCache]::DefaultNetworkCredentials)
+                            $Cache.Add([System.Uri]::new($FullURL), 'Negotiate', [System.Net.CredentialCache]::DefaultNetworkCredentials)
                             $Request.Credentials = $Cache
-                            $Request.Timeout = 3000
                             $Request.GetResponse() | Out-Null
                             $CAEnrollmentEndpoint += $FullURL
                         } catch {
-                            try {
-                                $FullURL = "https$URL"
-                                $Request = [System.Net.WebRequest]::Create($FullURL)
-                                $Cache = [System.Net.CredentialCache]::New()
-                                $Cache.Add([System.Uri]::new($FullURL), 'Negotiate', [System.Net.CredentialCache]::DefaultNetworkCredentials)
-                                $Request.Credentials = $Cache
-                                $Request.GetResponse() | Out-Null
-                                $CAEnrollmentEndpoint += $FullURL
-                            } catch {
-                            }
                         }
                     }
-                # }
+                }
                 try {
                     if ($Credential) {
                         $CertutilAudit = Invoke-Command -ComputerName $CAHostname -Credential $Credential -ScriptBlock { param($CAFullName); certutil -config $CAFullName -getreg CA\AuditFilter } -ArgumentList $CAFullName
