@@ -42,14 +42,23 @@
                     Forest               = $_.CanonicalName.split('/')[0]
                     Name                 = $_.Name
                     DistinguishedName    = $_.DistinguishedName
-                    CAEnrollmentEndpoint = $endpoint
-                    Issue                = 'HTTP enrollment is enabled.'
-                    Fix                  = '[TODO]'
+                    CAEnrollmentEndpoint = $endpoint.URL
+                    AuthType             = $endpoint.Auth
+                    Issue                = 'An HTTP enrollment endpoint is available.'
+                    Fix                  = @'
+Disable HTTP access and enforce HTTPS.
+Enable EPA.
+Disable NTLM authentication (if possible.)
+'@
                     Revert               = '[TODO]'
                     Technique            = 'ESC8'
                 }
-                if ($endpoint -match 'https:') {
-                    $Issue.Issue = 'HTTPS enrollment is enabled.'
+                if ($endpoint.URL -match '^https:') {
+                    $Issue.Issue = 'An HTTPS enrollment endpoint is available.'
+                    $Issue.Fix   = @'
+Ensure EPA is enabled.
+Disable NTLM authentication (if possible.)
+'@
                 }
                 $Issue
             }

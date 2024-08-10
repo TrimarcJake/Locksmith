@@ -52,28 +52,51 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
 
     process {
         $ADCSObjects | Where-Object objectClass -Match 'pKIEnrollmentService' | ForEach-Object {
-            [array]$CAEnrollmentEndpoint = $_.'msPKI-Enrollment-Servers' | Select-String 'http.*' | ForEach-Object { $_.Matches[0].Value }
+            #[array]$CAEnrollmentEndpoint = $_.'msPKI-Enrollment-Servers' | Select-String 'http.*' | ForEach-Object { $_.Matches[0].Value }
             foreach ($directory in @("certsrv/", "$($_.Name)_CES_Kerberos/service.svc", "$($_.Name)_CES_Kerberos/service.svc/CES", "ADPolicyProvider_CEP_Kerberos/service.svc", "certsrv/mscep/")) {
                 $URL = "://$($_.dNSHostName)/$directory"
                 try {
+                    $Auth = 'NTLM'
                     $FullURL = "http$URL"
                     $Request = [System.Net.WebRequest]::Create($FullURL)
                     $Cache = [System.Net.CredentialCache]::New()
-                    $Cache.Add([System.Uri]::new($FullURL), 'NTLM', [System.Net.CredentialCache]::DefaultNetworkCredentials)
+                    $Cache.Add([System.Uri]::new($FullURL), $Auth, [System.Net.CredentialCache]::DefaultNetworkCredentials)
                     $Request.Credentials = $Cache
                     $Request.Timeout = 3000
                     $Request.GetResponse() | Out-Null
-                    $CAEnrollmentEndpoint += $FullURL
+                    $CAEnrollmentEndpoint += @{
+                        'URL'  = $FullURL
+                        'Auth' = $Auth
+                    }
                 } catch {
                     try {
                         $FullURL = "https$URL"
                         $Request = [System.Net.WebRequest]::Create($FullURL)
                         $Cache = [System.Net.CredentialCache]::New()
-                        $Cache.Add([System.Uri]::new($FullURL), 'Negotiate', [System.Net.CredentialCache]::DefaultNetworkCredentials)
+                        $Cache.Add([System.Uri]::new($FullURL), 'NTLM', [System.Net.CredentialCache]::DefaultNetworkCredentials)
                         $Request.Credentials = $Cache
                         $Request.GetResponse() | Out-Null
-                        $CAEnrollmentEndpoint += $FullURL
+                        # $CAEnrollmentEndpoint += $FullURL
+                        $CAEnrollmentEndpoint += @{
+                            'URL'  = $FullURL
+                            'Auth' = $Auth
+                        }
                     } catch {
+                        try {
+                            $Auth = 'Negotiate'
+                            $FullURL = "https$URL"
+                            $Request = [System.Net.WebRequest]::Create($FullURL)
+                            $Cache = [System.Net.CredentialCache]::New()
+                            $Cache.Add([System.Uri]::new($FullURL), $Auth, [System.Net.CredentialCache]::DefaultNetworkCredentials)
+                            $Request.Credentials = $Cache
+                            $Request.GetResponse() | Out-Null
+                            # $CAEnrollmentEndpoint += $FullURL
+                            $CAEnrollmentEndpoint += @{
+                                'URL'  = $FullURL
+                                'Auth' = $Auth
+                            }
+                        } catch {
+                        }
                     }
                 }
             }

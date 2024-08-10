@@ -863,14 +863,23 @@ function Find-ESC8 {
                     Forest               = $_.CanonicalName.split('/')[0]
                     Name                 = $_.Name
                     DistinguishedName    = $_.DistinguishedName
-                    CAEnrollmentEndpoint = $endpoint
-                    Issue                = 'HTTP enrollment is enabled.'
-                    Fix                  = '[TODO]'
+                    CAEnrollmentEndpoint = $endpoint.URL
+                    AuthType             = $endpoint.Auth
+                    Issue                = 'An HTTP enrollment endpoint is available.'
+                    Fix                  = @'
+Disable HTTP access and enforce HTTPS.
+Enable EPA.
+Disable NTLM authentication (if possible.)
+'@
                     Revert               = '[TODO]'
                     Technique            = 'ESC8'
                 }
-                if ($endpoint -match 'https:') {
-                    $Issue.Issue = 'HTTPS enrollment is enabled.'
+                if ($endpoint.URL -match '^https:') {
+                    $Issue.Issue = 'An HTTPS enrollment endpoint is available.'
+                    $Issue.Fix = @'
+Ensure EPA is enabled.
+Disable NTLM authentication (if possible.)
+'@
                 }
                 $Issue
             }
@@ -1044,7 +1053,7 @@ function Format-Result {
             }
             1 {
                 if ($Issue.Technique -eq 'ESC8') {
-                    $Issue | Format-List Technique, Name, DistinguishedName, CAEnrollmentEndpoint, Issue, Fix
+                    $Issue | Format-List Technique, Name, DistinguishedName, CAEnrollmentEndpoint, AuthType, Issue, Fix
                 }
                 else {
                     $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix
@@ -1980,30 +1989,54 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
 
     process {
         $ADCSObjects | Where-Object objectClass -Match 'pKIEnrollmentService' | ForEach-Object {
-            [array]$CAEnrollmentEndpoint = $_.'msPKI-Enrollment-Servers' | Select-String 'http.*' | ForEach-Object { $_.Matches[0].Value }
+            #[array]$CAEnrollmentEndpoint = $_.'msPKI-Enrollment-Servers' | Select-String 'http.*' | ForEach-Object { $_.Matches[0].Value }
             foreach ($directory in @("certsrv/", "$($_.Name)_CES_Kerberos/service.svc", "$($_.Name)_CES_Kerberos/service.svc/CES", "ADPolicyProvider_CEP_Kerberos/service.svc", "certsrv/mscep/")) {
                 $URL = "://$($_.dNSHostName)/$directory"
                 try {
+                    $Auth = 'NTLM'
                     $FullURL = "http$URL"
                     $Request = [System.Net.WebRequest]::Create($FullURL)
                     $Cache = [System.Net.CredentialCache]::New()
-                    $Cache.Add([System.Uri]::new($FullURL), 'NTLM', [System.Net.CredentialCache]::DefaultNetworkCredentials)
+                    $Cache.Add([System.Uri]::new($FullURL), $Auth, [System.Net.CredentialCache]::DefaultNetworkCredentials)
                     $Request.Credentials = $Cache
                     $Request.Timeout = 3000
                     $Request.GetResponse() | Out-Null
-                    $CAEnrollmentEndpoint += $FullURL
+                    $CAEnrollmentEndpoint += @{
+                        'URL'  = $FullURL
+                        'Auth' = $Auth
+                    }
                 }
                 catch {
                     try {
                         $FullURL = "https$URL"
                         $Request = [System.Net.WebRequest]::Create($FullURL)
                         $Cache = [System.Net.CredentialCache]::New()
-                        $Cache.Add([System.Uri]::new($FullURL), 'Negotiate', [System.Net.CredentialCache]::DefaultNetworkCredentials)
+                        $Cache.Add([System.Uri]::new($FullURL), 'NTLM', [System.Net.CredentialCache]::DefaultNetworkCredentials)
                         $Request.Credentials = $Cache
                         $Request.GetResponse() | Out-Null
-                        $CAEnrollmentEndpoint += $FullURL
+                        # $CAEnrollmentEndpoint += $FullURL
+                        $CAEnrollmentEndpoint += @{
+                            'URL'  = $FullURL
+                            'Auth' = $Auth
+                        }
                     }
                     catch {
+                        try {
+                            $Auth = 'Negotiate'
+                            $FullURL = "https$URL"
+                            $Request = [System.Net.WebRequest]::Create($FullURL)
+                            $Cache = [System.Net.CredentialCache]::New()
+                            $Cache.Add([System.Uri]::new($FullURL), $Auth, [System.Net.CredentialCache]::DefaultNetworkCredentials)
+                            $Request.Credentials = $Cache
+                            $Request.GetResponse() | Out-Null
+                            # $CAEnrollmentEndpoint += $FullURL
+                            $CAEnrollmentEndpoint += @{
+                                'URL'  = $FullURL
+                                'Auth' = $Auth
+                            }
+                        }
+                        catch {
+                        }
                     }
                 }
             }
