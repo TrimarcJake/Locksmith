@@ -1977,6 +1977,32 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
     process {
         $ADCSObjects | Where-Object objectClass -Match 'pKIEnrollmentService' | ForEach-Object {
             [array]$CAEnrollmentEndpoint = $_.'msPKI-Enrollment-Servers' | Select-String 'http.*' | ForEach-Object { $_.Matches[0].Value }
+            foreach ($directory in @("certsrv/", "$($_.Name)_CES_Kerberos/service.svc", "$($_.Name)_CES_Kerberos/service.svc/CES", "ADPolicyProvider_CEP_Kerberos/service.svc", "certsrv/mscep/")) {
+                $URL = "://$($_.dNSHostName)/$directory"
+                try {
+                    $FullURL = "http$URL"
+                    $Request = [System.Net.WebRequest]::Create($FullURL)
+                    $Cache = [System.Net.CredentialCache]::New()
+                    $Cache.Add([System.Uri]::new($FullURL), 'NTLM', [System.Net.CredentialCache]::DefaultNetworkCredentials)
+                    $Request.Credentials = $Cache
+                    $Request.Timeout = 3000
+                    $Request.GetResponse() | Out-Null
+                    $CAEnrollmentEndpoint += $FullURL
+                }
+                catch {
+                    try {
+                        $FullURL = "https$URL"
+                        $Request = [System.Net.WebRequest]::Create($FullURL)
+                        $Cache = [System.Net.CredentialCache]::New()
+                        $Cache.Add([System.Uri]::new($FullURL), 'Negotiate', [System.Net.CredentialCache]::DefaultNetworkCredentials)
+                        $Request.Credentials = $Cache
+                        $Request.GetResponse() | Out-Null
+                        $CAEnrollmentEndpoint += $FullURL
+                    }
+                    catch {
+                    }
+                }
+            }
             [string]$CAFullName = "$($_.dNSHostName)\$($_.Name)"
             $CAHostname = $_.dNSHostName.split('.')[0]
             if ($Credential) {
@@ -1988,38 +2014,7 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
                 $CAHostFQDN = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -Properties DnsHostname -Server $ForestGC).DnsHostname
             }
             $ping = Test-Connection -ComputerName $CAHostFQDN -Quiet -Count 1
-            if ($ping) {
-                
-                foreach ($directory in @("certsrv/", "$($_.Name)_CES_Kerberos/service.svc", "$($_.Name)_CES_Kerberos/service.svc/CES", "ADPolicyProvider_CEP_Kerberos/service.svc", "certsrv/mscep/")) {
-                    $URL = "://$($_.dNSHostName)/$directory"
-                    
-
-                    
-
-                    try {
-                        $FullURL = "http$URL"
-                        $Request = [System.Net.WebRequest]::Create($FullURL)
-                        $Cache = [System.Net.CredentialCache]::New()
-                        $Cache.Add([System.Uri]::new($FullURL), 'NTLM', [System.Net.CredentialCache]::DefaultNetworkCredentials)
-                        $Request.Credentials = $Cache
-                        $Request.Timeout = 3000
-                        $Request.GetResponse() | Out-Null
-                        $CAEnrollmentEndpoint += $FullURL
-                    }
-                    catch {
-                        try {
-                            $FullURL = "https$URL"
-                            $Request = [System.Net.WebRequest]::Create($FullURL)
-                            $Cache = [System.Net.CredentialCache]::New()
-                            $Cache.Add([System.Uri]::new($FullURL), 'Negotiate', [System.Net.CredentialCache]::DefaultNetworkCredentials)
-                            $Request.Credentials = $Cache
-                            $Request.GetResponse() | Out-Null
-                            $CAEnrollmentEndpoint += $FullURL
-                        }
-                        catch {
-                        }
-                    }
-                }
+            if ($ping) { 
                 try {
                     if ($Credential) {
                         $CertutilAudit = Invoke-Command -ComputerName $CAHostname -Credential $Credential -ScriptBlock { param($CAFullName); certutil -config $CAFullName -getreg CA\AuditFilter } -ArgumentList $CAFullName
