@@ -2010,11 +2010,8 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
                     try {
                         $FullURL = "https$URL"
                         $Request = [System.Net.WebRequest]::Create($FullURL)
-                        $Cache = [System.Net.CredentialCache]::New()
-                        $Cache.Add([System.Uri]::new($FullURL), 'NTLM', [System.Net.CredentialCache]::DefaultNetworkCredentials)
-                        $Request.Credentials = $Cache
+                       
                         $Request.GetResponse() | Out-Null
-                        # $CAEnrollmentEndpoint += $FullURL
                         $CAEnrollmentEndpoint += @{
                             'URL'  = $FullURL
                             'Auth' = $Auth
@@ -2026,10 +2023,9 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
                             $FullURL = "https$URL"
                             $Request = [System.Net.WebRequest]::Create($FullURL)
                             $Cache = [System.Net.CredentialCache]::New()
-                            $Cache.Add([System.Uri]::new($FullURL), $Auth, [System.Net.CredentialCache]::DefaultNetworkCredentials)
+                            $Cache.Add([System.Uri]::new($FullURL), 'Negotiate', [System.Net.CredentialCache]::DefaultNetworkCredentials)
                             $Request.Credentials = $Cache
                             $Request.GetResponse() | Out-Null
-                            # $CAEnrollmentEndpoint += $FullURL
                             $CAEnrollmentEndpoint += @{
                                 'URL'  = $FullURL
                                 'Auth' = $Auth
