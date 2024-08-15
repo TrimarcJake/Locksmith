@@ -35,6 +35,13 @@ Build-Module -ModuleName 'Locksmith' {
     }
     New-ConfigurationManifest @Manifest
 
+    # See [PR26](https://github.com/EvotecIT/PSPublishModule/pull/26) for notes about using placeholders and
+    # built-in placeholders for common module metadata.
+    # New-ConfigurationPlaceHolder -CustomReplacement @(
+    #     @{ Find = '{CustomName}'; Replace = 'SpecialCase' }
+    #     @{ Find = '{CustomVersion}'; Replace = '1.0.0' }
+    # )
+
     # Add standard module dependencies (directly, but can be used with loop as well)
     #New-ConfigurationModule -Type RequiredModule -Name 'PSSharedGoods' -Guid 'Auto' -Version 'Latest'
 
