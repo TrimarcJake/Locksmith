@@ -535,12 +535,14 @@ function Find-ESC4 {
         [int]$Mode
     )
     $ADCSObjects | ForEach-Object {
-        $Principal = New-Object System.Security.Principal.NTAccount($_.nTSecurityDescriptor.Owner)
-        if ($Principal -match '^(S-1|O:)') {
-            $SID = $Principal
-        }
-        else {
-            $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+        if ($_.Name -ne '' -and $null -ne $_.Name) {
+            $Principal = [System.Security.Principal.NTAccount]::New($_.nTSecurityDescriptor.Owner)
+            if ($Principal -match '^(S-1|O:)') {
+                $SID = $Principal
+            }
+            else {
+                $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+            }
         }
 
         if ( ($_.objectClass -eq 'pKICertificateTemplate') -and ($SID -notmatch $SafeOwners) ) {
@@ -685,12 +687,14 @@ function Find-ESC5 {
         $SafeObjectTypes
     )
     $ADCSObjects | ForEach-Object {
-        $Principal = New-Object System.Security.Principal.NTAccount($_.nTSecurityDescriptor.Owner)
-        if ($Principal -match '^(S-1|O:)') {
-            $SID = $Principal
-        }
-        else {
-            $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+        if ($_.Name -ne '' -and $null -ne $_.Name) {
+            $Principal = New-Object System.Security.Principal.NTAccount($_.nTSecurityDescriptor.Owner)
+            if ($Principal -match '^(S-1|O:)') {
+                $SID = $Principal
+            }
+            else {
+                $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+            }
         }
 
         if ( ($_.objectClass -ne 'pKICertificateTemplate') -and ($SID -notmatch $SafeOwners) ) {
@@ -854,20 +858,31 @@ function Find-ESC8 {
         $ADCSObjects | Where-Object {
             $_.CAEnrollmentEndpoint
         } | ForEach-Object {
-            $Issue = [pscustomobject]@{
-                Forest               = $_.CanonicalName.split('/')[0]
-                Name                 = $_.Name
-                DistinguishedName    = $_.DistinguishedName
-                CAEnrollmentEndpoint = $_.CAEnrollmentEndpoint
-                Issue                = 'HTTP enrollment is enabled.'
-                Fix                  = '[TODO]'
-                Revert               = '[TODO]'
-                Technique            = 'ESC8'
+            foreach ($endpoint in $_.CAEnrollmentEndpoint) {
+                $Issue = [pscustomobject]@{
+                    Forest               = $_.CanonicalName.split('/')[0]
+                    Name                 = $_.Name
+                    DistinguishedName    = $_.DistinguishedName
+                    CAEnrollmentEndpoint = $endpoint.URL
+                    AuthType             = $endpoint.Auth
+                    Issue                = 'An HTTP enrollment endpoint is available.'
+                    Fix                  = @'
+Disable HTTP access and enforce HTTPS.
+Enable EPA.
+Disable NTLM authentication (if possible.)
+'@
+                    Revert               = '[TODO]'
+                    Technique            = 'ESC8'
+                }
+                if ($endpoint.URL -match '^https:') {
+                    $Issue.Issue = 'An HTTPS enrollment endpoint is available.'
+                    $Issue.Fix = @'
+Ensure EPA is enabled.
+Disable NTLM authentication (if possible.)
+'@
+                }
+                $Issue
             }
-            if ($_.CAEnrollmentEndpoint -match '^https') {
-                $Issue.Issue = 'HTTPS enrollment is enabled.'
-            }
-            $Issue
         }
     }
 }
@@ -1038,7 +1053,7 @@ function Format-Result {
             }
             1 {
                 if ($Issue.Technique -eq 'ESC8') {
-                    $Issue | Format-List Technique, Name, DistinguishedName, CAEnrollmentEndpoint, Issue, Fix
+                    $Issue | Format-List Technique, Name, DistinguishedName, CAEnrollmentEndpoint, AuthType, Issue, Fix
                 }
                 else {
                     $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix
@@ -1149,7 +1164,7 @@ function Get-RestrictedAdminModeSetting {
         Retrieves the current configuration of the Restricted Admin Mode setting.
 
     .DESCRIPTION
-        This script retrieves the current configuration of the Restricted Admin Mode setting from the registry.
+        This script retrieves the current configuration of the Restricted Admin Mode setting from the registry. 
         It checks if the DisableRestrictedAdmin value is set to '0' and the DisableRestrictedAdminOutboundCreds value is set to '1'.
         If both conditions are met, it returns $true; otherwise, it returns $false.
 
@@ -1957,12 +1972,72 @@ function Set-AdditionalCAProperty {
         $ForestGC
     )
 
+    begin {
+        $CAEnrollmentEndpoint = @()
+        $code = @"
+using System.Net;
+using System.Security.Cryptography.X509Certificates;
+public class TrustAllCertsPolicy : ICertificatePolicy {
+    public bool CheckValidationResult(ServicePoint srvPoint, X509Certificate certificate, WebRequest request, int certificateProblem) {
+        return true;
+    }
+}
+"@
+        Add-Type -TypeDefinition $code -Language CSharp
+        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+    }
+
     process {
         $ADCSObjects | Where-Object objectClass -Match 'pKIEnrollmentService' | ForEach-Object {
-            [string]$CAEnrollmentEndpoint = $_.'msPKI-Enrollment-Servers' | Select-String 'http.*' | ForEach-Object { $_.Matches[0].Value }
+            #[array]$CAEnrollmentEndpoint = $_.'msPKI-Enrollment-Servers' | Select-String 'http.*' | ForEach-Object { $_.Matches[0].Value }
+            foreach ($directory in @("certsrv/", "$($_.Name)_CES_Kerberos/service.svc", "$($_.Name)_CES_Kerberos/service.svc/CES", "ADPolicyProvider_CEP_Kerberos/service.svc", "certsrv/mscep/")) {
+                $URL = "://$($_.dNSHostName)/$directory"
+                try {
+                    $Auth = 'NTLM'
+                    $FullURL = "http$URL"
+                    $Request = [System.Net.WebRequest]::Create($FullURL)
+                    $Cache = [System.Net.CredentialCache]::New()
+                    $Cache.Add([System.Uri]::new($FullURL), $Auth, [System.Net.CredentialCache]::DefaultNetworkCredentials)
+                    $Request.Credentials = $Cache
+                    $Request.Timeout = 3000
+                    $Request.GetResponse() | Out-Null
+                    $CAEnrollmentEndpoint += @{
+                        'URL'  = $FullURL
+                        'Auth' = $Auth
+                    }
+                }
+                catch {
+                    try {
+                        $FullURL = "https$URL"
+                        $Request = [System.Net.WebRequest]::Create($FullURL)
+                       
+                        $Request.GetResponse() | Out-Null
+                        $CAEnrollmentEndpoint += @{
+                            'URL'  = $FullURL
+                            'Auth' = $Auth
+                        }
+                    }
+                    catch {
+                        try {
+                            $Auth = 'Negotiate'
+                            $FullURL = "https$URL"
+                            $Request = [System.Net.WebRequest]::Create($FullURL)
+                            $Cache = [System.Net.CredentialCache]::New()
+                            $Cache.Add([System.Uri]::new($FullURL), 'Negotiate', [System.Net.CredentialCache]::DefaultNetworkCredentials)
+                            $Request.Credentials = $Cache
+                            $Request.GetResponse() | Out-Null
+                            $CAEnrollmentEndpoint += @{
+                                'URL'  = $FullURL
+                                'Auth' = $Auth
+                            }
+                        }
+                        catch {
+                        }
+                    }
+                }
+            }
             [string]$CAFullName = "$($_.dNSHostName)\$($_.Name)"
             $CAHostname = $_.dNSHostName.split('.')[0]
-            # $CAName = $_.Name
             if ($Credential) {
                 $CAHostDistinguishedName = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -Server $ForestGC -Credential $Credential).DistinguishedName
                 $CAHostFQDN = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -Properties DnsHostname -Server $ForestGC -Credential $Credential).DnsHostname
@@ -1972,7 +2047,7 @@ function Set-AdditionalCAProperty {
                 $CAHostFQDN = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -Properties DnsHostname -Server $ForestGC).DnsHostname
             }
             $ping = Test-Connection -ComputerName $CAHostFQDN -Quiet -Count 1
-            if ($ping) {
+            if ($ping) { 
                 try {
                     if ($Credential) {
                         $CertutilAudit = Invoke-Command -ComputerName $CAHostname -Credential $Credential -ScriptBlock { param($CAFullName); certutil -config $CAFullName -getreg CA\AuditFilter } -ArgumentList $CAFullName
@@ -2788,7 +2863,7 @@ function Invoke-Locksmith {
         }
     }
     Write-Host 'Thank you for using ' -NoNewline
-    Write-Host "❤  Locksmith ❤`n" -ForegroundColor Magenta
+    Write-Host "❤ Locksmith ❤`n" -ForegroundColor Magenta
 }
 
 

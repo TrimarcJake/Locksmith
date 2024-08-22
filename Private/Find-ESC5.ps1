@@ -73,11 +73,13 @@
         $SafeObjectTypes
     )
     $ADCSObjects | ForEach-Object {
-        $Principal = New-Object System.Security.Principal.NTAccount($_.nTSecurityDescriptor.Owner)
-        if ($Principal -match '^(S-1|O:)') {
-            $SID = $Principal
-        } else {
-            $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+        if ($_.Name -ne '' -and $null -ne $_.Name) {
+            $Principal = New-Object System.Security.Principal.NTAccount($_.nTSecurityDescriptor.Owner)
+            if ($Principal -match '^(S-1|O:)') {
+                $SID = $Principal
+            } else {
+                $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+            }
         }
 
         if ( ($_.objectClass -ne 'pKICertificateTemplate') -and ($SID -notmatch $SafeOwners) ) {
