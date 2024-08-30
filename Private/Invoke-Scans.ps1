@@ -40,7 +40,7 @@ function Invoke-Scans {
     #>
 
     [CmdletBinding()]
-    [OutputType([hashtable])
+    [OutputType([hashtable])]
     [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', 'Invoke-Scans', Justification='Performing multiple scans.')]
     param (
     # Could split Scans and PromptMe into separate parameter sets.
