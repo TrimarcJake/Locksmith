@@ -1,4 +1,5 @@
 function Set-Severity {
+    [OutputType([string])]
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
