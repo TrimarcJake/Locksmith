@@ -66,12 +66,19 @@
 
     [CmdletBinding()]
     param (
-        [string]$Forest,
-        [string]$InputPath,
-        [int]$Mode = 0,
+        #[string]$Forest, # Not used yet
+        #[string]$InputPath, # Not used yet
+
+        # The mode to run Locksmith in. Defaults to 0.
+        [Parameter()]
+            [ValidateSet(0,1,2,3,4)]
+            [int]$Mode = 0,
+
+        # The scans to run. Defaults to 'All'.
         [Parameter()]
             [ValidateSet('Auditing','ESC1','ESC2','ESC3','ESC4','ESC5','ESC6','ESC8','All','PromptMe')]
             [array]$Scans = 'All',
+        
         [string]$OutputPath = (Get-Location).Path,
         [System.Management.Automation.PSCredential]$Credential
     )
@@ -105,7 +112,7 @@
     # Exit if running in restricted admin mode without explicit credentials
     if (!$Credential -and (Get-RestrictedAdminModeSetting)) {
         Write-Warning "Restricted Admin Mode appears to be in place, re-run with the '-Credential domain\user' option"
-        break;
+        break
     }
 
     ### Initial variables
@@ -158,18 +165,20 @@
 
     ### Generated variables
     # $Dictionary = New-Dictionary
+
+    $Forest = Get-ADForest
     $ForestGC = $(Get-ADDomainController -Discover -Service GlobalCatalog -ForceDiscover | Select-Object -ExpandProperty Hostname) + ":3268"
-    # $DNSRoot = [string]((Get-ADForest).RootDomain | Get-ADDomain).DNSRoot
-    $EnterpriseAdminsSID = ([string]((Get-ADForest).RootDomain | Get-ADDomain).DomainSID) + '-519'
+    # $DNSRoot = [string]($Forest.RootDomain | Get-ADDomain).DNSRoot
+    $EnterpriseAdminsSID = ([string]($Forest.RootDomain | Get-ADDomain).DomainSID) + '-519'
     $PreferredOwner = [System.Security.Principal.SecurityIdentifier]::New($EnterpriseAdminsSID)
-    # $DomainSIDs = (Get-ADForest).Domains | ForEach-Object { (Get-ADDomain $_).DomainSID.Value }
+    # $DomainSIDs = $Forest.Domains | ForEach-Object { (Get-ADDomain $_).DomainSID.Value }
 
     # Add SIDs of (probably) Safe Users to $SafeUsers
     Get-ADGroupMember $EnterpriseAdminsSID | ForEach-Object {
         $SafeUsers += '|' + $_.SID.Value
     }
 
-    (Get-ADForest).Domains | ForEach-Object {
+    $Forest.Domains | ForEach-Object {
         $DomainSID = (Get-ADDomain $_).DomainSID.Value
         <#
             -517 = Cert Publishers
