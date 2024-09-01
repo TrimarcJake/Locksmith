@@ -75,9 +75,7 @@
         
         # The directory to save the output in (defaults to the current working directory).
         [Parameter()]
-            [ValidateScript({(Test-Path -Path $_ -PathType Container)},
-                ErrorMessage = "{0} is not a valid directory path."
-            )]
+            [ValidateScript({Test-Path -Path $_ -PathType Container})]
             [string]$OutputPath = $PWD,
 
         # The credential to use for working with ADCS.
@@ -119,7 +117,7 @@
 
     ### Initial variables
     # For output filenames
-    [string]$FilePrefix = "Locksmith $(Get-Date -format 'yyyy-MM-dd hh-mm-ss') "
+    [string]$FilePrefix = "Locksmith $(Get-Date -format 'yyyy-MM-dd hh-mm-ss')"
 
     # Extended Key Usages for client authentication. A requirement for ESC1
     $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
