@@ -24,9 +24,11 @@ function Test-IsMemberOfProtectedUsers {
             Active Directory user object, user SID, SamAccountName, etc
 
         .OUTPUTS
-            True, False
+            Boolean
     #>
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', 'Test-IsMemberOfProtectedUsers', Justification='The name of the group we are checking is plural.')]
+    [OutputType([Boolean])]
     [CmdletBinding()]
     param (
         # User parameter accepts any input that is valid for Get-ADUser
