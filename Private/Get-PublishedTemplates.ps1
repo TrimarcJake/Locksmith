@@ -18,8 +18,13 @@ function Get-PublishedTemplates {
         If pkiEnrollmentFlag has 0x10 (CT_FLAG_PUBLISH_TO_DS) set, the certificate is published to Active Directory.
     #>
     [CmdletBinding()]
-    param ()
+    param (
+        # Use the ADCSObjects already found
+        [Parameter(Mandatory,ValueFromPipeline)]
+        $ADCSObjects
+    )
 
+    #region Get Templates With ADSI Searcher
     $ADSISearcher = [adsisearcher]'(objectClass=*)'
     $ADSISearcher.SearchRoot = [adsi]'LDAP://RootDSE'
     $ConfigurationNamingContext = $ADSISearcher.SearchRoot.Properties['configurationNamingContext'][0]
@@ -58,5 +63,11 @@ function Get-PublishedTemplates {
             }
         )
     }
+    #endregion Get Templates With ADSI Searcher
+
+    $Templates = $ADCSObjects.Where({$_.objectClass -eq 'pKICertificateTemplate'}) | Sort-Object Name
+    $PublishedTemplates = $ADCSObjects.Where({$_.displayName})
+
+
     return $Templates | Where-Object {$_.IsPublished -eq $true}
 }
