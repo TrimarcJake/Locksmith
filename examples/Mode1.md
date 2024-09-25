@@ -46,7 +46,7 @@ Fix               : Get-ADObject 'CN=ESC2-Vulnerable,CN=Certificate Templates,CN
                     @{'msPKI-Certificate-Name-Flag' = 0}
 
 
-########## ESC4 - Vulnerable Certifcate Template Access Control ##########
+########## ESC4 - Vulnerable Certificate Template Access Control ##########
 
 Technique         : ESC4
 Name              : User
