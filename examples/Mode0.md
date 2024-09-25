@@ -33,7 +33,7 @@ ESC2      ESC2-Vulnerable NT AUTHORITY\Authenticated Users can request a SubCA c
 
 
 
-########## ESC4 - Vulnerable Certifcate Template Access Control ##########
+########## ESC4 - Vulnerable Certificate Template Access Control ##########
 
 Technique Name                    Issue
 --------- ----                    -----
