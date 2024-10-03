@@ -1,4 +1,4 @@
-﻿function Format-Result {
+function Format-Result {
     <#
     .SYNOPSIS
         Formats the result of an issue for display.
@@ -35,7 +35,7 @@
         ESC1   = 'ESC1 - Vulnerable Certificate Template - Authentication'
         ESC2   = 'ESC2 - Vulnerable Certificate Template - Subordinate CA'
         ESC3   = 'ESC3 - Vulnerable Certificate Template - Enrollment Agent'
-        ESC4   = 'ESC4 - Vulnerable Access Control - Certifcate Template'
+        ESC4   = 'ESC4 - Vulnerable Access Control - Certificate Template'
         ESC5   = 'ESC5 - Vulnerable Access Control - PKI Object'
         ESC6   = 'ESC6 - EDITF_ATTRIBUTESUBJECTALTNAME2 Flag Enabled'
         ESC8   = 'ESC8 - HTTP/S Enrollment Enabled'
