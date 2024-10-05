@@ -421,10 +421,9 @@ function Find-ESC3Condition2 {
     $ADCSObjects | Where-Object {
         ($_.objectClass -eq 'pKICertificateTemplate') -and
         ($_.pkiExtendedKeyUsage -match $ClientAuthEKU) -and
-        ($_.'msPKI-Certificate-Name-Flag' -band 1) -and
         !($_.'msPKI-Enrollment-Flag' -band 2) -and
-        ($_.'msPKI-RA-Application-Policies' -eq '1.3.6.1.4.1.311.20.2.1') -and
-        ( ($_.'msPKI-RA-Signature' -eq 1) )
+        ($_.'msPKI-RA-Application-Policies' -match '1.3.6.1.4.1.311.20.2.1') -and
+        ($_.'msPKI-RA-Signature' -eq 1)
     } | ForEach-Object {
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
@@ -1629,7 +1628,7 @@ function Invoke-Scans {
 
     .EXAMPLE
         # Perform all scans
-        Invoke-Scans 
+        Invoke-Scans
 
     .EXAMPLE
         # Perform only the 'Auditing' and 'ESC1' scans
@@ -1641,6 +1640,8 @@ function Invoke-Scans {
     #>
 
     [CmdletBinding()]
+    [OutputType([hashtable])]
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', 'Invoke-Scans', Justification = 'Performing multiple scans.')]
     param (
         # Could split Scans and PromptMe into separate parameter sets.
         [Parameter()]
@@ -2110,6 +2111,7 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
 }
 
 function Set-Severity {
+    [OutputType([string])]
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -2237,9 +2239,11 @@ function Test-IsMemberOfProtectedUsers {
             Active Directory user object, user SID, SamAccountName, etc
 
         .OUTPUTS
-            True, False
+            Boolean
     #>
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', 'Test-IsMemberOfProtectedUsers', Justification = 'The name of the group we are checking is plural.')]
+    [OutputType([Boolean])]
     [CmdletBinding()]
     param (
         # User parameter accepts any input that is valid for Get-ADUser
@@ -2318,12 +2322,9 @@ function Test-IsRecentVersion {
         Published at:            01/28/2024 12:47:18
         Install Module:     Install-Module -Name Locksmith
         Standalone Script:  https://github.com/trimarcjake/locksmith/releases/download/v2.6/Invoke-Locksmith.zip
-
-    .NOTES
-        Author: Sam Erde
-        Date:   02/10/2024
     #>
     [CmdletBinding()]
+    [OutputType([boolean])]
     param (
         # Check a specific version number from the script
         [Parameter(Mandatory)]
@@ -2568,7 +2569,7 @@ function Invoke-Locksmith {
     Finds the most common malconfigurations of Active Directory Certificate Services (AD CS).
 
     .DESCRIPTION
-    Locksmith uses the Active Directory (AD) Powershell (PS) module to identify 6 misconfigurations
+    Locksmith uses the Active Directory (AD) Powershell (PS) module to identify 7 misconfigurations
     commonly found in Enterprise mode AD CS installations.
 
     .COMPONENT
@@ -2630,17 +2631,30 @@ function Invoke-Locksmith {
 
     [CmdletBinding()]
     param (
-        [string]$Forest,
-        [string]$InputPath,
+        #[string]$Forest, # Not used yet
+        #[string]$InputPath, # Not used yet
+
+        # The mode to run Locksmith in. Defaults to 0.
+        [Parameter()]
+        [ValidateSet(0, 1, 2, 3, 4)]
         [int]$Mode = 0,
+
+        # The scans to run. Defaults to 'All'.
         [Parameter()]
         [ValidateSet('Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'All', 'PromptMe')]
         [array]$Scans = 'All',
-        [string]$OutputPath = (Get-Location).Path,
+        
+        # The directory to save the output in (defaults to the current working directory).
+        [Parameter()]
+        [ValidateScript({ Test-Path -Path $_ -PathType Container })]
+        [string]$OutputPath = $PWD,
+
+        # The credential to use for working with ADCS.
+        [Parameter()]
         [System.Management.Automation.PSCredential]$Credential
     )
 
-    $Version = '2024.8'
+    $Version = '2024.10'
     $LogoPart1 = @"
     _       _____  _______ _     _ _______ _______ _____ _______ _     _
     |      |     | |       |____/  |______ |  |  |   |      |    |_____|
@@ -2670,10 +2684,13 @@ function Invoke-Locksmith {
     # Exit if running in restricted admin mode without explicit credentials
     if (!$Credential -and (Get-RestrictedAdminModeSetting)) {
         Write-Warning "Restricted Admin Mode appears to be in place, re-run with the '-Credential domain\user' option"
-        break;
+        break
     }
 
     ### Initial variables
+    # For output filenames
+    [string]$FilePrefix = "Locksmith $(Get-Date -Format 'yyyy-MM-dd hh-mm-ss')"
+
     # Extended Key Usages for client authentication. A requirement for ESC1
     $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
 
@@ -2723,18 +2740,20 @@ function Invoke-Locksmith {
 
     ### Generated variables
     # $Dictionary = New-Dictionary
+
+    $Forest = Get-ADForest
     $ForestGC = $(Get-ADDomainController -Discover -Service GlobalCatalog -ForceDiscover | Select-Object -ExpandProperty Hostname) + ":3268"
-    # $DNSRoot = [string]((Get-ADForest).RootDomain | Get-ADDomain).DNSRoot
-    $EnterpriseAdminsSID = ([string]((Get-ADForest).RootDomain | Get-ADDomain).DomainSID) + '-519'
+    # $DNSRoot = [string]($Forest.RootDomain | Get-ADDomain).DNSRoot
+    $EnterpriseAdminsSID = ([string]($Forest.RootDomain | Get-ADDomain).DomainSID) + '-519'
     $PreferredOwner = [System.Security.Principal.SecurityIdentifier]::New($EnterpriseAdminsSID)
-    # $DomainSIDs = (Get-ADForest).Domains | ForEach-Object { (Get-ADDomain $_).DomainSID.Value }
+    # $DomainSIDs = $Forest.Domains | ForEach-Object { (Get-ADDomain $_).DomainSID.Value }
 
     # Add SIDs of (probably) Safe Users to $SafeUsers
     Get-ADGroupMember $EnterpriseAdminsSID | ForEach-Object {
         $SafeUsers += '|' + $_.SID.Value
     }
 
-    (Get-ADForest).Domains | ForEach-Object {
+    $Forest.Domains | ForEach-Object {
         $DomainSID = (Get-ADDomain $_).DomainSID.Value
         <#
             -517 = Cert Publishers
@@ -2837,7 +2856,7 @@ function Invoke-Locksmith {
             Format-Result $ESC8 '1'
         }
         2 {
-            $Output = 'ADCSIssues.CSV'
+            $Output = Join-Path -Path $OutputPath -ChildPath "$FilePrefix ADCSIssues.CSV"
             Write-Host "Writing AD CS issues to $Output..."
             try {
                 $AllIssues | Select-Object Forest, Technique, Name, Issue | Export-Csv -NoTypeInformation $Output
@@ -2848,7 +2867,7 @@ function Invoke-Locksmith {
             }
         }
         3 {
-            $Output = 'ADCSRemediation.CSV'
+            $Output = Join-Path -Path $OutputPath -ChildPath "$FilePrefix ADCSRemediation.CSV"
             Write-Host "Writing AD CS issues to $Output..."
             try {
                 $AllIssues | Select-Object Forest, Technique, Name, DistinguishedName, Issue, Fix | Export-Csv -NoTypeInformation $Output
