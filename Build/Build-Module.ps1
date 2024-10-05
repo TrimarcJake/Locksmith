@@ -1,4 +1,9 @@
-﻿if (Get-Module -Name 'PSPublishModule' -ListAvailable) {
+﻿param (
+    # A CalVer string if you need to manually override the default yyyy.M version string.
+    [string]$CalVer
+)
+
+if (Get-Module -Name 'PSPublishModule' -ListAvailable) {
     Write-Information 'PSPublishModule is installed.'
 } else {
     Write-Information 'PSPublishModule is not installed. Attempting installation.'
@@ -17,7 +22,7 @@ Import-Module -Name PSPublishModule -Force
 Build-Module -ModuleName 'Locksmith' {
     # Usual defaults as per standard module
     $Manifest = [ordered] @{
-        ModuleVersion        = (Get-Date -Format yyyy.M)
+        ModuleVersion        = if ($Calver) {$CalVer} else {(Get-Date -Format yyyy.M)}
         CompatiblePSEditions = @('Desktop', 'Core')
         GUID                 = 'b1325b42-8dc4-4f17-aa1f-dcb5984ca14a'
         Author               = 'Jake Hildreth'
@@ -29,6 +34,13 @@ Build-Module -ModuleName 'Locksmith' {
         Tags                 = @('Windows', 'Locksmith', 'CA', 'PKI', 'ActiveDirectory', 'CertificateServices','ADCS')
     }
     New-ConfigurationManifest @Manifest
+
+    # See [PR26](https://github.com/EvotecIT/PSPublishModule/pull/26) for notes about using placeholders and
+    # built-in placeholders for common module metadata.
+    # New-ConfigurationPlaceHolder -CustomReplacement @(
+    #     @{ Find = '{CustomName}'; Replace = 'SpecialCase' }
+    #     @{ Find = '{CustomVersion}'; Replace = '1.0.0' }
+    # )
 
     # Add standard module dependencies (directly, but can be used with loop as well)
     #New-ConfigurationModule -Type RequiredModule -Name 'PSSharedGoods' -Guid 'Auto' -Version 'Latest'

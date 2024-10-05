@@ -50,7 +50,7 @@ function Format-Result {
             }
             1 {
                 if ($Issue.Technique -eq 'ESC8') {
-                    $Issue | Format-List Technique, Name, DistinguishedName, CAEnrollmentEndpoint, Issue, Fix
+                    $Issue | Format-List Technique, Name, DistinguishedName, CAEnrollmentEndpoint, AuthType, Issue, Fix
                 } else {
                     $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix
                     if(($Issue.Technique -eq "DETECT" -or $Issue.Technique -eq "ESC6") -and (Get-RestrictedAdminModeSetting)){

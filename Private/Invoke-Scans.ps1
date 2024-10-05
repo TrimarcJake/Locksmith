@@ -28,7 +28,7 @@ function Invoke-Scans {
 
     .EXAMPLE
         # Perform all scans
-        Invoke-Scans 
+        Invoke-Scans
 
     .EXAMPLE
         # Perform only the 'Auditing' and 'ESC1' scans
@@ -40,6 +40,8 @@ function Invoke-Scans {
     #>
 
     [CmdletBinding()]
+    [OutputType([hashtable])]
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', 'Invoke-Scans', Justification='Performing multiple scans.')]
     param (
     # Could split Scans and PromptMe into separate parameter sets.
     [Parameter()]
