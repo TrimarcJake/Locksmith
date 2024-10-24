@@ -245,6 +245,68 @@ Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 
     }
 }
 
+function Find-ESC11 {
+    <#
+    .SYNOPSIS
+        This script finds AD CS (Active Directory Certificate Services) objects that have the ESC6 vulnerability.
+
+    .DESCRIPTION
+        The script takes an array of ADCS objects as input and filters them based on objects that have the objectClass
+        'pKIEnrollmentService' and the SANFlag set to 'Yes'. For each matching object, it creates a custom object with
+        properties representing various information about the object, such as Forest, Name, DistinguishedName, Technique,
+        Issue, Fix, and Revert.
+
+    .PARAMETER ADCSObjects
+        Specifies the array of ADCS objects to be processed. This parameter is mandatory.
+
+    .OUTPUTS
+        The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
+
+    .EXAMPLE
+        $ADCSObjects = Get-ADCSObjects
+        $Results = $ADCSObjects | Find-ESC6
+        $Results
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        $ADCSObjects
+    )
+    process {
+        $ADCSObjects | Where-Object {
+            ($_.objectClass -eq 'pKIEnrollmentService') -and
+            ($_.InterfaceFlag -ne 'Yes')
+        } | ForEach-Object {
+            [string]$CAFullName = "$($_.dNSHostName)\$($_.Name)"
+            $Issue = [pscustomobject]@{
+                Forest            = $_.CanonicalName.split('/')[0]
+                Name              = $_.Name
+                DistinguishedName = $_.DistinguishedName
+                Technique         = 'ESC11'
+                Issue             = $_.AuditFilter
+                Fix               = 'N/A'
+                Revert            = 'N/A'
+            }
+            if ($_.InterfaceFlag -eq 'No') {
+                $Issue.Issue = 'IF_ENFORCEENCRYPTICERTREQUEST is disabled.'
+                $Issue.Fix = @"
+certutil -config $CAFullname -setreg CA\InterfaceFlags +IF_ENFORCEENCRYPTICERTREQUEST
+Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock {
+    Get-Service -Name `'certsvc`' | Restart-Service -Force
+}
+"@
+                $Issue.Revert = @"
+certutil -config $CAFullname -setreg CA\InterfaceFlags -IF_ENFORCEENCRYPTICERTREQUEST
+Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock {
+    Get-Service -Name `'certsvc`' | Restart-Service -Force
+}
+"@
+            }
+            $Issue
+        }
+    }
+}
+
 function Find-ESC2 {
     <#
     .SYNOPSIS
@@ -1037,7 +1099,7 @@ function Format-Result {
         ESC1   = 'ESC1 - Vulnerable Certificate Template - Authentication'
         ESC2   = 'ESC2 - Vulnerable Certificate Template - Subordinate CA'
         ESC3   = 'ESC3 - Vulnerable Certificate Template - Enrollment Agent'
-        ESC4   = 'ESC4 - Vulnerable Access Control - Certifcate Template'
+        ESC4   = 'ESC4 - Vulnerable Access Control - Certificate Template'
         ESC5   = 'ESC5 - Vulnerable Access Control - PKI Object'
         ESC6   = 'ESC6 - EDITF_ATTRIBUTESUBJECTALTNAME2 Flag Enabled'
         ESC8   = 'ESC8 - HTTP/S Enrollment Enabled'
@@ -2011,7 +2073,7 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
                     try {
                         $FullURL = "https$URL"
                         $Request = [System.Net.WebRequest]::Create($FullURL)
-                       
+
                         $Request.GetResponse() | Out-Null
                         $CAEnrollmentEndpoint += @{
                             'URL'  = $FullURL
@@ -2048,7 +2110,7 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
                 $CAHostFQDN = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -Properties DnsHostname -Server $ForestGC).DnsHostname
             }
             $ping = Test-Connection -ComputerName $CAHostFQDN -Quiet -Count 1
-            if ($ping) { 
+            if ($ping) {
                 try {
                     if ($Credential) {
                         $CertutilAudit = Invoke-Command -ComputerName $CAHostname -Credential $Credential -ScriptBlock { param($CAFullName); certutil -config $CAFullName -getreg CA\AuditFilter } -ArgumentList $CAFullName
@@ -2069,12 +2131,24 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
                     }
                 }
                 catch {
-                    $AuditFilter = 'Failure'
+                    $SANFlag = 'Failure'
+                }
+                try {
+                    if ($Credential) {
+                        $CertutilInterfaceFlag = Invoke-Command -ComputerName $CAHostname -Credential $Credential -ScriptBlock { param($CAFullName); certutil -config $CAFullName -getreg policy\EditFlags } -ArgumentList $CAFullName
+                    }
+                    else {
+                        $CertutilInterfaceFlag = certutil -config $CAFullName -getreg CA\InterfaceFlags
+                    }
+                }
+                catch {
+                    $InterfaceFlag = 'Failure'
                 }
             }
             else {
                 $AuditFilter = 'CA Unavailable'
                 $SANFlag = 'CA Unavailable'
+                $InterfaceFlag = 'CA Unavailable'
             }
             if ($CertutilAudit) {
                 try {
@@ -2100,12 +2174,22 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
                     $SANFlag = 'No'
                 }
             }
+            if ($CertutilInterfaceFlag) {
+                [string]$InterfaceFlag = $CertutilInterfaceFlag | Select-String ' IF_ENFORCEENCRYPTICERTREQUEST -- 200 \('
+                if ($InterfaceFlag) {
+                    $InterfaceFlag = 'Yes'
+                }
+                else {
+                    $InterfaceFlag = 'No'
+                }
+            }
             Add-Member -InputObject $_ -MemberType NoteProperty -Name AuditFilter -Value $AuditFilter -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name CAEnrollmentEndpoint -Value $CAEnrollmentEndpoint -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name CAFullName -Value $CAFullName -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name CAHostname -Value $CAHostname -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name CAHostDistinguishedName -Value $CAHostDistinguishedName -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name SANFlag -Value $SANFlag -Force
+            Add-Member -InputObject $_ -MemberType NoteProperty -Name InterfaceFlag -Value $InterfaceFlag -Force
         }
     }
 }
@@ -2886,5 +2970,4 @@ function Invoke-Locksmith {
 }
 
 
-# Export functions and aliases as required
 Invoke-Locksmith -Mode $Mode -Scans $Scans

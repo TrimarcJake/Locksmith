@@ -72,7 +72,7 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
                     try {
                         $FullURL = "https$URL"
                         $Request = [System.Net.WebRequest]::Create($FullURL)
-                       
+
                         $Request.GetResponse() | Out-Null
                         $CAEnrollmentEndpoint += @{
                             'URL'  = $FullURL
@@ -106,7 +106,7 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
                 $CAHostFQDN = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -Properties DnsHostname -Server $ForestGC).DnsHostname
             }
             $ping = Test-Connection -ComputerName $CAHostFQDN -Quiet -Count 1
-            if ($ping) { 
+            if ($ping) {
                 try {
                     if ($Credential) {
                         $CertutilAudit = Invoke-Command -ComputerName $CAHostname -Credential $Credential -ScriptBlock { param($CAFullName); certutil -config $CAFullName -getreg CA\AuditFilter } -ArgumentList $CAFullName
@@ -123,11 +123,21 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
                         $CertutilFlag = certutil -config $CAFullName -getreg policy\EditFlags
                     }
                 } catch {
-                    $AuditFilter = 'Failure'
+                    $SANFlag = 'Failure'
+                }
+                try {
+                    if ($Credential) {
+                        $CertutilInterfaceFlag = Invoke-Command -ComputerName $CAHostname -Credential $Credential -ScriptBlock { param($CAFullName); certutil -config $CAFullName -getreg policy\EditFlags } -ArgumentList $CAFullName
+                    } else {
+                        $CertutilInterfaceFlag = certutil -config $CAFullName -getreg CA\InterfaceFlags
+                    }
+                } catch {
+                    $InterfaceFlag = 'Failure'
                 }
             } else {
                 $AuditFilter = 'CA Unavailable'
                 $SANFlag = 'CA Unavailable'
+                $InterfaceFlag = 'CA Unavailable'
             }
             if ($CertutilAudit) {
                 try {
@@ -150,12 +160,21 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
                     $SANFlag = 'No'
                 }
             }
+            if ($CertutilInterfaceFlag) {
+                [string]$InterfaceFlag = $CertutilInterfaceFlag | Select-String ' IF_ENFORCEENCRYPTICERTREQUEST -- 200 \('
+                if ($InterfaceFlag) {
+                    $InterfaceFlag = 'Yes'
+                } else {
+                    $InterfaceFlag = 'No'
+                }
+            }
             Add-Member -InputObject $_ -MemberType NoteProperty -Name AuditFilter -Value $AuditFilter -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name CAEnrollmentEndpoint -Value $CAEnrollmentEndpoint -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name CAFullName -Value $CAFullName -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name CAHostname -Value $CAHostname -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name CAHostDistinguishedName -Value $CAHostDistinguishedName -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name SANFlag -Value $SANFlag -Force
+            Add-Member -InputObject $_ -MemberType NoteProperty -Name InterfaceFlag -Value $InterfaceFlag -Force
         }
     }
 }
