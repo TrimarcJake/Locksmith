@@ -74,6 +74,9 @@ function Export-RevertScript {
     .PARAMETER ESC6
         An array of ESC6 changes to be reverted.
 
+    .PARAMETER ESC11
+        An array of ESC11 changes to be reverted.
+
     .EXAMPLE
         Export-RevertScript -AuditingIssues $auditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC3 $ESC3 -ESC4 $ESC4 -ESC5 $ESC5 -ESC6 $ESC6 -ESC11 $ESC11
         Reverts the changes performed by Locksmith using the specified arrays of objects.
@@ -92,15 +95,16 @@ function Export-RevertScript {
     )
     begin {
         $Output = 'Invoke-RevertLocksmith.ps1'
-        Set-Content -Path $Output -Value "<#`nScript to revert changes performed by Locksmith`nCreated $(Get-Date)`n#>" -Force
+        $RevertScript = [System.Text.StringBuilder]::New()
+        [void]$RevertScript.Append("<#`nScript to revert changes performed by Locksmith`nCreated $(Get-Date)`n#>`n")
         $Objects = $AuditingIssues + $ESC1 + $ESC2 + $ESC3 + $ESC4 + $ESC5 + $ESC6 + $ESC11
     }
     process {
         if ($Objects) {
             $Objects | ForEach-Object {
-                Add-Content -Path $Output -Value $_.Revert
-                Start-Sleep -Seconds 1
+                [void]$RevertScript.Append("$($_.Revert)`n")
             }
+            $RevertScript.ToString() | Out-File -FilePath $Output
         }
     }
 }
@@ -249,11 +253,11 @@ Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 
 function Find-ESC11 {
     <#
     .SYNOPSIS
-        This script finds AD CS (Active Directory Certificate Services) objects that have the ESC6 vulnerability.
+        This script finds AD CS (Active Directory Certificate Services) objects that have the ESC11 vulnerability.
 
     .DESCRIPTION
         The script takes an array of ADCS objects as input and filters them based on objects that have the objectClass
-        'pKIEnrollmentService' and the SANFlag set to 'Yes'. For each matching object, it creates a custom object with
+        'pKIEnrollmentService' and the InterfaceFlag set to 'No'. For each matching object, it creates a custom object with
         properties representing various information about the object, such as Forest, Name, DistinguishedName, Technique,
         Issue, Fix, and Revert.
 
@@ -264,8 +268,8 @@ function Find-ESC11 {
         The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
 
     .EXAMPLE
-        $ADCSObjects = Get-ADCSObjects
-        $Results = $ADCSObjects | Find-ESC6
+        $ADCSObjects = Get-ADCSObject -Target (Get-Target)
+        Find-ESC11 -ADCSObjects $ADCSObjects
         $Results
     #>
     [CmdletBinding()]
@@ -1994,15 +1998,15 @@ function New-Dictionary {
         #     FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
         #     ReferenceUrls = ''
         # },
-        # [VulnerableConfigurationItem]@{
-        #     Name = 'ESC11'
-        #     Category = 'Escalation Path'
-        #     Subcategory = ''
-        #     Summary = ''
-        #     FindIt =  {Find-ESC11}
-        #     FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
-        #     ReferenceUrls = ''
-        # },
+        [VulnerableConfigurationItem]@{
+            Name          = 'ESC11'
+            Category      = 'Escalation Path'
+            Subcategory   = 'IF_ENFORCEENCRYPTICERTREQUEST'
+            Summary       = ''
+            FindIt        = { Find-ESC11 }
+            FixIt         = { Write-Output 'Add code to fix the vulnerable configuration.' }
+            ReferenceUrls = 'https://blog.compass-security.com/2022/11/relaying-to-ad-certificate-services-over-rpc/'
+        },
         [VulnerableConfigurationItem]@{
             Name          = 'Auditing'
             Category      = 'Server Configuration'
@@ -3012,11 +3016,21 @@ function Invoke-Locksmith {
             }
         }
         4 {
-            Invoke-Remediation -AuditingIssues $AuditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC3 $ESC3 -ESC4 $ESC4 -ESC5 $ESC5 -ESC6 $ESC6 -ESC11 $ESC11
+            $params = @{
+                AuditingIssues = $AuditingIssues
+                ESC1           = $ESC1
+                ESC2           = $ESC2
+                ESC3           = $ESC3
+                ESC4           = $ESC4
+                ESC5           = $ESC5
+                ESC6           = $ESC6
+                ESC11          = $ESC11
+            }
+            Invoke-Remediation @params
         }
     }
     Write-Host 'Thank you for using ' -NoNewline
-    Write-Host "❤ Locksmith ❤`n" -ForegroundColor Magenta
+    Write-Host "Locksmith ❤`n" -ForegroundColor Magenta
 }
 
 

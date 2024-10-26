@@ -125,15 +125,15 @@ function New-Dictionary {
         #     FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
         #     ReferenceUrls = ''
         # },
-        # [VulnerableConfigurationItem]@{
-        #     Name = 'ESC11'
-        #     Category = 'Escalation Path'
-        #     Subcategory = ''
-        #     Summary = ''
-        #     FindIt =  {Find-ESC11}
-        #     FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
-        #     ReferenceUrls = ''
-        # },
+        [VulnerableConfigurationItem]@{
+            Name = 'ESC11'
+            Category = 'Escalation Path'
+            Subcategory = 'IF_ENFORCEENCRYPTICERTREQUEST'
+            Summary = ''
+            FindIt =  {Find-ESC11}
+            FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
+            ReferenceUrls = 'https://blog.compass-security.com/2022/11/relaying-to-ad-certificate-services-over-rpc/'
+        },
         [VulnerableConfigurationItem]@{
             Name = 'Auditing'
             Category = 'Server Configuration'

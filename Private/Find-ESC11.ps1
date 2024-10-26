@@ -1,11 +1,11 @@
 ﻿function Find-ESC11 {
     <#
     .SYNOPSIS
-        This script finds AD CS (Active Directory Certificate Services) objects that have the ESC6 vulnerability.
+        This script finds AD CS (Active Directory Certificate Services) objects that have the ESC11 vulnerability.
 
     .DESCRIPTION
         The script takes an array of ADCS objects as input and filters them based on objects that have the objectClass
-        'pKIEnrollmentService' and the SANFlag set to 'Yes'. For each matching object, it creates a custom object with
+        'pKIEnrollmentService' and the InterfaceFlag set to 'No'. For each matching object, it creates a custom object with
         properties representing various information about the object, such as Forest, Name, DistinguishedName, Technique,
         Issue, Fix, and Revert.
 
@@ -16,8 +16,8 @@
         The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
 
     .EXAMPLE
-        $ADCSObjects = Get-ADCSObjects
-        $Results = $ADCSObjects | Find-ESC6
+        $ADCSObjects = Get-ADCSObject -Target (Get-Target)
+        Find-ESC11 -ADCSObjects $ADCSObjects
         $Results
     #>
     [CmdletBinding()]

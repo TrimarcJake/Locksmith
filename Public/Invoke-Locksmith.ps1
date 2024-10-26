@@ -310,9 +310,19 @@
             }
         }
         4 {
-            Invoke-Remediation -AuditingIssues $AuditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC3 $ESC3 -ESC4 $ESC4 -ESC5 $ESC5 -ESC6 $ESC6 -ESC11 $ESC11
+            $params = @{
+                AuditingIssues = $AuditingIssues
+                ESC1           = $ESC1
+                ESC2           = $ESC2
+                ESC3           = $ESC3
+                ESC4           = $ESC4
+                ESC5           = $ESC5
+                ESC6           = $ESC6
+                ESC11          = $ESC11
+            }
+            Invoke-Remediation @params
         }
     }
     Write-Host 'Thank you for using ' -NoNewline
-    Write-Host "❤ Locksmith ❤`n" -ForegroundColor Magenta
+    Write-Host "Locksmith ❤`n" -ForegroundColor Magenta
 }
