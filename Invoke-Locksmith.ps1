@@ -1037,7 +1037,7 @@ function Format-Result {
         ESC1   = 'ESC1 - Vulnerable Certificate Template - Authentication'
         ESC2   = 'ESC2 - Vulnerable Certificate Template - Subordinate CA'
         ESC3   = 'ESC3 - Vulnerable Certificate Template - Enrollment Agent'
-        ESC4   = 'ESC4 - Vulnerable Access Control - Certifcate Template'
+        ESC4   = 'ESC4 - Vulnerable Access Control - Certificate Template'
         ESC5   = 'ESC5 - Vulnerable Access Control - PKI Object'
         ESC6   = 'ESC6 - EDITF_ATTRIBUTESUBJECTALTNAME2 Flag Enabled'
         ESC8   = 'ESC8 - HTTP/S Enrollment Enabled'
@@ -1975,32 +1975,34 @@ function Set-AdditionalCAProperty {
 
     begin {
         $CAEnrollmentEndpoint = @()
-        if ($PSVersionTable.PSEdition -eq 'Desktop') {
-            $code = @"
-                using System.Net;
-                using System.Security.Cryptography.X509Certificates;
-                public class TrustAllCertsPolicy : ICertificatePolicy {
-                    public bool CheckValidationResult(ServicePoint srvPoint, X509Certificate certificate, WebRequest request, int certificateProblem) {
-                        return true;
+        if (-not ([System.Management.Automation.PSTypeName]'TrustAllCertsPolicy') ) {
+            if ($PSVersionTable.PSEdition -eq 'Desktop') {
+                $code = @"
+                    using System.Net;
+                    using System.Security.Cryptography.X509Certificates;
+                    public class TrustAllCertsPolicy : ICertificatePolicy {
+                        public bool CheckValidationResult(ServicePoint srvPoint, X509Certificate certificate, WebRequest request, int certificateProblem) {
+                            return true;
+                        }
                     }
-                }
 "@
-            Add-Type -TypeDefinition $code -Language CSharp
-            [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-        }
-        else {
-            Add-Type @"
-                using System.Net;
-                using System.Security.Cryptography.X509Certificates;
-                using System.Net.Security;
-                public class TrustAllCertsPolicy {
-                    public static bool TrustAllCerts(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) {
-                        return true;
+                Add-Type -TypeDefinition $code -Language CSharp
+                [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+            }
+            else {
+                Add-Type @"
+                    using System.Net;
+                    using System.Security.Cryptography.X509Certificates;
+                    using System.Net.Security;
+                    public class TrustAllCertsPolicy {
+                        public static bool TrustAllCerts(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) {
+                            return true;
+                        }
                     }
-                }
 "@
-            # Set the ServerCertificateValidationCallback
-            [System.Net.ServicePointManager]::ServerCertificateValidationCallback = [TrustAllCertsPolicy]::TrustAllCerts
+                # Set the ServerCertificateValidationCallback
+                [System.Net.ServicePointManager]::ServerCertificateValidationCallback = [TrustAllCertsPolicy]::TrustAllCerts
+            }
         }
     }
 
@@ -2161,6 +2163,44 @@ function Set-Severity {
             return 'Unknown Failure'
         }
     }
+}
+
+function Show-LocksmithLogo {
+    Write-Host '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+    Write-Host '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+    Write-Host '%%%%%%%%%%%%%%%%%#+==============#%%%%%%%%%%%%%%%%%'
+    Write-Host '%%%%%%%%%%%%%%#=====================#%%%%%%%%%%%%%%'
+    Write-Host '%%%%%%%%%%%%#=========================#%%%%%%%%%%%%'
+    Write-Host '%%%%%%%%%%%=============================%%%%%%%%%%%'
+    Write-Host '%%%%%%%%%#==============+++==============#%%%%%%%%%'
+    Write-Host '%%%%%%%%#===========#%%%%%%%%%#===========#%%%%%%%%'
+    Write-Host '%%%%%%%%==========%%%%%%%%%%%%%%%==========%%%%%%%%'
+    Write-Host '%%%%%%%*=========%%%%%%%%%%%%%%%%%=========*%%%%%%%'
+    Write-Host '%%%%%%%+========*%%%%%%%%%%%%%%%%%#=========%%%%%%%'
+    Write-Host '%%%%%%%+========#%%%%%%%%%%%%%%%%%#=========%%%%%%%'
+    Write-Host '%%%%%%%+========#%%%%%%%%%%%%%%%%%#=========%%%%%%%'
+    Write-Host '%%%%%%%+========#%%%%%%%%%%%%%%%%%#=========%%%%%%%'
+    Write-Host '%%%%%%%+========#%%%%%%%%%%%%%%%%%#=========%%%%%%%'
+    Write-Host '%%%%%%%+========#%%%%%%%%%%%%%%%%%#=========%%%%%%%'
+    Write-Host '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+    Write-Host '#=================================================#'
+    Write-Host '#=================================================#'
+    Write-Host '#=================+%%%============================#'
+    Write-Host '#==================%%%%*==========================#'
+    Write-Host '#===================*%%%%+========================#'
+    Write-Host '#=====================#%%%%=======================#'
+    Write-Host '#======================+%%%%#=====================#'
+    Write-Host '#========================*%%%%*===================#'
+    Write-Host '#========================+%%%%%===================#'
+    Write-Host '#======================#%%%%%+====================#'
+    Write-Host '#===================+%%%%%%=======================#'
+    Write-Host '#=================#%%%%%+=========================#'
+    Write-Host '#==============+%%%%%#============================#'
+    Write-Host '#============*%%%%%+====+%%%%%%%%%%===============#'
+    Write-Host '#=============%%*========+********+===============#'
+    Write-Host '#=================================================#'
+    Write-Host '#=================================================#'
+    Write-Host '#=================================================#'
 }
 
 function Test-IsADAdmin {
@@ -2902,5 +2942,4 @@ function Invoke-Locksmith {
 }
 
 
-# Export functions and aliases as required
 Invoke-Locksmith -Mode $Mode -Scans $Scans
