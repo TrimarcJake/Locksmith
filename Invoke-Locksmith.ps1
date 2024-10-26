@@ -1108,11 +1108,18 @@ function Format-Result {
         ESC5   = 'ESC5 - Vulnerable Access Control - PKI Object'
         ESC6   = 'ESC6 - EDITF_ATTRIBUTESUBJECTALTNAME2 Flag Enabled'
         ESC8   = 'ESC8 - HTTP/S Enrollment Enabled'
+        ESC11  = 'ESC11 - IF_ENFORCEENCRYPTICERTREQUEST Flag Disabled'
     }
 
     if ($null -ne $Issue) {
         $UniqueIssue = $Issue.Technique | Sort-Object -Unique
-        Write-Host "`n########## $($IssueTable[$UniqueIssue]) ##########`n"
+        $Title = $($IssueTable[$UniqueIssue])
+        Write-Host "$('-'*($($Title.ToString().Length + 10)))" -ForegroundColor Magenta -BackgroundColor Magenta -NoNewline; Write-Host
+        Write-Host "     " -BackgroundColor Magenta -NoNewline
+        Write-Host $Title -BackgroundColor Magenta -ForegroundColor White -NoNewline
+        Write-Host "     " -BackgroundColor Magenta -NoNewline; Write-Host
+        Write-Host "$('-'*($($Title.ToString().Length + 10)))" -ForegroundColor Magenta -BackgroundColor Magenta -NoNewline; Write-Host
+
         switch ($Mode) {
             0 {
                 $Issue | Format-Table Technique, Name, Issue -Wrap

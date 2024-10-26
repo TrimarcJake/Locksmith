@@ -137,6 +137,7 @@ function Invoke-Scans {
             [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects
             Write-Host 'Identifying Certificate Authorities with IF_ENFORCEENCRYPTICERTREQUEST disabled (ESC11)...'
             [array]$ESC11 = Find-ESC11 -ADCSObjects $ADCSObjects
+            Write-Host
         }
     }
 
