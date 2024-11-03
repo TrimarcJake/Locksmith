@@ -288,7 +288,7 @@ function Find-ESC11 {
                 Name              = $_.Name
                 DistinguishedName = $_.DistinguishedName
                 Technique         = 'ESC11'
-                Issue             = $_.AuditFilter
+                Issue             = $_.InterfaceFlag
                 Fix               = 'N/A'
                 Revert            = 'N/A'
             }
@@ -861,7 +861,7 @@ function Find-ESC6 {
                 Name              = $_.Name
                 DistinguishedName = $_.DistinguishedName
                 Technique         = 'ESC6'
-                Issue             = $_.AuditFilter
+                Issue             = $_.SANFlag
                 Fix               = 'N/A'
                 Revert            = 'N/A'
             }
@@ -2798,7 +2798,7 @@ function Invoke-Locksmith {
         [System.Management.Automation.PSCredential]$Credential
     )
 
-    $Version = '2024.10'
+    $Version = '2024.11'
     $LogoPart1 = @"
     _       _____  _______ _     _ _______ _______ _____ _______ _     _
     |      |     | |       |____/  |______ |  |  |   |      |    |_____|

@@ -36,7 +36,7 @@
                 Name              = $_.Name
                 DistinguishedName = $_.DistinguishedName
                 Technique         = 'ESC11'
-                Issue             = $_.AuditFilter
+                Issue             = $_.InterfaceFlag
                 Fix               = 'N/A'
                 Revert            = 'N/A'
             }

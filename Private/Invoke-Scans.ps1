@@ -23,7 +23,7 @@ function Invoke-Scans {
 
     .NOTES
         - The script requires the following functions to be defined: Find-AuditingIssue, Find-ESC1, Find-ESC2, Find-ESC3Condition1,
-          Find-ESC3Condition2, Find-ESC4, Find-ESC5, Find-ESC6, Find-ESC8, Find-ESC8.
+          Find-ESC3Condition2, Find-ESC4, Find-ESC5, Find-ESC6, Find-ESC8, Find-ESC11.
         - The script uses Out-GridView or Out-ConsoleGridView for interactive selection when the 'PromptMe' scan option is chosen.
         - The script returns a hash table containing the results of the scans.
 
@@ -113,9 +113,9 @@ function Invoke-Scans {
             Write-Host 'Identifying HTTP-based certificate enrollment interfaces (ESC8)...'
             [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects
         }
-        ESC6 {
+        ESC11 {
             Write-Host 'Identifying Issuing CAs with IF_ENFORCEENCRYPTICERTREQUEST disabled (ESC11)...'
-            [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects
+            [array]$ESC11 = Find-ESC11 -ADCSObjects $ADCSObjects
         }
         All {
             Write-Host 'Identifying auditing issues...'
@@ -144,7 +144,7 @@ function Invoke-Scans {
     [array]$AllIssues = $AuditingIssues + $ESC1 + $ESC2 + $ESC3 + $ESC4 + $ESC5 + $ESC6 + $ESC8 + $ESC11
 
     # If these are all empty = no issues found, exit
-    if ((!$AuditingIssues) -and (!$ESC1) -and (!$ESC2) -and (!$ESC3) -and (!$ESC4) -and (!$ESC5) -and (!$ESC6) -and (!$ESC8) -and ($ESC11) ) {
+    if ((!$AuditingIssues) -and (!$ESC1) -and (!$ESC2) -and (!$ESC3) -and (!$ESC4) -and (!$ESC5) -and (!$ESC6) -and (!$ESC8) -and (!$ESC11) ) {
         Write-Host "`n$(Get-Date) : No ADCS issues were found." -ForegroundColor Green
         break
     }

@@ -27,7 +27,7 @@ function Invoke-Remediation {
     .PARAMETER ESC6
     A PS Object containing all necessary information about ESC6 issues.
 
-    .PARAMETER ESC6
+    .PARAMETER ESC11
     A PS Object containing all necessary information about ESC11 issues.
 
     .INPUTS
