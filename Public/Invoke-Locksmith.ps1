@@ -71,18 +71,18 @@
 
         # The mode to run Locksmith in. Defaults to 0.
         [Parameter()]
-            [ValidateSet(0,1,2,3,4)]
-            [int]$Mode = 0,
+        [ValidateSet(0, 1, 2, 3, 4)]
+        [int]$Mode = 0,
 
         # The scans to run. Defaults to 'All'.
         [Parameter()]
-            [ValidateSet('Auditing','ESC1','ESC2','ESC3','ESC4','ESC5','ESC6','ESC8','All','PromptMe')]
-            [array]$Scans = 'All',
-        
+        [ValidateSet('Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'All', 'PromptMe')]
+        [array]$Scans = 'All',
+
         # The directory to save the output in (defaults to the current working directory).
         [Parameter()]
-            [ValidateScript({Test-Path -Path $_ -PathType Container})]
-            [string]$OutputPath = $PWD,
+        [ValidateScript({ Test-Path -Path $_ -PathType Container })]
+        [string]$OutputPath = $PWD,
 
         # The credential to use for working with ADCS.
         [Parameter()]
@@ -193,7 +193,7 @@
             -517 = Cert Publishers
             -512 = Domain Admins group
         #>
-        $SafeGroupRIDs = @('-517','-512')
+        $SafeGroupRIDs = @('-517', '-512')
 
         # Administrators group
         $SafeGroupSIDs = @('S-1-5-32-544')
@@ -207,7 +207,7 @@
             $SafeUsers += '|' + $user
         }
     }
-    $SafeUsers = $SafeUsers.Replace('||','|')
+    $SafeUsers = $SafeUsers.Replace('||', '|')
 
     if ($Credential) {
         $Targets = Get-Target -Credential $Credential
@@ -232,31 +232,31 @@
     $CAHosts | ForEach-Object { $SafeUsers += '|' + $_.objectSid }
 
     #if ( $Scans ) {
-        # If the Scans parameter was used, Invoke-Scans with the specified checks.
-        $ScansParameters = @{
-            ClientAuthEkus     = $ClientAuthEKUs
-            DangerousRights    = $DangerousRights
-            EnrollmentAgentEKU = $EnrollmentAgentEKU
-            Mode               = $Mode
-            SafeObjectTypes    = $SafeObjectTypes
-            SafeOwners         = $SafeOwners
-            Scans              = $Scans
-            UnsafeOwners       = $UnsafeOwners
-            UnsafeUsers        = $UnsafeUsers
-            PreferredOwner     = $PreferredOwner
-        }
-        $Results = Invoke-Scans @ScansParameters
-            # Re-hydrate the findings arrays from the Results hash table
-            $AllIssues      = $Results['AllIssues']
-            $AuditingIssues = $Results['AuditingIssues']
-            $ESC1           = $Results['ESC1']
-            $ESC2           = $Results['ESC2']
-            $ESC3           = $Results['ESC3']
-            $ESC4           = $Results['ESC4']
-            $ESC5           = $Results['ESC5']
-            $ESC6           = $Results['ESC6']
-            $ESC8           = $Results['ESC8']
-    #}
+    # If the Scans parameter was used, Invoke-Scans with the specified checks.
+    $ScansParameters = @{
+        ClientAuthEkus     = $ClientAuthEKUs
+        DangerousRights    = $DangerousRights
+        EnrollmentAgentEKU = $EnrollmentAgentEKU
+        Mode               = $Mode
+        SafeObjectTypes    = $SafeObjectTypes
+        SafeOwners         = $SafeOwners
+        Scans              = $Scans
+        UnsafeOwners       = $UnsafeOwners
+        UnsafeUsers        = $UnsafeUsers
+        PreferredOwner     = $PreferredOwner
+    }
+    $Results = Invoke-Scans @ScansParameters
+    # Re-hydrate the findings arrays from the Results hash table
+    $AllIssues = $Results['AllIssues']
+    $AuditingIssues = $Results['AuditingIssues']
+    $ESC1 = $Results['ESC1']
+    $ESC2 = $Results['ESC2']
+    $ESC3 = $Results['ESC3']
+    $ESC4 = $Results['ESC4']
+    $ESC5 = $Results['ESC5']
+    $ESC6 = $Results['ESC6']
+    $ESC8 = $Results['ESC8']
+    $ESC11 = $Results['ESC11']
 
     # If these are all empty = no issues found, exit
     if ($null -eq $Results) {
@@ -276,6 +276,7 @@
             Format-Result $ESC5 '0'
             Format-Result $ESC6 '0'
             Format-Result $ESC8 '0'
+            Format-Result $ESC11 '0'
         }
         1 {
             Format-Result $AuditingIssues '1'
@@ -286,6 +287,7 @@
             Format-Result $ESC5 '1'
             Format-Result $ESC6 '1'
             Format-Result $ESC8 '1'
+            Format-Result $ESC11 '1'
         }
         2 {
             $Output = Join-Path -Path $OutputPath -ChildPath "$FilePrefix ADCSIssues.CSV"
@@ -308,9 +310,19 @@
             }
         }
         4 {
-            Invoke-Remediation -AuditingIssues $AuditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC3 $ESC3 -ESC4 $ESC4 -ESC5 $ESC5 -ESC6 $ESC6
+            $params = @{
+                AuditingIssues = $AuditingIssues
+                ESC1           = $ESC1
+                ESC2           = $ESC2
+                ESC3           = $ESC3
+                ESC4           = $ESC4
+                ESC5           = $ESC5
+                ESC6           = $ESC6
+                ESC11          = $ESC11
+            }
+            Invoke-Remediation @params
         }
     }
     Write-Host 'Thank you for using ' -NoNewline
-    Write-Host "❤ Locksmith ❤`n" -ForegroundColor Magenta
+    Write-Host "Locksmith ❤`n" -ForegroundColor Magenta
 }

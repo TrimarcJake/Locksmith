@@ -27,6 +27,9 @@ function Invoke-Remediation {
     .PARAMETER ESC6
     A PS Object containing all necessary information about ESC6 issues.
 
+    .PARAMETER ESC11
+    A PS Object containing all necessary information about ESC11 issues.
+
     .INPUTS
     PS Objects
 
@@ -42,7 +45,8 @@ function Invoke-Remediation {
         $ESC3,
         $ESC4,
         $ESC5,
-        $ESC6
+        $ESC6,
+        $ESC11
     )
 
     Write-Host "`nExecuting Mode 4 - Attempting to fix identified issues!`n" -ForegroundColor Green
@@ -50,7 +54,7 @@ function Invoke-Remediation {
     Write-Host 'Invoke-RevertLocksmith.ps1' -ForegroundColor White -NoNewline
     Write-Host ") which can be used to revert all changes made by Locksmith...`n"
     try {
-        Export-RevertScript -AuditingIssues $AuditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC3 $ESC3 -ESC4 $ESC4 -ESC5 $ESC5 -ESC6 $ESC6
+        Export-RevertScript -AuditingIssues $AuditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC3 $ESC3 -ESC4 $ESC4 -ESC5 $ESC5 -ESC6 $ESC6 -ESC11 $ESC11
     } catch {
         Write-Warning 'Creation of Invoke-RevertLocksmith.ps1 failed.'
         Write-Host "Continue with this operation? [Y] Yes " -NoNewline
@@ -246,6 +250,39 @@ function Invoke-Remediation {
                     Invoke-Command -ScriptBlock $FixBlock
                 } catch {
                     Write-Error 'Could not disable the EDITF_ATTRIBUTESUBJECTALTNAME2 flag. Are you an Active Directory or AD CS admin?'
+                }
+            } else {
+                Write-Host "SKIPPED!`n" -ForegroundColor Yellow
+            }
+        }
+    }
+
+    if ($ESC11) {
+        $ESC11 | ForEach-Object {
+            $FixBlock = [scriptblock]::Create($_.Fix)
+            Write-Host 'ISSUE:' -ForegroundColor White
+            Write-Host "The Certification Authority `"$($_.Name)`" has the IF_ENFORCEENCRYPTICERTREQUEST flag disabled.`n"
+            Write-Host 'TECHNIQUE:' -ForegroundColor White
+            Write-Host "$($_.Technique)`n"
+            Write-Host 'ACTION TO BE PERFORMED:' -ForegroundColor White
+            Write-Host "Locksmith will attempt to enable the IF_ENFORCEENCRYPTICERTREQUEST flag on Certifiction Authority `"$($_.Name)`".`n"
+            Write-Host 'COMMAND(S) TO BE RUN' -ForegroundColor White
+            Write-Host 'PS> ' -NoNewline
+            Write-Host "$($_.Fix)`n" -ForegroundColor Cyan
+            $WarningError = 'n'
+            Write-Host 'OPERATIONAL IMPACT:' -ForegroundColor White
+            Write-Host "WARNING: This change could cause some services to stop working.`n" -ForegroundColor Yellow
+            Write-Host "If you continue, Locksmith will attempt to fix this issue.`n" -ForegroundColor Yellow
+            Write-Host "Continue with this operation? [Y] Yes " -NoNewline
+            Write-Host "[N] " -ForegroundColor Yellow -NoNewline
+            Write-Host "No: " -NoNewLine
+            $WarningError = ''
+            $WarningError = Read-Host
+            if ($WarningError -like 'y') {
+                try {
+                    Invoke-Command -ScriptBlock $FixBlock
+                } catch {
+                    Write-Error 'Could not enable the IF_ENFORCEENCRYPTICERTREQUEST flag. Are you an Active Directory or AD CS admin?'
                 }
             } else {
                 Write-Host "SKIPPED!`n" -ForegroundColor Yellow

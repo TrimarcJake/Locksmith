@@ -74,8 +74,11 @@ function Export-RevertScript {
     .PARAMETER ESC6
         An array of ESC6 changes to be reverted.
 
+    .PARAMETER ESC11
+        An array of ESC11 changes to be reverted.
+
     .EXAMPLE
-        Export-RevertScript -AuditingIssues $auditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC3 $ESC3 -ESC4 $ESC4 -ESC5 $ESC5 -ESC6 $ESC6
+        Export-RevertScript -AuditingIssues $auditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC3 $ESC3 -ESC4 $ESC4 -ESC5 $ESC5 -ESC6 $ESC6 -ESC11 $ESC11
         Reverts the changes performed by Locksmith using the specified arrays of objects.
     #>
 
@@ -87,19 +90,21 @@ function Export-RevertScript {
         [array]$ESC3,
         [array]$ESC4,
         [array]$ESC5,
-        [array]$ESC6
+        [array]$ESC6,
+        [array]$ESC11
     )
     begin {
         $Output = 'Invoke-RevertLocksmith.ps1'
-        Set-Content -Path $Output -Value "<#`nScript to revert changes performed by Locksmith`nCreated $(Get-Date)`n#>" -Force
-        $Objects = $AuditingIssues + $ESC1 + $ESC2 + $ESC3 + $ESC4 + $ESC5 + $ESC6
+        $RevertScript = [System.Text.StringBuilder]::New()
+        [void]$RevertScript.Append("<#`nScript to revert changes performed by Locksmith`nCreated $(Get-Date)`n#>`n")
+        $Objects = $AuditingIssues + $ESC1 + $ESC2 + $ESC3 + $ESC4 + $ESC5 + $ESC6 + $ESC11
     }
     process {
         if ($Objects) {
             $Objects | ForEach-Object {
-                Add-Content -Path $Output -Value $_.Revert
-                Start-Sleep -Seconds 5
+                [void]$RevertScript.Append("$($_.Revert)`n")
             }
+            $RevertScript.ToString() | Out-File -FilePath $Output
         }
     }
 }
@@ -241,6 +246,68 @@ Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 
                 }
                 $Issue
             }
+        }
+    }
+}
+
+function Find-ESC11 {
+    <#
+    .SYNOPSIS
+        This script finds AD CS (Active Directory Certificate Services) objects that have the ESC11 vulnerability.
+
+    .DESCRIPTION
+        The script takes an array of ADCS objects as input and filters them based on objects that have the objectClass
+        'pKIEnrollmentService' and the InterfaceFlag set to 'No'. For each matching object, it creates a custom object with
+        properties representing various information about the object, such as Forest, Name, DistinguishedName, Technique,
+        Issue, Fix, and Revert.
+
+    .PARAMETER ADCSObjects
+        Specifies the array of ADCS objects to be processed. This parameter is mandatory.
+
+    .OUTPUTS
+        The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
+
+    .EXAMPLE
+        $ADCSObjects = Get-ADCSObject -Target (Get-Target)
+        Find-ESC11 -ADCSObjects $ADCSObjects
+        $Results
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        $ADCSObjects
+    )
+    process {
+        $ADCSObjects | Where-Object {
+            ($_.objectClass -eq 'pKIEnrollmentService') -and
+            ($_.InterfaceFlag -ne 'Yes')
+        } | ForEach-Object {
+            [string]$CAFullName = "$($_.dNSHostName)\$($_.Name)"
+            $Issue = [pscustomobject]@{
+                Forest            = $_.CanonicalName.split('/')[0]
+                Name              = $_.Name
+                DistinguishedName = $_.DistinguishedName
+                Technique         = 'ESC11'
+                Issue             = $_.InterfaceFlag
+                Fix               = 'N/A'
+                Revert            = 'N/A'
+            }
+            if ($_.InterfaceFlag -eq 'No') {
+                $Issue.Issue = 'IF_ENFORCEENCRYPTICERTREQUEST is disabled.'
+                $Issue.Fix = @"
+certutil -config $CAFullname -setreg CA\InterfaceFlags +IF_ENFORCEENCRYPTICERTREQUEST
+Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock {
+    Get-Service -Name `'certsvc`' | Restart-Service -Force
+}
+"@
+                $Issue.Revert = @"
+certutil -config $CAFullname -setreg CA\InterfaceFlags -IF_ENFORCEENCRYPTICERTREQUEST
+Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock {
+    Get-Service -Name `'certsvc`' | Restart-Service -Force
+}
+"@
+            }
+            $Issue
         }
     }
 }
@@ -794,7 +861,7 @@ function Find-ESC6 {
                 Name              = $_.Name
                 DistinguishedName = $_.DistinguishedName
                 Technique         = 'ESC6'
-                Issue             = $_.AuditFilter
+                Issue             = $_.SANFlag
                 Fix               = 'N/A'
                 Revert            = 'N/A'
             }
@@ -1041,11 +1108,18 @@ function Format-Result {
         ESC5   = 'ESC5 - Vulnerable Access Control - PKI Object'
         ESC6   = 'ESC6 - EDITF_ATTRIBUTESUBJECTALTNAME2 Flag Enabled'
         ESC8   = 'ESC8 - HTTP/S Enrollment Enabled'
+        ESC11  = 'ESC11 - IF_ENFORCEENCRYPTICERTREQUEST Flag Disabled'
     }
 
     if ($null -ne $Issue) {
         $UniqueIssue = $Issue.Technique | Sort-Object -Unique
-        Write-Host "`n########## $($IssueTable[$UniqueIssue]) ##########`n"
+        $Title = $($IssueTable[$UniqueIssue])
+        Write-Host "$('-'*($($Title.ToString().Length + 10)))" -ForegroundColor Magenta -BackgroundColor Magenta -NoNewline; Write-Host
+        Write-Host "     " -BackgroundColor Magenta -NoNewline
+        Write-Host $Title -BackgroundColor Magenta -ForegroundColor White -NoNewline
+        Write-Host "     " -BackgroundColor Magenta -NoNewline; Write-Host
+        Write-Host "$('-'*($($Title.ToString().Length + 10)))" -ForegroundColor Magenta -BackgroundColor Magenta -NoNewline; Write-Host
+
         switch ($Mode) {
             0 {
                 $Issue | Format-Table Technique, Name, Issue -Wrap
@@ -1347,6 +1421,9 @@ function Invoke-Remediation {
     .PARAMETER ESC6
     A PS Object containing all necessary information about ESC6 issues.
 
+    .PARAMETER ESC6
+    A PS Object containing all necessary information about ESC11 issues.
+
     .INPUTS
     PS Objects
 
@@ -1362,7 +1439,8 @@ function Invoke-Remediation {
         $ESC3,
         $ESC4,
         $ESC5,
-        $ESC6
+        $ESC6,
+        $ESC11
     )
 
     Write-Host "`nExecuting Mode 4 - Attempting to fix identified issues!`n" -ForegroundColor Green
@@ -1370,7 +1448,7 @@ function Invoke-Remediation {
     Write-Host 'Invoke-RevertLocksmith.ps1' -ForegroundColor White -NoNewline
     Write-Host ") which can be used to revert all changes made by Locksmith...`n"
     try {
-        Export-RevertScript -AuditingIssues $AuditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC3 $ESC3 -ESC4 $ESC4 -ESC5 $ESC5 -ESC6 $ESC6
+        Export-RevertScript -AuditingIssues $AuditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC3 $ESC3 -ESC4 $ESC4 -ESC5 $ESC5 -ESC6 $ESC6 -ESC11 $ESC11
     }
     catch {
         Write-Warning 'Creation of Invoke-RevertLocksmith.ps1 failed.'
@@ -1586,6 +1664,41 @@ function Invoke-Remediation {
         }
     }
 
+    if ($ESC11) {
+        $ESC11 | ForEach-Object {
+            $FixBlock = [scriptblock]::Create($_.Fix)
+            Write-Host 'ISSUE:' -ForegroundColor White
+            Write-Host "The Certification Authority `"$($_.Name)`" has the IF_ENFORCEENCRYPTICERTREQUEST flag disabled.`n"
+            Write-Host 'TECHNIQUE:' -ForegroundColor White
+            Write-Host "$($_.Technique)`n"
+            Write-Host 'ACTION TO BE PERFORMED:' -ForegroundColor White
+            Write-Host "Locksmith will attempt to enable the IF_ENFORCEENCRYPTICERTREQUEST flag on Certifiction Authority `"$($_.Name)`".`n"
+            Write-Host 'COMMAND(S) TO BE RUN' -ForegroundColor White
+            Write-Host 'PS> ' -NoNewline
+            Write-Host "$($_.Fix)`n" -ForegroundColor Cyan
+            $WarningError = 'n'
+            Write-Host 'OPERATIONAL IMPACT:' -ForegroundColor White
+            Write-Host "WARNING: This change could cause some services to stop working.`n" -ForegroundColor Yellow
+            Write-Host "If you continue, Locksmith will attempt to fix this issue.`n" -ForegroundColor Yellow
+            Write-Host "Continue with this operation? [Y] Yes " -NoNewline
+            Write-Host "[N] " -ForegroundColor Yellow -NoNewline
+            Write-Host "No: " -NoNewline
+            $WarningError = ''
+            $WarningError = Read-Host
+            if ($WarningError -like 'y') {
+                try {
+                    Invoke-Command -ScriptBlock $FixBlock
+                }
+                catch {
+                    Write-Error 'Could not enable the IF_ENFORCEENCRYPTICERTREQUEST flag. Are you an Active Directory or AD CS admin?'
+                }
+            }
+            else {
+                Write-Host "SKIPPED!`n" -ForegroundColor Yellow
+            }
+        }
+    }
+
     Write-Host "Mode 4 Complete! There are no more issues that Locksmith can automatically resolve.`n" -ForegroundColor Green
     Write-Host 'If you experience any operational impact from using Locksmith Mode 4, use ' -NoNewline
     Write-Host 'Invoke-RevertLocksmith.ps1 ' -ForegroundColor White
@@ -1613,16 +1726,17 @@ function Invoke-Scans {
         - ESC5
         - ESC6
         - ESC8
+        - ESC11
         - All
         - PromptMe
 
     .PARAMETER Scans
         Specifies the type of scans to perform. Multiple scan options can be provided as an array. The default value is 'All'.
-        The available scan options are: 'Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'All', 'PromptMe'.
+        The available scan options are: 'Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'ESC11', 'All', 'PromptMe'.
 
     .NOTES
         - The script requires the following functions to be defined: Find-AuditingIssue, Find-ESC1, Find-ESC2, Find-ESC3Condition1,
-          Find-ESC3Condition2, Find-ESC4, Find-ESC5, Find-ESC6, Find-ESC8.
+          Find-ESC3Condition2, Find-ESC4, Find-ESC5, Find-ESC6, Find-ESC8, Find-ESC8.
         - The script uses Out-GridView or Out-ConsoleGridView for interactive selection when the 'PromptMe' scan option is chosen.
         - The script returns a hash table containing the results of the scans.
 
@@ -1651,7 +1765,7 @@ function Invoke-Scans {
         [int]$Mode,
         $SafeObjectTypes,
         $SafeOwners,
-        [ValidateSet('Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'All', 'PromptMe')]
+        [ValidateSet('Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'ESC11', 'All', 'PromptMe')]
         [array]$Scans = 'All',
         $UnsafeOwners,
         $UnsafeUsers,
@@ -1699,20 +1813,24 @@ function Invoke-Scans {
             [array]$ESC3 += Find-ESC3Condition2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
         }
         ESC4 {
-            Write-Host 'Identifying AD CS template and other objects with poor access control (ESC4)...'
+            Write-Host 'Identifying AD CS templates with poor access control (ESC4)...'
             [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes
         }
         ESC5 {
-            Write-Host 'Identifying AD CS template and other objects with poor access control (ESC5)...'
+            Write-Host 'Identifying AD CS objects with poor access control (ESC5)...'
             [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes
         }
         ESC6 {
-            Write-Host 'Identifying AD CS template and other objects with poor access control (ESC6)...'
+            Write-Host 'Identifying Issuing CAs with EDITF_ATTRIBUTESUBJECTALTNAME2 enabled (ESC6)...'
             [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects
         }
         ESC8 {
             Write-Host 'Identifying HTTP-based certificate enrollment interfaces (ESC8)...'
             [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects
+        }
+        ESC6 {
+            Write-Host 'Identifying Issuing CAs with IF_ENFORCEENCRYPTICERTREQUEST disabled (ESC11)...'
+            [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects
         }
         All {
             Write-Host 'Identifying auditing issues...'
@@ -1724,21 +1842,24 @@ function Invoke-Scans {
             Write-Host 'Identifying AD CS templates with dangerous ESC3 configurations...'
             [array]$ESC3 = Find-ESC3Condition1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
             [array]$ESC3 += Find-ESC3Condition2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
-            Write-Host 'Identifying AD CS template and other objects with poor access control (ESC4)...'
+            Write-Host 'Identifying AD CS templates with poor access control (ESC4)...'
             [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes -Mode $Mode
-            Write-Host 'Identifying AD CS template and other objects with poor access control (ESC5)...'
+            Write-Host 'Identifying AD CS objects with poor access control (ESC5)...'
             [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes
-            Write-Host 'Identifying Certificate Authorities configured with dangerous flags (ESC6)...'
+            Write-Host 'Identifying Certificate Authorities with EDITF_ATTRIBUTESUBJECTALTNAME2 enabled v (ESC6)...'
             [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects
             Write-Host 'Identifying HTTP-based certificate enrollment interfaces (ESC8)...'
             [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects
+            Write-Host 'Identifying Certificate Authorities with IF_ENFORCEENCRYPTICERTREQUEST disabled (ESC11)...'
+            [array]$ESC11 = Find-ESC11 -ADCSObjects $ADCSObjects
+            Write-Host
         }
     }
 
-    [array]$AllIssues = $AuditingIssues + $ESC1 + $ESC2 + $ESC3 + $ESC4 + $ESC5 + $ESC6 + $ESC8
+    [array]$AllIssues = $AuditingIssues + $ESC1 + $ESC2 + $ESC3 + $ESC4 + $ESC5 + $ESC6 + $ESC8 + $ESC11
 
     # If these are all empty = no issues found, exit
-    if ((!$AuditingIssues) -and (!$ESC1) -and (!$ESC2) -and (!$ESC3) -and (!$ESC4) -and (!$ESC5) -and (!$ESC6) -and (!$ESC8) ) {
+    if ((!$AuditingIssues) -and (!$ESC1) -and (!$ESC2) -and (!$ESC3) -and (!$ESC4) -and (!$ESC5) -and (!$ESC6) -and (!$ESC8) -and ($ESC11) ) {
         Write-Host "`n$(Get-Date) : No ADCS issues were found." -ForegroundColor Green
         break
     }
@@ -1754,6 +1875,7 @@ function Invoke-Scans {
         ESC5           = $ESC5
         ESC6           = $ESC6
         ESC8           = $ESC8
+        ESC11          = $ESC11
     }
 }
 
@@ -1884,15 +2006,15 @@ function New-Dictionary {
         #     FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
         #     ReferenceUrls = ''
         # },
-        # [VulnerableConfigurationItem]@{
-        #     Name = 'ESC11'
-        #     Category = 'Escalation Path'
-        #     Subcategory = ''
-        #     Summary = ''
-        #     FindIt =  {Find-ESC11}
-        #     FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
-        #     ReferenceUrls = ''
-        # },
+        [VulnerableConfigurationItem]@{
+            Name          = 'ESC11'
+            Category      = 'Escalation Path'
+            Subcategory   = 'IF_ENFORCEENCRYPTICERTREQUEST'
+            Summary       = ''
+            FindIt        = { Find-ESC11 }
+            FixIt         = { Write-Output 'Add code to fix the vulnerable configuration.' }
+            ReferenceUrls = 'https://blog.compass-security.com/2022/11/relaying-to-ad-certificate-services-over-rpc/'
+        },
         [VulnerableConfigurationItem]@{
             Name          = 'Auditing'
             Category      = 'Server Configuration'
@@ -2087,12 +2209,24 @@ function Set-AdditionalCAProperty {
                     }
                 }
                 catch {
-                    $AuditFilter = 'Failure'
+                    $SANFlag = 'Failure'
+                }
+                try {
+                    if ($Credential) {
+                        $CertutilInterfaceFlag = Invoke-Command -ComputerName $CAHostname -Credential $Credential -ScriptBlock { param($CAFullName); certutil -config $CAFullName -getreg policy\EditFlags } -ArgumentList $CAFullName
+                    }
+                    else {
+                        $CertutilInterfaceFlag = certutil -config $CAFullName -getreg CA\InterfaceFlags
+                    }
+                }
+                catch {
+                    $InterfaceFlag = 'Failure'
                 }
             }
             else {
                 $AuditFilter = 'CA Unavailable'
                 $SANFlag = 'CA Unavailable'
+                $InterfaceFlag = 'CA Unavailable'
             }
             if ($CertutilAudit) {
                 try {
@@ -2118,12 +2252,22 @@ function Set-AdditionalCAProperty {
                     $SANFlag = 'No'
                 }
             }
+            if ($CertutilInterfaceFlag) {
+                [string]$InterfaceFlag = $CertutilInterfaceFlag | Select-String ' IF_ENFORCEENCRYPTICERTREQUEST -- 200 \('
+                if ($InterfaceFlag) {
+                    $InterfaceFlag = 'Yes'
+                }
+                else {
+                    $InterfaceFlag = 'No'
+                }
+            }
             Add-Member -InputObject $_ -MemberType NoteProperty -Name AuditFilter -Value $AuditFilter -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name CAEnrollmentEndpoint -Value $CAEnrollmentEndpoint -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name CAFullName -Value $CAFullName -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name CAHostname -Value $CAHostname -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name CAHostDistinguishedName -Value $CAHostDistinguishedName -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name SANFlag -Value $SANFlag -Force
+            Add-Member -InputObject $_ -MemberType NoteProperty -Name InterfaceFlag -Value $InterfaceFlag -Force
         }
     }
 }
@@ -2699,7 +2843,7 @@ function Invoke-Locksmith {
         [Parameter()]
         [ValidateSet('Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'All', 'PromptMe')]
         [array]$Scans = 'All',
-        
+
         # The directory to save the output in (defaults to the current working directory).
         [Parameter()]
         [ValidateScript({ Test-Path -Path $_ -PathType Container })]
@@ -2710,7 +2854,7 @@ function Invoke-Locksmith {
         [System.Management.Automation.PSCredential]$Credential
     )
 
-    $Version = '2024.10'
+    $Version = '2024.11'
     $LogoPart1 = @"
     _       _____  _______ _     _ _______ _______ _____ _______ _     _
     |      |     | |       |____/  |______ |  |  |   |      |    |_____|
@@ -2880,7 +3024,7 @@ function Invoke-Locksmith {
     $ESC5 = $Results['ESC5']
     $ESC6 = $Results['ESC6']
     $ESC8 = $Results['ESC8']
-    #}
+    $ESC11 = $Results['ESC11']
 
     # If these are all empty = no issues found, exit
     if ($null -eq $Results) {
@@ -2900,6 +3044,7 @@ function Invoke-Locksmith {
             Format-Result $ESC5 '0'
             Format-Result $ESC6 '0'
             Format-Result $ESC8 '0'
+            Format-Result $ESC11 '0'
         }
         1 {
             Format-Result $AuditingIssues '1'
@@ -2910,6 +3055,7 @@ function Invoke-Locksmith {
             Format-Result $ESC5 '1'
             Format-Result $ESC6 '1'
             Format-Result $ESC8 '1'
+            Format-Result $ESC11 '1'
         }
         2 {
             $Output = Join-Path -Path $OutputPath -ChildPath "$FilePrefix ADCSIssues.CSV"
@@ -2934,11 +3080,21 @@ function Invoke-Locksmith {
             }
         }
         4 {
-            Invoke-Remediation -AuditingIssues $AuditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC3 $ESC3 -ESC4 $ESC4 -ESC5 $ESC5 -ESC6 $ESC6
+            $params = @{
+                AuditingIssues = $AuditingIssues
+                ESC1           = $ESC1
+                ESC2           = $ESC2
+                ESC3           = $ESC3
+                ESC4           = $ESC4
+                ESC5           = $ESC5
+                ESC6           = $ESC6
+                ESC11          = $ESC11
+            }
+            Invoke-Remediation @params
         }
     }
     Write-Host 'Thank you for using ' -NoNewline
-    Write-Host "❤ Locksmith ❤`n" -ForegroundColor Magenta
+    Write-Host "Locksmith ❤`n" -ForegroundColor Magenta
 }
 
 
