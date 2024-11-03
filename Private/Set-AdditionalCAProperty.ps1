@@ -37,17 +37,34 @@
 
     begin {
         $CAEnrollmentEndpoint = @()
-        $code= @"
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-public class TrustAllCertsPolicy : ICertificatePolicy {
-    public bool CheckValidationResult(ServicePoint srvPoint, X509Certificate certificate, WebRequest request, int certificateProblem) {
-        return true;
-    }
-}
+        if (-not ([System.Management.Automation.PSTypeName]'TrustAllCertsPolicy') ) {
+            if ($PSVersionTable.PSEdition -eq 'Desktop') {
+                $code= @"
+                    using System.Net;
+                    using System.Security.Cryptography.X509Certificates;
+                    public class TrustAllCertsPolicy : ICertificatePolicy {
+                        public bool CheckValidationResult(ServicePoint srvPoint, X509Certificate certificate, WebRequest request, int certificateProblem) {
+                            return true;
+                        }
+                    }
 "@
-        Add-Type -TypeDefinition $code -Language CSharp
-        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+                Add-Type -TypeDefinition $code -Language CSharp
+                [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+            } else {
+                Add-Type @"
+                    using System.Net;
+                    using System.Security.Cryptography.X509Certificates;
+                    using System.Net.Security;
+                    public class TrustAllCertsPolicy {
+                        public static bool TrustAllCerts(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) {
+                            return true;
+                        }
+                    }
+"@
+                # Set the ServerCertificateValidationCallback
+                [System.Net.ServicePointManager]::ServerCertificateValidationCallback = [TrustAllCertsPolicy]::TrustAllCerts
+            }
+        }
     }
 
     process {
@@ -72,7 +89,7 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
                     try {
                         $FullURL = "https$URL"
                         $Request = [System.Net.WebRequest]::Create($FullURL)
-                       
+
                         $Request.GetResponse() | Out-Null
                         $CAEnrollmentEndpoint += @{
                             'URL'  = $FullURL
@@ -106,7 +123,7 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
                 $CAHostFQDN = (Get-ADObject -Filter { (Name -eq $CAHostName) -and (objectclass -eq 'computer') } -Properties DnsHostname -Server $ForestGC).DnsHostname
             }
             $ping = Test-Connection -ComputerName $CAHostFQDN -Quiet -Count 1
-            if ($ping) { 
+            if ($ping) {
                 try {
                     if ($Credential) {
                         $CertutilAudit = Invoke-Command -ComputerName $CAHostname -Credential $Credential -ScriptBlock { param($CAFullName); certutil -config $CAFullName -getreg CA\AuditFilter } -ArgumentList $CAFullName

@@ -4,7 +4,7 @@
     Finds the most common malconfigurations of Active Directory Certificate Services (AD CS).
 
     .DESCRIPTION
-    Locksmith uses the Active Directory (AD) Powershell (PS) module to identify 6 misconfigurations
+    Locksmith uses the Active Directory (AD) Powershell (PS) module to identify 7 misconfigurations
     commonly found in Enterprise mode AD CS installations.
 
     .COMPONENT
@@ -79,7 +79,13 @@
             [ValidateSet('Auditing','ESC1','ESC2','ESC3','ESC4','ESC5','ESC6','ESC8','All','PromptMe')]
             [array]$Scans = 'All',
         
-        [string]$OutputPath = (Get-Location).Path,
+        # The directory to save the output in (defaults to the current working directory).
+        [Parameter()]
+            [ValidateScript({Test-Path -Path $_ -PathType Container})]
+            [string]$OutputPath = $PWD,
+
+        # The credential to use for working with ADCS.
+        [Parameter()]
         [System.Management.Automation.PSCredential]$Credential
     )
 
@@ -116,6 +122,9 @@
     }
 
     ### Initial variables
+    # For output filenames
+    [string]$FilePrefix = "Locksmith $(Get-Date -format 'yyyy-MM-dd hh-mm-ss')"
+
     # Extended Key Usages for client authentication. A requirement for ESC1
     $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
 
@@ -279,7 +288,7 @@
             Format-Result $ESC8 '1'
         }
         2 {
-            $Output = 'ADCSIssues.CSV'
+            $Output = Join-Path -Path $OutputPath -ChildPath "$FilePrefix ADCSIssues.CSV"
             Write-Host "Writing AD CS issues to $Output..."
             try {
                 $AllIssues | Select-Object Forest, Technique, Name, Issue | Export-Csv -NoTypeInformation $Output
@@ -289,7 +298,7 @@
             }
         }
         3 {
-            $Output = 'ADCSRemediation.CSV'
+            $Output = Join-Path -Path $OutputPath -ChildPath "$FilePrefix ADCSRemediation.CSV"
             Write-Host "Writing AD CS issues to $Output..."
             try {
                 $AllIssues | Select-Object Forest, Technique, Name, DistinguishedName, Issue, Fix | Export-Csv -NoTypeInformation $Output
