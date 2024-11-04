@@ -33,7 +33,8 @@ A ~~tiny~~ small tool built to find and fix common misconfigurations in Active D
 
 # Installation
 ## Prerequisites
-Locksmith needs to run on a domain joined system.
+1. Locksmith (both script and module versions) must be run on a domain joined system.
+2. Locksmith (module version only) needs the ActiveDirectory and ServerManager PowerShell modules installed.
 
 ## Module
 ### Install module from the PowerShell Gallery (preferred):
