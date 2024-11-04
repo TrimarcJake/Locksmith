@@ -47,7 +47,7 @@ A ~~tiny~~ small tool built to find and fix common misconfigurations in Active D
 
 ## Script
 ### Download the standalone script (classic) without module:
-1. Download the latest script version: [https://github.com/TrimarcJake/Locksmith/releases/latest/download/Invoke-Locksmith.ps1](https://github.com/TrimarcJake/Locksmith/releases/latest/download/Invoke-Locksmith.zip)
+1. Download the latest script version: [https://github.com/TrimarcJake/Locksmith/releases/latest/download/Invoke-Locksmith.zip](https://github.com/TrimarcJake/Locksmith/releases/latest/download/Invoke-Locksmith.zip)
 2. Open a PowerShell prompt to the location of the downloaded file and run .\Invoke-Locksmith.ps1
 
 <a name="RunLocksmith" id="RunLocksmith"></a>
