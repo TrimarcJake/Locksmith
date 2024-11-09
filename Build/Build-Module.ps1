@@ -1,5 +1,5 @@
 ﻿param (
-    # A CalVer string if you need to manually override the default yyyy.M version string.
+    # A CalVer string if you need to manually override the default yyyy.M.d version string.
     [string]$CalVer
 )
 
@@ -22,7 +22,7 @@ Import-Module -Name PSPublishModule -Force
 Build-Module -ModuleName 'Locksmith' {
     # Usual defaults as per standard module
     $Manifest = [ordered] @{
-        ModuleVersion        = if ($Calver) {$CalVer} else {(Get-Date -Format yyyy.M)}
+        ModuleVersion        = if ($Calver) {$CalVer} else {(Get-Date -Format yyyy.M.d)}
         CompatiblePSEditions = @('Desktop', 'Core')
         GUID                 = 'b1325b42-8dc4-4f17-aa1f-dcb5984ca14a'
         Author               = 'Jake Hildreth'
