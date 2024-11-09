@@ -84,22 +84,23 @@
 
         if ( ($_.objectClass -ne 'pKICertificateTemplate') -and ($SID -notmatch $SafeOwners) ) {
             $Issue = [pscustomobject]@{
-                Forest                = $_.CanonicalName.split('/')[0]
-                Name                  = $_.Name
-                DistinguishedName     = $_.DistinguishedName
-                Issue                 = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
-                Fix                   = @"
+                Forest            = $_.CanonicalName.split('/')[0]
+                Name              = $_.Name
+                DistinguishedName = $_.DistinguishedName
+                objectClass       = $_.objectClass
+                Issue             = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this object"
+                Fix               = @"
 `$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`')
 `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
 `$ACL.SetOwner(`$Owner)
 Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
 "@
-                Revert                = "
+                Revert            = "
 `$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`')
 `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
 `$ACL.SetOwner(`$Owner)
 Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
-                Technique             = 'ESC5'
+                Technique         = 'ESC5'
             }
             $Issue
         }
@@ -120,6 +121,7 @@ Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
                     Forest                = $_.CanonicalName.split('/')[0]
                     Name                  = $_.Name
                     DistinguishedName     = $_.DistinguishedName
+                    objectClass           = $_.objectClass
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Issue                 = "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this object"

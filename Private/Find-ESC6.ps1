@@ -41,16 +41,17 @@
                 Revert            = 'N/A'
             }
             if ($_.SANFlag -eq 'Yes') {
-                $Issue.Issue  = 'EDITF_ATTRIBUTESUBJECTALTNAME2 is enabled.'
-                $Issue.Fix    = @"
+                $Issue.Issue = 'EDITF_ATTRIBUTESUBJECTALTNAME2 is enabled. If Strong Mapping enforcement has been ' +
+                    'disabled on Domain Controllers, all templates will accept a SAN during enrollment.'
+                $Issue.Fix = @"
 certutil -config $CAFullname -setreg policy\EditFlags -EDITF_ATTRIBUTESUBJECTALTNAME2
-Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock {
+Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
     Get-Service -Name `'certsvc`' | Restart-Service -Force
 }
 "@
                 $Issue.Revert = @"
 certutil -config $CAFullname -setreg policy\EditFlags +EDITF_ATTRIBUTESUBJECTALTNAME2
-Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock {
+Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
     Get-Service -Name `'certsvc`' | Restart-Service -Force
 }
 "@

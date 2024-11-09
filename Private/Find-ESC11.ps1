@@ -41,16 +41,16 @@
                 Revert            = 'N/A'
             }
             if ($_.InterfaceFlag -eq 'No') {
-                $Issue.Issue  = 'IF_ENFORCEENCRYPTICERTREQUEST is disabled.'
-                $Issue.Fix    = @"
+                $Issue.Issue = 'The IF_ENFORCEENCRYPTICERTREQUEST flag is disabled on this CA. It is possible to relay NTLM authentication to the ICPR RPC endpoint.'
+                $Issue.Fix = @"
 certutil -config $CAFullname -setreg CA\InterfaceFlags +IF_ENFORCEENCRYPTICERTREQUEST
-Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock {
+Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
     Get-Service -Name `'certsvc`' | Restart-Service -Force
 }
 "@
                 $Issue.Revert = @"
 certutil -config $CAFullname -setreg CA\InterfaceFlags -IF_ENFORCEENCRYPTICERTREQUEST
-Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock {
+Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
     Get-Service -Name `'certsvc`' | Restart-Service -Force
 }
 "@

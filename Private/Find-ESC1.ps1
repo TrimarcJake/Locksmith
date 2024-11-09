@@ -58,16 +58,16 @@
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
-                    Issue = "$($entry.IdentityReference) can enroll in this Client Authentication template using a SAN without Manager Approval"
-                    Fix = @"
+                    Issue                 = "$($entry.IdentityReference) can enroll in this Client Authentication template using a SAN without Manager Approval."
+                    Fix                   = @"
 `$Object = `'$($_.DistinguishedName)`'
-Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 2}
 "@
-                    Revert = @"
+                    Revert                = @"
 `$Object = `'$($_.DistinguishedName)`'
-Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@
-                    Technique = 'ESC1'
+                    Technique             = 'ESC1'
                 }
                 $Issue
             }

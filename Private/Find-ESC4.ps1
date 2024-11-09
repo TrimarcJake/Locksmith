@@ -86,23 +86,23 @@
 
         if ( ($_.objectClass -eq 'pKICertificateTemplate') -and ($SID -notmatch $SafeOwners) ) {
             $Issue = [pscustomobject]@{
-                Forest                = $_.CanonicalName.split('/')[0]
-                Name                  = $_.Name
-                DistinguishedName     = $_.DistinguishedName
-                Issue                 = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
-                Fix                   = @"
+                Forest            = $_.CanonicalName.split('/')[0]
+                Name              = $_.Name
+                DistinguishedName = $_.DistinguishedName
+                Issue             = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template. $($_.nTSecurityDescriptor.Owner) can modify this template into an ESC1 template."
+                Fix               = @"
 `$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`')
 `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
 `$ACL.SetOwner(`$Owner)
 Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
 "@
-                Revert                = @"
+                Revert            = @"
 `$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`')
 `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
 `$ACL.SetOwner(`$Owner)
 Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
 "@
-                Technique             = 'ESC4'
+                Technique         = 'ESC4'
             }
             $Issue
         }
@@ -119,14 +119,14 @@ Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
                 ($entry.AccessControlType -eq 'Allow') -and
                 ($entry.ActiveDirectoryRights -match $DangerousRights) -and
                 ($entry.ObjectType -notmatch $SafeObjectTypes)
-                ) {
+            ) {
                 $Issue = [pscustomobject]@{
                     Forest                = $_.CanonicalName.split('/')[0]
                     Name                  = $_.Name
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
-                    Issue                 = "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this template"
+                    Issue                 = "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this template. $($entry.IdentityReference) can modify this template into an ESC1 template."
                     Fix                   = @"
 `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
 foreach ( `$ace in `$ACL.access ) {
@@ -140,7 +140,7 @@ Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
                     Technique             = 'ESC4'
                 }
 
-                if ( $Mode -in @(1,3,4) ) {
+                if ( $Mode -in @(1, 3, 4) ) {
                     Update-ESC4Remediation -Issue $Issue
                 }
 

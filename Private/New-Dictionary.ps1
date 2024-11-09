@@ -141,7 +141,7 @@ function New-Dictionary {
             Summary = ''
             FindIt =  {Find-ESC13}
             FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
-            ReferenceUrls = 'https://blog.compass-security.com/2022/11/relaying-to-ad-certificate-services-over-rpc/'
+            ReferenceUrls = 'https://posts.specterops.io/adcs-esc13-abuse-technique-fda4272fbd53'
         },
         [VulnerableConfigurationItem]@{
             Name = 'Auditing'

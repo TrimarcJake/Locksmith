@@ -171,7 +171,7 @@ function Find-AuditingIssue {
             Name              = $_.Name
             DistinguishedName = $_.DistinguishedName
             Technique         = 'DETECT'
-            Issue             = "Auditing is not fully enabled on $($_.CAFullName). Current value is $($_.AuditFilter)"
+            Issue             = "Auditing is not fully enabled on $($_.CAFullName). Important security events may be left unrecorded."
             Fix               = @"
 certutil.exe -config `'$($_.CAFullname)`' -setreg `'CA\AuditFilter`' 127
 Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
@@ -212,7 +212,7 @@ function Find-ESC1 {
 
     .PARAMETER ClientAuthEKUs
         A list of EKUs that can be used for client authentication.
-        
+
     .OUTPUTS
         The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
 
@@ -239,6 +239,7 @@ function Find-ESC1 {
         !($_.'msPKI-Enrollment-Flag' -band 2) -and
         ( ($_.'msPKI-RA-Signature' -eq 0) -or ($null -eq $_.'msPKI-RA-Signature') )
     } | ForEach-Object {
+        # Write-Host $_; continue
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
             if ($Principal -match '^(S-1|O:)') {
@@ -247,21 +248,21 @@ function Find-ESC1 {
             else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
             }
-            if ( ($SID -notmatch $SafeUsers) -and ($entry.ActiveDirectoryRights -match 'ExtendedRight') ) {
+            if ( ($SID -notmatch $SafeUsers) -and ( ($entry.ActiveDirectoryRights -match 'ExtendedRight') -or ($entry.ActiveDirectoryRights -match 'GenericAll') ) ) {
                 $Issue = [pscustomobject]@{
                     Forest                = $_.CanonicalName.split('/')[0]
                     Name                  = $_.Name
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
-                    Issue                 = "$($entry.IdentityReference) can enroll in this Client Authentication template using a SAN without Manager Approval"
+                    Issue                 = "$($entry.IdentityReference) can enroll in this Client Authentication template using a SAN without Manager Approval."
                     Fix                   = @"
 `$Object = `'$($_.DistinguishedName)`'
-Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 2}
 "@
                     Revert                = @"
 `$Object = `'$($_.DistinguishedName)`'
-Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@
                     Technique             = 'ESC1'
                 }
@@ -314,16 +315,16 @@ function Find-ESC11 {
                 Revert            = 'N/A'
             }
             if ($_.InterfaceFlag -eq 'No') {
-                $Issue.Issue = 'IF_ENFORCEENCRYPTICERTREQUEST is disabled.'
+                $Issue.Issue = 'The IF_ENFORCEENCRYPTICERTREQUEST flag is disabled on this CA. It is possible to relay NTLM authentication to the ICPR RPC endpoint.'
                 $Issue.Fix = @"
 certutil -config $CAFullname -setreg CA\InterfaceFlags +IF_ENFORCEENCRYPTICERTREQUEST
-Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock {
+Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
     Get-Service -Name `'certsvc`' | Restart-Service -Force
 }
 "@
                 $Issue.Revert = @"
 certutil -config $CAFullname -setreg CA\InterfaceFlags -IF_ENFORCEENCRYPTICERTREQUEST
-Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock {
+Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
     Get-Service -Name `'certsvc`' | Restart-Service -Force
 }
 "@
@@ -398,7 +399,9 @@ function Find-ESC13 {
                                 ActiveDirectoryRights = $entry.ActiveDirectoryRights
                                 LinkedGroup           = $OidToCheck.'msDS-OIDToGroupLink'
                                 Issue                 = "$($entry.IdentityReference) can enroll in this Client " +
-                                "Authentication template which is linked to $($OidToCheck.'msDS-OIDToGroupLink')."
+                                "Authentication template which is linked to $($OidToCheck.'msDS-OIDToGroupLink')." +
+                                "If $($entry.IdentityReference) uses this certificate for authentication, they will" +
+                                "gain the rights of the linked group while the group membership appears empty."
                                 Fix                   = @"
 # Enable Manager Approval
 `$Object = `'$($_.DistinguishedName)`'
@@ -466,7 +469,7 @@ function Find-ESC2 {
             else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
             }
-            if ( ($SID -notmatch $SafeUsers) -and ($entry.ActiveDirectoryRights -match 'ExtendedRight') ) {
+            if ( ($SID -notmatch $SafeUsers) -and ( ($entry.ActiveDirectoryRights -match 'ExtendedRight') -or ($entry.ActiveDirectoryRights -match 'GenericAll') ) ) {
                 $Issue = [pscustomobject]@{
                     Forest                = $_.CanonicalName.split('/')[0]
                     Name                  = $_.Name
@@ -536,7 +539,7 @@ function Find-ESC3Condition1 {
             else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
             }
-            if ( ($SID -notmatch $SafeUsers) -and ($entry.ActiveDirectoryRights -match 'ExtendedRight') ) {
+            if ( ($SID -notmatch $SafeUsers) -and ( ($entry.ActiveDirectoryRights -match 'ExtendedRight') -or ($entry.ActiveDirectoryRights -match 'GenericAll') ) ) {
                 $Issue = [pscustomobject]@{
                     Forest                = $_.CanonicalName.split('/')[0]
                     Name                  = $_.Name
@@ -609,19 +612,20 @@ function Find-ESC3Condition2 {
             else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
             }
-            if ( ($SID -notmatch $SafeUsers) -and ($entry.ActiveDirectoryRights -match 'ExtendedRight') ) {
+            if ( ($SID -notmatch $SafeUsers) -and ( ($entry.ActiveDirectoryRights -match 'ExtendedRight') -or ($entry.ActiveDirectoryRights -match 'GenericAll') ) ) {
                 $Issue = [pscustomobject]@{
                     Forest                = $_.CanonicalName.split('/')[0]
                     Name                  = $_.Name
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
-                    Issue                 = "$($entry.IdentityReference) can enroll in this Client Authentication template using a SAN without Manager Approval"
-                    #                     Fix = @"
+                    Issue                 = "$($entry.IdentityReference) can enroll in this Client Authentication template using an Enrollment Agent template."
+                    Fix                   = '[TODO]'
+                    # Fix = @"
                     # `$Object = `'$($_.DistinguishedName)`'
                     # Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}
                     # "@
-                    #                     Revert = @"
+                    # Revert = @"
                     # `$Object = `'$($_.DistinguishedName)`'
                     # Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}
                     # "@
@@ -725,7 +729,7 @@ function Find-ESC4 {
                 Forest            = $_.CanonicalName.split('/')[0]
                 Name              = $_.Name
                 DistinguishedName = $_.DistinguishedName
-                Issue             = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
+                Issue             = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template. $($_.nTSecurityDescriptor.Owner) can modify this template into an ESC1 template."
                 Fix               = @"
 `$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`')
 `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
@@ -763,7 +767,7 @@ Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
-                    Issue                 = "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this template"
+                    Issue                 = "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this template. $($entry.IdentityReference) can modify this template into an ESC1 template."
                     Fix                   = @"
 `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
 foreach ( `$ace in `$ACL.access ) {
@@ -877,7 +881,8 @@ function Find-ESC5 {
                 Forest            = $_.CanonicalName.split('/')[0]
                 Name              = $_.Name
                 DistinguishedName = $_.DistinguishedName
-                Issue             = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
+                objectClass       = $_.objectClass
+                Issue             = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this object"
                 Fix               = @"
 `$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`')
 `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
@@ -911,6 +916,7 @@ Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
                     Forest                = $_.CanonicalName.split('/')[0]
                     Name                  = $_.Name
                     DistinguishedName     = $_.DistinguishedName
+                    objectClass           = $_.objectClass
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Issue                 = "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this object"
@@ -975,16 +981,17 @@ function Find-ESC6 {
                 Revert            = 'N/A'
             }
             if ($_.SANFlag -eq 'Yes') {
-                $Issue.Issue = 'EDITF_ATTRIBUTESUBJECTALTNAME2 is enabled.'
+                $Issue.Issue = 'EDITF_ATTRIBUTESUBJECTALTNAME2 is enabled. If Strong Mapping enforcement has been ' +
+                'disabled on Domain Controllers, all templates will accept a SAN during enrollment.'
                 $Issue.Fix = @"
 certutil -config $CAFullname -setreg policy\EditFlags -EDITF_ATTRIBUTESUBJECTALTNAME2
-Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock {
+Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
     Get-Service -Name `'certsvc`' | Restart-Service -Force
 }
 "@
                 $Issue.Revert = @"
 certutil -config $CAFullname -setreg policy\EditFlags +EDITF_ATTRIBUTESUBJECTALTNAME2
-Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock {
+Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
     Get-Service -Name `'certsvc`' | Restart-Service -Force
 }
 "@
@@ -1040,7 +1047,7 @@ function Find-ESC8 {
                     DistinguishedName    = $_.DistinguishedName
                     CAEnrollmentEndpoint = $endpoint.URL
                     AuthType             = $endpoint.Auth
-                    Issue                = 'An HTTP enrollment endpoint is available.'
+                    Issue                = 'An HTTP enrollment endpoint is available. It is possible to relay NTLM authentication to this HTTP endpoint.'
                     Fix                  = @'
 Disable HTTP access and enforce HTTPS.
 Enable EPA.
@@ -1050,7 +1057,7 @@ Disable NTLM authentication (if possible.)
                     Technique            = 'ESC8'
                 }
                 if ($endpoint.URL -match '^https:') {
-                    $Issue.Issue = 'An HTTPS enrollment endpoint is available.'
+                    $Issue.Issue = 'An HTTPS enrollment endpoint is available. It may be possible to relay NTLM authentication to this HTTPS endpoint.'
                     $Issue.Fix = @'
 Ensure EPA is enabled.
 Disable NTLM authentication (if possible.)
@@ -1224,18 +1231,21 @@ function Format-Result {
     if ($null -ne $Issue) {
         $UniqueIssue = $Issue.Technique | Sort-Object -Unique
         $Title = $($IssueTable[$UniqueIssue])
-        Write-Host "$('-'*($($Title.ToString().Length + 10)))" -ForegroundColor Magenta -BackgroundColor Magenta -NoNewline; Write-Host
+        Write-Host "$('-'*($($Title.ToString().Length + 10)))" -ForegroundColor Black -BackgroundColor Magenta -NoNewline; Write-Host
         Write-Host "     " -BackgroundColor Magenta -NoNewline
-        Write-Host $Title -BackgroundColor Magenta -ForegroundColor White -NoNewline
+        Write-Host $Title -BackgroundColor Magenta -ForegroundColor Black -NoNewline
         Write-Host "     " -BackgroundColor Magenta -NoNewline; Write-Host
-        Write-Host "$('-'*($($Title.ToString().Length + 10)))" -ForegroundColor Magenta -BackgroundColor Magenta -NoNewline; Write-Host
+        Write-Host "$('-'*($($Title.ToString().Length + 10)))" -ForegroundColor Black -BackgroundColor Magenta -NoNewline; Write-Host
 
         switch ($Mode) {
             0 {
                 $Issue | Format-Table Technique, Name, Issue -Wrap
             }
             1 {
-                if ($Issue.Technique -eq 'ESC8') {
+                if ($Issue.Technique -eq 'ESC5') {
+                    $Issue | Format-List Technique, Name, objectClass, DistinguishedName, Issue, Fix
+                }
+                elseif ($Issue.Technique -eq 'ESC8') {
                     $Issue | Format-List Technique, Name, DistinguishedName, CAEnrollmentEndpoint, AuthType, Issue, Fix
                 }
                 else {
@@ -2170,7 +2180,7 @@ function New-Dictionary {
             Summary       = ''
             FindIt        = { Find-ESC13 }
             FixIt         = { Write-Output 'Add code to fix the vulnerable configuration.' }
-            ReferenceUrls = 'https://blog.compass-security.com/2022/11/relaying-to-ad-certificate-services-over-rpc/'
+            ReferenceUrls = 'https://posts.specterops.io/adcs-esc13-abuse-technique-fda4272fbd53'
         },
         [VulnerableConfigurationItem]@{
             Name          = 'Auditing'

@@ -44,7 +44,7 @@
                     DistinguishedName    = $_.DistinguishedName
                     CAEnrollmentEndpoint = $endpoint.URL
                     AuthType             = $endpoint.Auth
-                    Issue                = 'An HTTP enrollment endpoint is available.'
+                    Issue                = 'An HTTP enrollment endpoint is available. It is possible to relay NTLM authentication to this HTTP endpoint.'
                     Fix                  = @'
 Disable HTTP access and enforce HTTPS.
 Enable EPA.
@@ -54,8 +54,8 @@ Disable NTLM authentication (if possible.)
                     Technique            = 'ESC8'
                 }
                 if ($endpoint.URL -match '^https:') {
-                    $Issue.Issue = 'An HTTPS enrollment endpoint is available.'
-                    $Issue.Fix   = @'
+                    $Issue.Issue = 'An HTTPS enrollment endpoint is available. It may be possible to relay NTLM authentication to this HTTPS endpoint.'
+                    $Issue.Fix = @'
 Ensure EPA is enabled.
 Disable NTLM authentication (if possible.)
 '@
