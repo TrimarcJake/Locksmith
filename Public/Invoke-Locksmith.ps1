@@ -125,7 +125,7 @@
     # For output filenames
     [string]$FilePrefix = "Locksmith $(Get-Date -format 'yyyy-MM-dd hh-mm-ss')"
 
-    # Extended Key Usages for client authentication. A requirement for ESC1
+    # Extended Key Usages for client authentication. A requirement for ESC1, ESC3 Condition 2, and ESC13
     $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
 
     # GenericAll, WriteDacl, and WriteOwner all permit full control of an AD object.
@@ -257,6 +257,7 @@
     $ESC6 = $Results['ESC6']
     $ESC8 = $Results['ESC8']
     $ESC11 = $Results['ESC11']
+    $ESC13 = $Results['ESC13']
 
     # If these are all empty = no issues found, exit
     if ($null -eq $Results) {
@@ -277,6 +278,7 @@
             Format-Result $ESC6 '0'
             Format-Result $ESC8 '0'
             Format-Result $ESC11 '0'
+            Format-Result $ESC13 '0'
         }
         1 {
             Format-Result $AuditingIssues '1'
@@ -288,6 +290,7 @@
             Format-Result $ESC6 '1'
             Format-Result $ESC8 '1'
             Format-Result $ESC11 '1'
+            Format-Result $ESC13 '1'
         }
         2 {
             $Output = Join-Path -Path $OutputPath -ChildPath "$FilePrefix ADCSIssues.CSV"
@@ -319,6 +322,7 @@
                 ESC5           = $ESC5
                 ESC6           = $ESC6
                 ESC11          = $ESC11
+                ESC13          = $ESC13
             }
             Invoke-Remediation @params
         }

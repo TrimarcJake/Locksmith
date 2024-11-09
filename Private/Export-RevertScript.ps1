@@ -33,8 +33,22 @@
     .PARAMETER ESC11
         An array of ESC11 changes to be reverted.
 
+    .PARAMETER ESC13
+        An array of ESC13 changes to be reverted.
+
     .EXAMPLE
-        Export-RevertScript -AuditingIssues $auditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC3 $ESC3 -ESC4 $ESC4 -ESC5 $ESC5 -ESC6 $ESC6 -ESC11 $ESC11
+        $params = @{
+            AuditingIssues = $AuditingIssues
+            ESC1           = $ESC1
+            ESC2           = $ESC2
+            ESC3           = $ESC3
+            ESC4           = $ESC4
+            ESC5           = $ESC5
+            ESC6           = $ESC6
+            ESC11          = $ESC11
+            ESC13          = $ESC13
+        }
+        Export-RevertScript @params
         Reverts the changes performed by Locksmith using the specified arrays of objects.
     #>
 
@@ -47,13 +61,14 @@
         [array]$ESC4,
         [array]$ESC5,
         [array]$ESC6,
-        [array]$ESC11
+        [array]$ESC11,
+        [array]$ESC13
     )
     begin {
         $Output = 'Invoke-RevertLocksmith.ps1'
         $RevertScript = [System.Text.StringBuilder]::New()
         [void]$RevertScript.Append("<#`nScript to revert changes performed by Locksmith`nCreated $(Get-Date)`n#>`n")
-        $Objects = $AuditingIssues + $ESC1 + $ESC2 + $ESC3 + $ESC4 + $ESC5 + $ESC6 + $ESC11
+        $Objects = $AuditingIssues + $ESC1 + $ESC2 + $ESC3 + $ESC4 + $ESC5 + $ESC6 + $ESC11 + $ESC13
     }
     process {
         if ($Objects) {

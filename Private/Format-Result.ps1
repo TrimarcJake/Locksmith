@@ -40,6 +40,7 @@ function Format-Result {
         ESC6   = 'ESC6 - EDITF_ATTRIBUTESUBJECTALTNAME2 Flag Enabled'
         ESC8   = 'ESC8 - HTTP/S Enrollment Enabled'
         ESC11  = 'ESC11 - IF_ENFORCEENCRYPTICERTREQUEST Flag Disabled'
+        ESC13  = 'ESC13 - Vulnerable Certificate Temple - Group-Linked'
     }
 
     if ($null -ne $Issue) {

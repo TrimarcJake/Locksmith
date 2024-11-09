@@ -135,6 +135,15 @@ function New-Dictionary {
             ReferenceUrls = 'https://blog.compass-security.com/2022/11/relaying-to-ad-certificate-services-over-rpc/'
         },
         [VulnerableConfigurationItem]@{
+            Name = 'ESC13'
+            Category = 'Escalation Path'
+            Subcategory = 'Certificate Template linked to Group'
+            Summary = ''
+            FindIt =  {Find-ESC13}
+            FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
+            ReferenceUrls = 'https://blog.compass-security.com/2022/11/relaying-to-ad-certificate-services-over-rpc/'
+        },
+        [VulnerableConfigurationItem]@{
             Name = 'Auditing'
             Category = 'Server Configuration'
             Subcategory = 'Gaps in auditing on certificate authorities and AD CS objects.'
