@@ -22,7 +22,7 @@ function ConvertFrom-IdentityReference {
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [array]$Object
     )
 

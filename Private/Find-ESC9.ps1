@@ -50,7 +50,7 @@ function Find-ESC9 {
 
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         $ADCSObjects
     )
 
