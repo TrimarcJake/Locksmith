@@ -62,15 +62,15 @@
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         $ADCSObjects,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         $DangerousRights,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         $SafeOwners,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         $SafeUsers,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         $SafeObjectTypes,
         [int]$Mode
     )
@@ -89,7 +89,11 @@
                 Forest            = $_.CanonicalName.split('/')[0]
                 Name              = $_.Name
                 DistinguishedName = $_.DistinguishedName
-                Issue             = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template. $($_.nTSecurityDescriptor.Owner) can modify this template into an ESC1 template."
+                Issue             = @"
+$($_.nTSecurityDescriptor.Owner) has Owner rights on this template and can
+modify it into a template that can create ESC1, ESC2, and ESC3 templates.
+
+"@
                 Fix               = @"
 `$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`')
 `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
@@ -126,7 +130,9 @@ Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
-                    Issue                 = "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this template. $($entry.IdentityReference) can modify this template into an ESC1 template."
+                    Issue                 = "$($entry.IdentityReference) has been granted " +
+                        "$($entry.ActiveDirectoryRights) rights on this template.`n" +
+                        "$($entry.IdentityReference) can likely modify this template into an ESC1 template."
                     Fix                   = @"
 `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
 foreach ( `$ace in `$ACL.access ) {

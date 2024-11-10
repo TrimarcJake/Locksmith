@@ -58,12 +58,23 @@
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
-                    Issue                 = "$($entry.IdentityReference) can enroll in this Client Authentication template using a SAN without Manager Approval."
+                    Issue                 = @"
+$($entry.IdentityReference) can provide a Subject Alternative Name (SAN) while
+enrolling in this Client Authentication template, and enrollment does not require
+Manager Approval.
+
+The resultant certificate can be used by an attacker to authenticate as any
+principal listed in the SAN up to and including Domain Admins, Enterprise Admins,
+or Domain Controllers.
+
+"@
                     Fix                   = @"
+# Enable Manager Approval
 `$Object = `'$($_.DistinguishedName)`'
 Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 2}
 "@
                     Revert                = @"
+# Disable Manager Approval
 `$Object = `'$($_.DistinguishedName)`'
 Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@

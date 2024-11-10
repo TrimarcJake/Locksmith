@@ -87,7 +87,7 @@ function Invoke-Remediation {
         $AuditingIssues | ForEach-Object {
             $FixBlock = [scriptblock]::Create($_.Fix)
             Write-Host 'ISSUE:' -ForegroundColor White
-            Write-Host "Auditing is not fully enabled on Certification Authority `"$($_.Name)`".`n"
+            Write-Host "$($_.Issue)`n"
             Write-Host 'TECHNIQUE:' -ForegroundColor White
             Write-Host "$($_.Technique)`n"
             Write-Host 'ACTION TO BE PERFORMED:' -ForegroundColor White
@@ -118,7 +118,7 @@ function Invoke-Remediation {
         $ESC1 | ForEach-Object {
             $FixBlock = [scriptblock]::Create($_.Fix)
             Write-Host 'ISSUE:' -ForegroundColor White
-            Write-Host "Security Principals can enroll in `"$($_.Name)`" template using a Subject Alternative Name without Manager Approval.`n"
+            Write-Host "$($_.Issue)`n"
             Write-Host 'TECHNIQUE:' -ForegroundColor White
             Write-Host "$($_.Technique)`n"
             Write-Host 'ACTION TO BE PERFORMED:' -ForegroundColor White
@@ -150,7 +150,7 @@ function Invoke-Remediation {
         $ESC2 | ForEach-Object {
             $FixBlock = [scriptblock]::Create($_.Fix)
             Write-Host 'ISSUE:' -ForegroundColor White
-            Write-Host "Security Principals can enroll in `"$($_.Name)`" template and create a Subordinate Certification Authority without Manager Approval.`n"
+            Write-Host "$($_.Issue)`n"
             Write-Host 'TECHNIQUE:' -ForegroundColor White
             Write-Host "$($_.Technique)`n"
             Write-Host 'ACTION TO BE PERFORMED:' -ForegroundColor White
@@ -243,7 +243,7 @@ function Invoke-Remediation {
         $ESC6 | ForEach-Object {
             $FixBlock = [scriptblock]::Create($_.Fix)
             Write-Host 'ISSUE:' -ForegroundColor White
-            Write-Host "The Certification Authority `"$($_.Name)`" has the dangerous EDITF_ATTRIBUTESUBJECTALTNAME2 flag enabled.`n"
+            Write-Host "$($_.Issue)`n"
             Write-Host 'TECHNIQUE:' -ForegroundColor White
             Write-Host "$($_.Technique)`n"
             Write-Host 'ACTION TO BE PERFORMED:' -ForegroundColor White
@@ -276,7 +276,7 @@ function Invoke-Remediation {
         $ESC11 | ForEach-Object {
             $FixBlock = [scriptblock]::Create($_.Fix)
             Write-Host 'ISSUE:' -ForegroundColor White
-            Write-Host "The Certification Authority `"$($_.Name)`" has the IF_ENFORCEENCRYPTICERTREQUEST flag disabled.`n"
+            Write-Host "$($_.Issue)`n"
             Write-Host 'TECHNIQUE:' -ForegroundColor White
             Write-Host "$($_.Technique)`n"
             Write-Host 'ACTION TO BE PERFORMED:' -ForegroundColor White
@@ -309,7 +309,7 @@ function Invoke-Remediation {
         $ESC13 | ForEach-Object {
             $FixBlock = [scriptblock]::Create($_.Fix)
             Write-Host 'ISSUE:' -ForegroundColor White
-            Write-Host "Security Principals can enroll in `"$($_.Name)`" template which is linked to $($_.LinkedGroup).`n"
+            Write-Host "$($_.Issue)`n"
             Write-Host 'TECHNIQUE:' -ForegroundColor White
             Write-Host "$($_.Technique)`n"
             Write-Host 'ACTION TO BE PERFORMED:' -ForegroundColor White

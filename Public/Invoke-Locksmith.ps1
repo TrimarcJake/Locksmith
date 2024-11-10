@@ -4,7 +4,7 @@
     Finds the most common malconfigurations of Active Directory Certificate Services (AD CS).
 
     .DESCRIPTION
-    Locksmith uses the Active Directory (AD) Powershell (PS) module to identify 7 misconfigurations
+    Locksmith uses the Active Directory (AD) Powershell (PS) module to identify 10 misconfigurations
     commonly found in Enterprise mode AD CS installations.
 
     .COMPONENT

@@ -25,9 +25,9 @@
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [array]$ADCSObjects,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [string]$SafeUsers
     )
     $ADCSObjects | Where-Object {
@@ -50,12 +50,28 @@
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
-                    Issue                 = "$($entry.IdentityReference) can request a SubCA certificate without Manager Approval"
+                    Issue                 = @"
+$($entry.IdentityReference) can use this template to request a Subordinate
+Certification Authority (SubCA) certificate without Manager Approval.
+
+The resultant certificate can be used by an attacker to instantiate their own
+SubCA which is trusted by AD.
+
+By default, certificates created from this attacker-controlled SubCA cannot be
+used for authentication, but they can be used for other purposes such as TLS
+certs and code signing.
+
+However, if an attacker can modify the NtAuthCertificates object (see ESC5),
+they can convert their rogue CA into one trusted for authentication.
+
+"@
                     Fix                   = @"
+# Enable Manager Approval
 `$Object = `'$($_.DistinguishedName)`'
 Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 2}
 "@
                     Revert                = @"
+# Disable Manager Approval
 `$Object = `'$($_.DistinguishedName)`'
 Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@

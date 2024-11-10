@@ -61,10 +61,14 @@ function Find-ESC13 {
                                 IdentityReference     = $entry.IdentityReference
                                 ActiveDirectoryRights = $entry.ActiveDirectoryRights
                                 LinkedGroup           = $OidToCheck.'msDS-OIDToGroupLink'
-                                Issue                 = "$($entry.IdentityReference) can enroll in this Client " +
-                                    "Authentication template which is linked to $($OidToCheck.'msDS-OIDToGroupLink')." +
-                                    "If $($entry.IdentityReference) uses this certificate for authentication, they will" +
-                                    "gain the rights of the linked group while the group membership appears empty."
+                                Issue                 = @"
+$($entry.IdentityReference) can enroll in this Client Authentication template
+which is linked to the group $($OidToCheck.'msDS-OIDToGroupLink').
+
+If $($entry.IdentityReference) uses this certificate for authentication, they
+will gain the rights of the linked group while the group membership appears empty.
+
+"@
                                 Fix                   = @"
 # Enable Manager Approval
 `$Object = `'$($_.DistinguishedName)`'

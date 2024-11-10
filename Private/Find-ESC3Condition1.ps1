@@ -25,9 +25,9 @@
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [array]$ADCSObjects,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [array]$SafeUsers
     )
     $ADCSObjects | Where-Object {
@@ -50,9 +50,16 @@
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
-                    Issue                 = "$($entry.IdentityReference) can enroll in this Enrollment Agent template without Manager Approval"
+                    Issue                 = @"
+$($entry.IdentityReference) can use this template to request an Enrollment Agent
+certificate without Manager Approval.
+
+The resulting certificate can be used to enroll in any template that requires
+an Enrollment Agent to submit the request.
+
+"@
                     Fix                   = @"
-# Enabled Manager Approval
+# Enable Manager Approval
 `$Object = `'$($_.DistinguishedName)`'
 Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 2}
 "@
