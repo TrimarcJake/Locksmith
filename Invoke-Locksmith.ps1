@@ -2160,7 +2160,7 @@ function Invoke-Scans {
         }
         ESC1 {
             Write-Host 'Identifying AD CS templates with dangerous ESC1 configurations...'
-            [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+            [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEkus
         }
         ESC2 {
             Write-Host 'Identifying AD CS templates with dangerous ESC2 configurations...'
@@ -2187,9 +2187,13 @@ function Invoke-Scans {
             Write-Host 'Identifying HTTP-based certificate enrollment interfaces (ESC8)...'
             [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects
         }
-        ESC6 {
+        ESC11 {
             Write-Host 'Identifying Issuing CAs with IF_ENFORCEENCRYPTICERTREQUEST disabled (ESC11)...'
-            [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects
+            [array]$ESC11 = Find-ESC11 -ADCSObjects $ADCSObjects
+        }
+        ESC13 {
+            Write-Host 'Identifying AD CS templates with dangerous ESC13 configurations...'
+            [array]$ESC11 = Find-ESC13 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEKUs
         }
         All {
             Write-Host 'Identifying auditing issues...'
@@ -2264,7 +2268,7 @@ descriptions, code used to find, code used to fix, and reference URLs. This is i
 
 function New-Dictionary {
     class VulnerableConfigurationItem {
-        static [string] $Version = '2023.10.01.000'
+        static [string] $Version = '2024.11.03.000'
         [string]$Name
         [ValidateSet('Escalation Path', 'Server Configuration', 'GPO Setting')][string]$Category
         [string]$Subcategory
@@ -3226,7 +3230,6 @@ function Invoke-Locksmith {
     )
 
     $Version = '2024.11.10'
-
     $LogoPart1 = @"
     _       _____  _______ _     _ _______ _______ _____ _______ _     _
     |      |     | |       |____/  |______ |  |  |   |      |    |_____|
