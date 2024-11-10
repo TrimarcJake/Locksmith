@@ -3,41 +3,27 @@ function Invoke-Scans {
     .SYNOPSIS
         Invoke-Scans.ps1 is a script that performs various scans on ADCS (Active Directory Certificate Services) objects.
 
-    .DESCRIPTION
-        This script accepts a parameter named $Scans, which specifies the type of scans to perform. The available scan options are:
-        - Auditing
-        - ESC1
-        - ESC2
-        - ESC3
-        - ESC4
-        - ESC5
-        - ESC6
-        - ESC8
-        - ESC11
-        - All
-        - PromptMe
-
     .PARAMETER Scans
         Specifies the type of scans to perform. Multiple scan options can be provided as an array. The default value is 'All'.
-        The available scan options are: 'Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'ESC11', 'All', 'PromptMe'.
+        The available scan options are: 'Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'ESC11', 'ESC13', 'All', 'PromptMe'.
 
     .NOTES
         - The script requires the following functions to be defined: Find-AuditingIssue, Find-ESC1, Find-ESC2, Find-ESC3Condition1,
-          Find-ESC3Condition2, Find-ESC4, Find-ESC5, Find-ESC6, Find-ESC8, Find-ESC11.
+          Find-ESC3Condition2, Find-ESC4, Find-ESC5, Find-ESC6, Find-ESC8, Find-ESC11, Find-ESC13
         - The script uses Out-GridView or Out-ConsoleGridView for interactive selection when the 'PromptMe' scan option is chosen.
         - The script returns a hash table containing the results of the scans.
 
     .EXAMPLE
-        # Perform all scans
-        Invoke-Scans
+    Invoke-Scans
+    # Perform all scans
 
     .EXAMPLE
-        # Perform only the 'Auditing' and 'ESC1' scans
-        Invoke-Scans -Scans 'Auditing', 'ESC1'
+    Invoke-Scans -Scans 'Auditing', 'ESC1'
+    # Perform only the 'Auditing' and 'ESC1' scans
 
     .EXAMPLE
-        # Prompt the user to select the scans to perform
-        Invoke-Scans -Scans 'PromptMe'
+    Invoke-Scans -Scans 'PromptMe'
+    # Prompt the user to select the scans to perform
     #>
 
     [CmdletBinding()]
@@ -52,7 +38,7 @@ function Invoke-Scans {
         [int]$Mode,
         $SafeObjectTypes,
         $SafeOwners,
-        [ValidateSet('Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'ESC11', 'All', 'PromptMe')]
+        [ValidateSet('Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'ESC11', 'ESC13', 'All', 'PromptMe')]
         [array]$Scans = 'All',
         $UnsafeOwners,
         $UnsafeUsers,
@@ -121,7 +107,7 @@ function Invoke-Scans {
             Write-Host 'Identifying auditing issues...'
             [array]$AuditingIssues = Find-AuditingIssue -ADCSObjects $ADCSObjects
             Write-Host 'Identifying AD CS templates with dangerous ESC1 configurations...'
-            [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+            [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEkus
             Write-Host 'Identifying AD CS templates with dangerous ESC2 configurations...'
             [array]$ESC2 = Find-ESC2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
             Write-Host 'Identifying AD CS templates with dangerous ESC3 configurations...'
@@ -137,14 +123,16 @@ function Invoke-Scans {
             [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects
             Write-Host 'Identifying Certificate Authorities with IF_ENFORCEENCRYPTICERTREQUEST disabled (ESC11)...'
             [array]$ESC11 = Find-ESC11 -ADCSObjects $ADCSObjects
+            Write-Host 'Identifying AD CS templates with dangerous ESC13 configurations...'
+            [array]$ESC13 = Find-ESC13 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEkus
             Write-Host
         }
     }
 
-    [array]$AllIssues = $AuditingIssues + $ESC1 + $ESC2 + $ESC3 + $ESC4 + $ESC5 + $ESC6 + $ESC8 + $ESC11
+    [array]$AllIssues = $AuditingIssues + $ESC1 + $ESC2 + $ESC3 + $ESC4 + $ESC5 + $ESC6 + $ESC8 + $ESC11 + $ESC13
 
     # If these are all empty = no issues found, exit
-    if ((!$AuditingIssues) -and (!$ESC1) -and (!$ESC2) -and (!$ESC3) -and (!$ESC4) -and (!$ESC5) -and (!$ESC6) -and (!$ESC8) -and (!$ESC11) ) {
+    if ((!$AuditingIssues) -and (!$ESC1) -and (!$ESC2) -and (!$ESC3) -and (!$ESC4) -and (!$ESC5) -and (!$ESC6) -and (!$ESC8) -and ($ESC11) -and ($ESC13) ) {
         Write-Host "`n$(Get-Date) : No ADCS issues were found." -ForegroundColor Green
         break
     }
@@ -161,5 +149,6 @@ function Invoke-Scans {
         ESC6           = $ESC6
         ESC8           = $ESC8
         ESC11          = $ESC11
+        ESC13          = $ESC13
     }
 }

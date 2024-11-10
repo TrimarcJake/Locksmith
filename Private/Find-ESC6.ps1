@@ -22,7 +22,7 @@
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         $ADCSObjects
     )
     process {
@@ -41,16 +41,33 @@
                 Revert            = 'N/A'
             }
             if ($_.SANFlag -eq 'Yes') {
-                $Issue.Issue  = 'EDITF_ATTRIBUTESUBJECTALTNAME2 is enabled.'
-                $Issue.Fix    = @"
+                $Issue.Issue = @"
+The dangerous EDITF_ATTRIBUTESUBJECTALTNAME2 flag is enabled on $CAFullname.
+All templates published on this CA will accept a Subject Alternative Name (SAN)
+during enrollment even if the template is not specifically configured to allow a SAN.
+
+As of May 2022, Microsoft has neutered this situation by requiring all SANs to
+be strongly mapped to certificates.
+
+However, if strong mapping has been explicitly disabled on Domain Controllers,
+this configuration remains vulnerable to privilege escalation attacks.
+
+"@
+                $Issue.Fix = @"
+# Disable the flag
 certutil -config $CAFullname -setreg policy\EditFlags -EDITF_ATTRIBUTESUBJECTALTNAME2
-Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock {
+
+# Restart the Ceritification Authority service
+Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
     Get-Service -Name `'certsvc`' | Restart-Service -Force
 }
 "@
                 $Issue.Revert = @"
+# Enable the flag
 certutil -config $CAFullname -setreg policy\EditFlags +EDITF_ATTRIBUTESUBJECTALTNAME2
-Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock {
+
+# Restart the Ceritification Authority service
+Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
     Get-Service -Name `'certsvc`' | Restart-Service -Force
 }
 "@

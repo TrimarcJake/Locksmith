@@ -28,7 +28,7 @@ function ConvertFrom-IdentityReference {
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [array]$Object
     )
 
@@ -77,8 +77,22 @@ function Export-RevertScript {
     .PARAMETER ESC11
         An array of ESC11 changes to be reverted.
 
+    .PARAMETER ESC13
+        An array of ESC13 changes to be reverted.
+
     .EXAMPLE
-        Export-RevertScript -AuditingIssues $auditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC3 $ESC3 -ESC4 $ESC4 -ESC5 $ESC5 -ESC6 $ESC6 -ESC11 $ESC11
+        $params = @{
+            AuditingIssues = $AuditingIssues
+            ESC1           = $ESC1
+            ESC2           = $ESC2
+            ESC3           = $ESC3
+            ESC4           = $ESC4
+            ESC5           = $ESC5
+            ESC6           = $ESC6
+            ESC11          = $ESC11
+            ESC13          = $ESC13
+        }
+        Export-RevertScript @params
         Reverts the changes performed by Locksmith using the specified arrays of objects.
     #>
 
@@ -91,13 +105,14 @@ function Export-RevertScript {
         [array]$ESC4,
         [array]$ESC5,
         [array]$ESC6,
-        [array]$ESC11
+        [array]$ESC11,
+        [array]$ESC13
     )
     begin {
         $Output = 'Invoke-RevertLocksmith.ps1'
         $RevertScript = [System.Text.StringBuilder]::New()
         [void]$RevertScript.Append("<#`nScript to revert changes performed by Locksmith`nCreated $(Get-Date)`n#>`n")
-        $Objects = $AuditingIssues + $ESC1 + $ESC2 + $ESC3 + $ESC4 + $ESC5 + $ESC6 + $ESC11
+        $Objects = $AuditingIssues + $ESC1 + $ESC2 + $ESC3 + $ESC4 + $ESC5 + $ESC6 + $ESC11 + $ESC13
     }
     process {
         if ($Objects) {
@@ -143,7 +158,7 @@ function Find-AuditingIssue {
 
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [array]$ADCSObjects
     )
 
@@ -156,7 +171,7 @@ function Find-AuditingIssue {
             Name              = $_.Name
             DistinguishedName = $_.DistinguishedName
             Technique         = 'DETECT'
-            Issue             = "Auditing is not fully enabled on $($_.CAFullName). Current value is $($_.AuditFilter)"
+            Issue             = "Auditing is not fully enabled on $($_.CAFullName). Important security events may go unnoticed."
             Fix               = @"
 certutil.exe -config `'$($_.CAFullname)`' -setreg `'CA\AuditFilter`' 127
 Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
@@ -195,21 +210,27 @@ function Find-ESC1 {
     .PARAMETER SafeUsers
         Specifies the list of SIDs of safe users who are allowed to have specific rights on the objects. This parameter is mandatory.
 
+    .PARAMETER ClientAuthEKUs
+        A list of EKUs that can be used for client authentication.
+
     .OUTPUTS
         The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
 
     .EXAMPLE
         $ADCSObjects = Get-ADCSObjects
         $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
-        $Results = $ADCSObjects | Find-ESC1 -SafeUsers $SafeUsers
+        $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
+        $Results = $ADCSObjects | Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEKUs
         $Results
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [array]$ADCSObjects,
-        [Parameter(Mandatory = $true)]
-        [array]$SafeUsers
+        [Parameter(Mandatory)]
+        [array]$SafeUsers,
+        [Parameter(Mandatory)]
+        $ClientAuthEKUs
     )
     $ADCSObjects | Where-Object {
         ($_.objectClass -eq 'pKICertificateTemplate') -and
@@ -218,6 +239,7 @@ function Find-ESC1 {
         !($_.'msPKI-Enrollment-Flag' -band 2) -and
         ( ($_.'msPKI-RA-Signature' -eq 0) -or ($null -eq $_.'msPKI-RA-Signature') )
     } | ForEach-Object {
+        # Write-Host $_; continue
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
             if ($Principal -match '^(S-1|O:)') {
@@ -226,21 +248,32 @@ function Find-ESC1 {
             else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
             }
-            if ( ($SID -notmatch $SafeUsers) -and ($entry.ActiveDirectoryRights -match 'ExtendedRight') ) {
+            if ( ($SID -notmatch $SafeUsers) -and ( ($entry.ActiveDirectoryRights -match 'ExtendedRight') -or ($entry.ActiveDirectoryRights -match 'GenericAll') ) ) {
                 $Issue = [pscustomobject]@{
                     Forest                = $_.CanonicalName.split('/')[0]
                     Name                  = $_.Name
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
-                    Issue                 = "$($entry.IdentityReference) can enroll in this Client Authentication template using a SAN without Manager Approval"
+                    Issue                 = @"
+$($entry.IdentityReference) can provide a Subject Alternative Name (SAN) while
+enrolling in this Client Authentication template, and enrollment does not require
+Manager Approval.
+
+The resultant certificate can be used by an attacker to authenticate as any
+principal listed in the SAN up to and including Domain Admins, Enterprise Admins,
+or Domain Controllers.
+
+"@
                     Fix                   = @"
+# Enable Manager Approval
 `$Object = `'$($_.DistinguishedName)`'
-Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 2}
 "@
                     Revert                = @"
+# Disable Manager Approval
 `$Object = `'$($_.DistinguishedName)`'
-Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@
                     Technique             = 'ESC1'
                 }
@@ -274,7 +307,7 @@ function Find-ESC11 {
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         $ADCSObjects
     )
     process {
@@ -293,21 +326,129 @@ function Find-ESC11 {
                 Revert            = 'N/A'
             }
             if ($_.InterfaceFlag -eq 'No') {
-                $Issue.Issue = 'IF_ENFORCEENCRYPTICERTREQUEST is disabled.'
+                $Issue.Issue = @"
+The IF_ENFORCEENCRYPTICERTREQUEST flag is disabled on this Certification
+Authority (CA). It is possible to relay NTLM authentication to the RPC interface
+of this CA.
+
+If the LAN Manager authentication level of any domain in this forest is 2 or
+less, an attacker can coerce authentication from a Domain Controller (DC) to
+receive a certificate which can be used to authenticate as that DC.
+
+"@
                 $Issue.Fix = @"
+# Enable the flag
 certutil -config $CAFullname -setreg CA\InterfaceFlags +IF_ENFORCEENCRYPTICERTREQUEST
-Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock {
+
+# Restart the Ceritification Authority service
+Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
     Get-Service -Name `'certsvc`' | Restart-Service -Force
 }
 "@
                 $Issue.Revert = @"
+# Disable the flag
 certutil -config $CAFullname -setreg CA\InterfaceFlags -IF_ENFORCEENCRYPTICERTREQUEST
-Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock {
+
+# Restart the Ceritification Authority service
+Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
     Get-Service -Name `'certsvc`' | Restart-Service -Force
 }
 "@
             }
             $Issue
+        }
+    }
+}
+
+function Find-ESC13 {
+    <#
+    .SYNOPSIS
+        This script finds AD CS (Active Directory Certificate Services) objects that have the ESC13 vulnerability.
+
+    .DESCRIPTION
+        The script takes an array of ADCS objects as input and filters them based on the specified conditions.
+        For each matching object, it creates a custom object with properties representing various information about
+        the object, such as Forest, Name, DistinguishedName, IdentityReference, ActiveDirectoryRights, Issue, Fix, Revert, and Technique.
+
+    .PARAMETER ADCSObjects
+        Specifies the array of ADCS objects to be processed. This parameter is mandatory.
+
+    .PARAMETER SafeUsers
+        Specifies the list of SIDs of safe users who are allowed to have specific rights on the objects. This parameter is mandatory.
+
+    .PARAMETER ClientAuthEKUs
+        A list of EKUs that can be used for client authentication.
+
+    .OUTPUTS
+        The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
+
+    .EXAMPLE
+        $ADCSObjects = Get-ADCSObjects
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
+        $Results = $ADCSObjects | Find-ESC13 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEKUs
+        $Results
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
+        [Parameter(Mandatory)]
+        [array]$SafeUsers,
+        [Parameter(Mandatory)]
+        $ClientAuthEKUs
+    )
+
+    $ADCSObjects | Where-Object {
+        ($_.objectClass -eq 'pKICertificateTemplate') -and
+        ($_.pkiExtendedKeyUsage -match $ClientAuthEKUs) -and
+        ($_.'msPKI-Certificate-Policy')
+    } | ForEach-Object {
+        foreach ($policy in $_.'msPKI-Certificate-Policy') {
+            if ($ADCSObjects.'msPKI-Cert-Template-OID' -contains $policy) {
+                $OidToCheck = $ADCSObjects | Where-Object 'msPKI-Cert-Template-OID' -EQ $policy
+                if ($OidToCheck.'msDS-OIDToGroupLink') {
+                    foreach ($entry in $_.nTSecurityDescriptor.Access) {
+                        $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
+                        if ($Principal -match '^(S-1|O:)') {
+                            $SID = $Principal
+                        }
+                        else {
+                            $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+                        }
+                        if ( ($SID -notmatch $SafeUsers) -and ($entry.ActiveDirectoryRights -match 'ExtendedRight') ) {
+                            $Issue = [pscustomobject]@{
+                                Forest                = $_.CanonicalName.split('/')[0]
+                                Name                  = $_.Name
+                                DistinguishedName     = $_.DistinguishedName
+                                IdentityReference     = $entry.IdentityReference
+                                ActiveDirectoryRights = $entry.ActiveDirectoryRights
+                                LinkedGroup           = $OidToCheck.'msDS-OIDToGroupLink'
+                                Issue                 = @"
+$($entry.IdentityReference) can enroll in this Client Authentication template
+which is linked to the group $($OidToCheck.'msDS-OIDToGroupLink').
+
+If $($entry.IdentityReference) uses this certificate for authentication, they
+will gain the rights of the linked group while the group membership appears empty.
+
+"@
+                                Fix                   = @"
+# Enable Manager Approval
+`$Object = `'$($_.DistinguishedName)`'
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 2}
+"@
+                                Revert                = @"
+# Disable Manager Approval
+`$Object = `'$($_.DistinguishedName)`'
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
+"@
+                                Technique             = 'ESC13'
+                            }
+                            $Issue
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -339,15 +480,14 @@ function Find-ESC2 {
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [array]$ADCSObjects,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [string]$SafeUsers
     )
     $ADCSObjects | Where-Object {
         ($_.ObjectClass -eq 'pKICertificateTemplate') -and
         ( (!$_.pkiExtendedKeyUsage) -or ($_.pkiExtendedKeyUsage -match '2.5.29.37.0') ) -and
-        ($_.'msPKI-Certificate-Name-Flag' -band 1) -and
         !($_.'msPKI-Enrollment-Flag' -band 2) -and
         ( ($_.'msPKI-RA-Signature' -eq 0) -or ($null -eq $_.'msPKI-RA-Signature') )
     } | ForEach-Object {
@@ -359,21 +499,37 @@ function Find-ESC2 {
             else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
             }
-            if ( ($SID -notmatch $SafeUsers) -and ($entry.ActiveDirectoryRights -match 'ExtendedRight') ) {
+            if ( ($SID -notmatch $SafeUsers) -and ( ($entry.ActiveDirectoryRights -match 'ExtendedRight') -or ($entry.ActiveDirectoryRights -match 'GenericAll') ) ) {
                 $Issue = [pscustomobject]@{
                     Forest                = $_.CanonicalName.split('/')[0]
                     Name                  = $_.Name
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
-                    Issue                 = "$($entry.IdentityReference) can request a SubCA certificate without Manager Approval"
+                    Issue                 = @"
+$($entry.IdentityReference) can use this template to request a Subordinate
+Certification Authority (SubCA) certificate without Manager Approval.
+
+The resultant certificate can be used by an attacker to instantiate their own
+SubCA which is trusted by AD.
+
+By default, certificates created from this attacker-controlled SubCA cannot be
+used for authentication, but they can be used for other purposes such as TLS
+certs and code signing.
+
+However, if an attacker can modify the NtAuthCertificates object (see ESC5),
+they can convert their rogue CA into one trusted for authentication.
+
+"@
                     Fix                   = @"
+# Enable Manager Approval
 `$Object = `'$($_.DistinguishedName)`'
-Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 2}
 "@
                     Revert                = @"
+# Disable Manager Approval
 `$Object = `'$($_.DistinguishedName)`'
-Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@
                     Technique             = 'ESC2'
                 }
@@ -410,9 +566,9 @@ function Find-ESC3Condition1 {
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [array]$ADCSObjects,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [array]$SafeUsers
     )
     $ADCSObjects | Where-Object {
@@ -429,21 +585,30 @@ function Find-ESC3Condition1 {
             else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
             }
-            if ( ($SID -notmatch $SafeUsers) -and ($entry.ActiveDirectoryRights -match 'ExtendedRight') ) {
+            if ( ($SID -notmatch $SafeUsers) -and ( ($entry.ActiveDirectoryRights -match 'ExtendedRight') -or ($entry.ActiveDirectoryRights -match 'GenericAll') ) ) {
                 $Issue = [pscustomobject]@{
                     Forest                = $_.CanonicalName.split('/')[0]
                     Name                  = $_.Name
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
-                    Issue                 = "$($entry.IdentityReference) can enroll in this Enrollment Agent template without Manager Approval"
+                    Issue                 = @"
+$($entry.IdentityReference) can use this template to request an Enrollment Agent
+certificate without Manager Approval.
+
+The resulting certificate can be used to enroll in any template that requires
+an Enrollment Agent to submit the request.
+
+"@
                     Fix                   = @"
+# Enable Manager Approval
 `$Object = `'$($_.DistinguishedName)`'
-Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 2}
 "@
                     Revert                = @"
+# Disable Manager Approval
 `$Object = `'$($_.DistinguishedName)`'
-Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@
                     Technique             = 'ESC3'
                 }
@@ -480,9 +645,9 @@ function Find-ESC3Condition2 {
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [array]$ADCSObjects,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [array]$SafeUsers
     )
     $ADCSObjects | Where-Object {
@@ -500,21 +665,30 @@ function Find-ESC3Condition2 {
             else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
             }
-            if ( ($SID -notmatch $SafeUsers) -and ($entry.ActiveDirectoryRights -match 'ExtendedRight') ) {
+            if ( ($SID -notmatch $SafeUsers) -and ( ($entry.ActiveDirectoryRights -match 'ExtendedRight') -or ($entry.ActiveDirectoryRights -match 'GenericAll') ) ) {
                 $Issue = [pscustomobject]@{
                     Forest                = $_.CanonicalName.split('/')[0]
                     Name                  = $_.Name
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
-                    Issue                 = "$($entry.IdentityReference) can enroll in this Client Authentication template using a SAN without Manager Approval"
+                    Issue                 = @"
+If the holder of an Enrollment Agent certificate requests a certificate using
+this template, they will receive a certificate which allows them to authenticate
+as $($entry.IdentityReference).
+
+"@
                     Fix                   = @"
+First, eliminate unused Enrollment Agent templates.
+Then, tightly scope any Enrollment Agent templates that remain and:
+# Enable Manager Approval
 `$Object = `'$($_.DistinguishedName)`'
-Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 2}
 "@
                     Revert                = @"
+# Disable Manager Approval
 `$Object = `'$($_.DistinguishedName)`'
-Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@
                     Technique             = 'ESC3'
                 }
@@ -588,15 +762,15 @@ function Find-ESC4 {
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         $ADCSObjects,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         $DangerousRights,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         $SafeOwners,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         $SafeUsers,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         $SafeObjectTypes,
         [int]$Mode
     )
@@ -616,7 +790,11 @@ function Find-ESC4 {
                 Forest            = $_.CanonicalName.split('/')[0]
                 Name              = $_.Name
                 DistinguishedName = $_.DistinguishedName
-                Issue             = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
+                Issue             = @"
+$($_.nTSecurityDescriptor.Owner) has Owner rights on this template and can
+modify it into a template that can create ESC1, ESC2, and ESC3 templates.
+
+"@
                 Fix               = @"
 `$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`')
 `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
@@ -654,7 +832,9 @@ Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
-                    Issue                 = "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this template"
+                    Issue                 = "$($entry.IdentityReference) has been granted " +
+                    "$($entry.ActiveDirectoryRights) rights on this template.`n" +
+                    "$($entry.IdentityReference) can likely modify this template into an ESC1 template."
                     Fix                   = @"
 `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
 foreach ( `$ace in `$ACL.access ) {
@@ -741,15 +921,15 @@ function Find-ESC5 {
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         $ADCSObjects,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         $DangerousRights,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         $SafeOwners,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         $SafeUsers,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         $SafeObjectTypes
     )
     $ADCSObjects | ForEach-Object {
@@ -764,11 +944,62 @@ function Find-ESC5 {
         }
 
         if ( ($_.objectClass -ne 'pKICertificateTemplate') -and ($SID -notmatch $SafeOwners) ) {
+            switch ($_.objectClass) {
+                computer {
+                    $IssueDetail = @"
+This computer is hosting a Certification Authority (CA). $($_.nTSecurityDescriptor.Owner)
+has full control of this object.
+
+There is little reason for anyone other than AD Admins to have elevated rights
+to this CA host.
+"@
+                }
+                'msPKI-Cert-Template-OID' {
+                    $IssueDetail = @"
+This Object Identifier (OID) can be modified into an Application Policy and linked
+to an empty Universal Group.
+
+If $($_.nTSecurityDescriptor.Owner) also has control over a certificate template
+(see ESC4), an attacker could link this Application Policy to the template. Once
+linked, any certificates issued from that template would allow an attacker to
+act as a member of the linked group (see ESC13).
+"@
+                }
+                pKIEnrollmentService {
+                    $IssueDetail = @"
+$($_.nTSecurityDescriptor.Owner) can use these elevated rights to publish currently
+unpublished templates.
+
+If $($_.nTSecurityDescriptor.Owner) also has control over an unpublished certificate
+template (see ESC4), they could modify the template into an ESC1 template then
+publish the certificate. This published certificate could be use for privilege
+escalation and persistence.
+"@
+                }
+            }
+            if ($_.objectClass -eq 'certificationAuthority' -and $_.Name -eq 'NTAuthCertificates') {
+                $IssueDetail = @"
+The NTAuthCertificates object determines which Certification Authorities are
+trusted by Active Directory (AD) for client authentication of all forms.
+
+$($_.nTSecurityDescriptor.Owner) can use their granted rights on NTAuthCertificates
+to add their own rogue CAs. Once the rogue CA is trusted, any client authentication
+certificates generated by the it can be used by the attacker.
+"@
+            }
+
             $Issue = [pscustomobject]@{
                 Forest            = $_.CanonicalName.split('/')[0]
                 Name              = $_.Name
                 DistinguishedName = $_.DistinguishedName
-                Issue             = "$($_.nTSecurityDescriptor.Owner) has Owner rights on this template"
+                objectClass       = $_.objectClass
+                Issue             = @"
+$($_.nTSecurityDescriptor.Owner) has Owner rights on this object. They are able
+to modify this object in whatever way they wish.
+
+$IssueDetail
+
+"@
                 Fix               = @"
 `$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`')
 `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
@@ -793,6 +1024,51 @@ Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
             else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
             }
+
+            switch ($_.objectClass) {
+                computer {
+                    $IssueDetail = @"
+This computer is hosting a Certification Authority (CA). It is likely
+$($entry.IdentityReference) can take control of this object.
+
+There is little reason for anyone other than AD Admins to have elevated rights
+to this CA host.
+"@
+                }
+                'msPKI-Cert-Template-OID' {
+                    $IssueDetail = @"
+This Object Identifier (OID) can be modified into an Application Policy and linked
+to an empty Universal Group.
+
+If $($entry.IdentityReference) also has control over a certificate template
+(see ESC4), an attacker could link this Application Policy to the template. Once
+linked, any certificates issued from that template would allow an attacker to
+act as a member of the linked group (see ESC13).
+"@
+                }
+                pKIEnrollmentService {
+                    $IssueDetail = @"
+$($entry.IdentityReference) can use these elevated rights to publish currently
+unpublished templates.
+
+If $($entry.IdentityReference) also has control over an unpublished certificate
+template (see ESC4), they could modify the template into an ESC1 template then
+publish the certificate. This published certificate could be use for privilege
+escalation and persistence.
+"@
+                }
+            }
+            if ($_.objectClass -eq 'certificationAuthority' -and $_.Name -eq 'NTAuthCertificates') {
+                $IssueDetail = @"
+The NTAuthCertificates object determines which Certification Authorities are
+trusted by Active Directory (AD) for client authentication of all forms.
+
+$($entry.IdentityReference) can use their granted rights on NTAuthCertificates
+to add their own rogue CAs. Once the rogue CA is trusted, any client authentication
+certificates generated by the it can be used by the attacker.
+"@
+            }
+
             if ( ($_.objectClass -ne 'pKICertificateTemplate') -and
                 ($SID -notmatch $SafeUsers) -and
                 ($entry.AccessControlType -eq 'Allow') -and
@@ -804,11 +1080,18 @@ Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
-                    Issue                 = "$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) rights on this object"
+                    Issue                 = @"
+$($entry.IdentityReference) has $($entry.ActiveDirectoryRights) elevated rights
+on this $($_.objectClass) object.
+
+$IssueDetail
+
+"@
                     Fix                   = @"
 `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
 foreach ( `$ace in `$ACL.access ) {
-    if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) {
+    if ( (`$ace.IdentityReference.Value -like '$($Principal.Value)' ) -and
+        ( `$ace.ActiveDirectoryRights -notmatch '^ExtendedRight$') ) {
         `$ACL.RemoveAccessRule(`$ace) | Out-Null
     }
 }
@@ -847,7 +1130,7 @@ function Find-ESC6 {
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         $ADCSObjects
     )
     process {
@@ -866,16 +1149,33 @@ function Find-ESC6 {
                 Revert            = 'N/A'
             }
             if ($_.SANFlag -eq 'Yes') {
-                $Issue.Issue = 'EDITF_ATTRIBUTESUBJECTALTNAME2 is enabled.'
+                $Issue.Issue = @"
+The dangerous EDITF_ATTRIBUTESUBJECTALTNAME2 flag is enabled on $CAFullname.
+All templates published on this CA will accept a Subject Alternative Name (SAN)
+during enrollment even if the template is not specifically configured to allow a SAN.
+
+As of May 2022, Microsoft has neutered this situation by requiring all SANs to
+be strongly mapped to certificates.
+
+However, if strong mapping has been explicitly disabled on Domain Controllers,
+this configuration remains vulnerable to privilege escalation attacks.
+
+"@
                 $Issue.Fix = @"
+# Disable the flag
 certutil -config $CAFullname -setreg policy\EditFlags -EDITF_ATTRIBUTESUBJECTALTNAME2
-Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock {
+
+# Restart the Ceritification Authority service
+Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
     Get-Service -Name `'certsvc`' | Restart-Service -Force
 }
 "@
                 $Issue.Revert = @"
+# Enable the flag
 certutil -config $CAFullname -setreg policy\EditFlags +EDITF_ATTRIBUTESUBJECTALTNAME2
-Invoke-Command -ComputerName `"$($_.dNSHostName)`" -ScriptBlock {
+
+# Restart the Ceritification Authority service
+Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
     Get-Service -Name `'certsvc`' | Restart-Service -Force
 }
 "@
@@ -916,7 +1216,7 @@ function Find-ESC8 {
 
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         $ADCSObjects
     )
 
@@ -931,7 +1231,16 @@ function Find-ESC8 {
                     DistinguishedName    = $_.DistinguishedName
                     CAEnrollmentEndpoint = $endpoint.URL
                     AuthType             = $endpoint.Auth
-                    Issue                = 'An HTTP enrollment endpoint is available.'
+                    Issue                = @'
+An HTTP enrollment endpoint is available. It is possible to relay NTLM
+authentication to this HTTP endpoint.
+
+If the LAN Manager authentication level of any domain in this forest is 2 or
+less, an attacker can coerce authentication from a Domain Controller (DC) and
+relay it to this HTTP enrollment enpoint to receive a certificate which can be
+used to authenticate as that DC.
+
+'@
                     Fix                  = @'
 Disable HTTP access and enforce HTTPS.
 Enable EPA.
@@ -941,7 +1250,18 @@ Disable NTLM authentication (if possible.)
                     Technique            = 'ESC8'
                 }
                 if ($endpoint.URL -match '^https:') {
-                    $Issue.Issue = 'An HTTPS enrollment endpoint is available.'
+                    $Issue.Issue = @'
+An HTTPS enrollment endpoint is available. It may be possible to relay NTLM
+authentication to this HTTPS endpoint. Enabling IIS Extended Protection for
+Authentication or disabling NTLM authentication completely, NTLM relay is not
+possible.
+
+If those protection are not in place, and the LAN Manager authentication level
+of any domain in this forest is 2 or less, an attacker can coerce authentication
+from a Domain Controller (DC) and relay it to this HTTPS enrollment enpoint to
+receive a certificate which can be used to authenticate as that DC.
+
+'@
                     $Issue.Fix = @'
 Ensure EPA is enabled.
 Disable NTLM authentication (if possible.)
@@ -1005,7 +1325,7 @@ function Find-ESC9 {
 
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         $ADCSObjects
     )
 
@@ -1095,7 +1415,7 @@ function Format-Result {
     [CmdletBinding()]
     param(
         $Issue,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [int]$Mode
     )
 
@@ -1109,23 +1429,27 @@ function Format-Result {
         ESC6   = 'ESC6 - EDITF_ATTRIBUTESUBJECTALTNAME2 Flag Enabled'
         ESC8   = 'ESC8 - HTTP/S Enrollment Enabled'
         ESC11  = 'ESC11 - IF_ENFORCEENCRYPTICERTREQUEST Flag Disabled'
+        ESC13  = 'ESC13 - Vulnerable Certificate Temple - Group-Linked'
     }
 
     if ($null -ne $Issue) {
         $UniqueIssue = $Issue.Technique | Sort-Object -Unique
         $Title = $($IssueTable[$UniqueIssue])
-        Write-Host "$('-'*($($Title.ToString().Length + 10)))" -ForegroundColor Magenta -BackgroundColor Magenta -NoNewline; Write-Host
+        Write-Host "$('-'*($($Title.ToString().Length + 10)))" -ForegroundColor Black -BackgroundColor Magenta -NoNewline; Write-Host
         Write-Host "     " -BackgroundColor Magenta -NoNewline
-        Write-Host $Title -BackgroundColor Magenta -ForegroundColor White -NoNewline
+        Write-Host $Title -BackgroundColor Magenta -ForegroundColor Black -NoNewline
         Write-Host "     " -BackgroundColor Magenta -NoNewline; Write-Host
-        Write-Host "$('-'*($($Title.ToString().Length + 10)))" -ForegroundColor Magenta -BackgroundColor Magenta -NoNewline; Write-Host
+        Write-Host "$('-'*($($Title.ToString().Length + 10)))" -ForegroundColor Black -BackgroundColor Magenta -NoNewline; Write-Host
 
         switch ($Mode) {
             0 {
                 $Issue | Format-Table Technique, Name, Issue -Wrap
             }
             1 {
-                if ($Issue.Technique -eq 'ESC8') {
+                if ($Issue.Technique -eq 'ESC5') {
+                    $Issue | Format-List Technique, Name, objectClass, DistinguishedName, Issue, Fix
+                }
+                elseif ($Issue.Technique -eq 'ESC8') {
                     $Issue | Format-List Technique, Name, DistinguishedName, CAEnrollmentEndpoint, AuthType, Issue, Fix
                 }
                 else {
@@ -1421,8 +1745,11 @@ function Invoke-Remediation {
     .PARAMETER ESC6
     A PS Object containing all necessary information about ESC6 issues.
 
-    .PARAMETER ESC6
+    .PARAMETER ESC11
     A PS Object containing all necessary information about ESC11 issues.
+
+    .PARAMETER ESC13
+    A PS Object containing all necessary information about ESC13 issues.
 
     .INPUTS
     PS Objects
@@ -1440,7 +1767,8 @@ function Invoke-Remediation {
         $ESC4,
         $ESC5,
         $ESC6,
-        $ESC11
+        $ESC11,
+        $ESC13
     )
 
     Write-Host "`nExecuting Mode 4 - Attempting to fix identified issues!`n" -ForegroundColor Green
@@ -1448,7 +1776,18 @@ function Invoke-Remediation {
     Write-Host 'Invoke-RevertLocksmith.ps1' -ForegroundColor White -NoNewline
     Write-Host ") which can be used to revert all changes made by Locksmith...`n"
     try {
-        Export-RevertScript -AuditingIssues $AuditingIssues -ESC1 $ESC1 -ESC2 $ESC2 -ESC3 $ESC3 -ESC4 $ESC4 -ESC5 $ESC5 -ESC6 $ESC6 -ESC11 $ESC11
+        $params = @{
+            AuditingIssues = $AuditingIssues
+            ESC1           = $ESC1
+            ESC2           = $ESC2
+            ESC3           = $ESC3
+            ESC4           = $ESC4
+            ESC5           = $ESC5
+            ESC6           = $ESC6
+            ESC11          = $ESC11
+            ESC13          = $ESC13
+        }
+        Export-RevertScript @params
     }
     catch {
         Write-Warning 'Creation of Invoke-RevertLocksmith.ps1 failed.'
@@ -1468,7 +1807,7 @@ function Invoke-Remediation {
         $AuditingIssues | ForEach-Object {
             $FixBlock = [scriptblock]::Create($_.Fix)
             Write-Host 'ISSUE:' -ForegroundColor White
-            Write-Host "Auditing is not fully enabled on Certification Authority `"$($_.Name)`".`n"
+            Write-Host "$($_.Issue)`n"
             Write-Host 'TECHNIQUE:' -ForegroundColor White
             Write-Host "$($_.Technique)`n"
             Write-Host 'ACTION TO BE PERFORMED:' -ForegroundColor White
@@ -1501,7 +1840,7 @@ function Invoke-Remediation {
         $ESC1 | ForEach-Object {
             $FixBlock = [scriptblock]::Create($_.Fix)
             Write-Host 'ISSUE:' -ForegroundColor White
-            Write-Host "Security Principals can enroll in `"$($_.Name)`" template using a Subject Alternative Name without Manager Approval.`n"
+            Write-Host "$($_.Issue)`n"
             Write-Host 'TECHNIQUE:' -ForegroundColor White
             Write-Host "$($_.Technique)`n"
             Write-Host 'ACTION TO BE PERFORMED:' -ForegroundColor White
@@ -1534,7 +1873,7 @@ function Invoke-Remediation {
         $ESC2 | ForEach-Object {
             $FixBlock = [scriptblock]::Create($_.Fix)
             Write-Host 'ISSUE:' -ForegroundColor White
-            Write-Host "Security Principals can enroll in `"$($_.Name)`" template and create a Subordinate Certification Authority without Manager Approval.`n"
+            Write-Host "$($_.Issue)`n"
             Write-Host 'TECHNIQUE:' -ForegroundColor White
             Write-Host "$($_.Technique)`n"
             Write-Host 'ACTION TO BE PERFORMED:' -ForegroundColor White
@@ -1597,7 +1936,7 @@ function Invoke-Remediation {
         }
     }
     if ($ESC5) {
-        $ESC5 | Where-Object Issue -Like "* Owner rights *" | ForEach-Object { # This selector sucks - Jake
+        $ESC5 | Where-Object Issue -Like "* Owner rights *" | ForEach-Object { # TODO This selector sucks - Jake
             $FixBlock = [scriptblock]::Create($_.Fix)
             Write-Host 'ISSUE:' -ForegroundColor White
             Write-Host "$($_.Issue)`n"
@@ -1633,7 +1972,7 @@ function Invoke-Remediation {
         $ESC6 | ForEach-Object {
             $FixBlock = [scriptblock]::Create($_.Fix)
             Write-Host 'ISSUE:' -ForegroundColor White
-            Write-Host "The Certification Authority `"$($_.Name)`" has the dangerous EDITF_ATTRIBUTESUBJECTALTNAME2 flag enabled.`n"
+            Write-Host "$($_.Issue)`n"
             Write-Host 'TECHNIQUE:' -ForegroundColor White
             Write-Host "$($_.Technique)`n"
             Write-Host 'ACTION TO BE PERFORMED:' -ForegroundColor White
@@ -1668,7 +2007,7 @@ function Invoke-Remediation {
         $ESC11 | ForEach-Object {
             $FixBlock = [scriptblock]::Create($_.Fix)
             Write-Host 'ISSUE:' -ForegroundColor White
-            Write-Host "The Certification Authority `"$($_.Name)`" has the IF_ENFORCEENCRYPTICERTREQUEST flag disabled.`n"
+            Write-Host "$($_.Issue)`n"
             Write-Host 'TECHNIQUE:' -ForegroundColor White
             Write-Host "$($_.Technique)`n"
             Write-Host 'ACTION TO BE PERFORMED:' -ForegroundColor White
@@ -1699,6 +2038,40 @@ function Invoke-Remediation {
         }
     }
 
+    if ($ESC13) {
+        $ESC13 | ForEach-Object {
+            $FixBlock = [scriptblock]::Create($_.Fix)
+            Write-Host 'ISSUE:' -ForegroundColor White
+            Write-Host "$($_.Issue)`n"
+            Write-Host 'TECHNIQUE:' -ForegroundColor White
+            Write-Host "$($_.Technique)`n"
+            Write-Host 'ACTION TO BE PERFORMED:' -ForegroundColor White
+            Write-Host "Locksmith will attempt to enable Manager Approval on the `"$($_.Name)`" template.`n"
+            Write-Host 'CCOMMAND(S) TO BE RUN:'
+            Write-Host 'PS> ' -NoNewline
+            Write-Host "$($_.Fix)`n" -ForegroundColor Cyan
+            Write-Host 'OPERATIONAL IMPACT:' -ForegroundColor White
+            Write-Host "WARNING: This change could cause some services to stop working until certificates are approved.`n" -ForegroundColor Yellow
+            Write-Host "If you continue, Locksmith will attempt to fix this issue.`n" -ForegroundColor Yellow
+            Write-Host "Continue with this operation? [Y] Yes " -NoNewline
+            Write-Host "[N] " -ForegroundColor Yellow -NoNewline
+            Write-Host "No: " -NoNewline
+            $WarningError = ''
+            $WarningError = Read-Host
+            if ($WarningError -like 'y') {
+                try {
+                    Invoke-Command -ScriptBlock $FixBlock
+                }
+                catch {
+                    Write-Error 'Could not enable Manager Approval. Are you an Active Directory or AD CS admin?'
+                }
+            }
+            else {
+                Write-Host "SKIPPED!`n" -ForegroundColor Yellow
+            }
+        }
+    }
+
     Write-Host "Mode 4 Complete! There are no more issues that Locksmith can automatically resolve.`n" -ForegroundColor Green
     Write-Host 'If you experience any operational impact from using Locksmith Mode 4, use ' -NoNewline
     Write-Host 'Invoke-RevertLocksmith.ps1 ' -ForegroundColor White
@@ -1716,41 +2089,27 @@ function Invoke-Scans {
     .SYNOPSIS
         Invoke-Scans.ps1 is a script that performs various scans on ADCS (Active Directory Certificate Services) objects.
 
-    .DESCRIPTION
-        This script accepts a parameter named $Scans, which specifies the type of scans to perform. The available scan options are:
-        - Auditing
-        - ESC1
-        - ESC2
-        - ESC3
-        - ESC4
-        - ESC5
-        - ESC6
-        - ESC8
-        - ESC11
-        - All
-        - PromptMe
-
     .PARAMETER Scans
         Specifies the type of scans to perform. Multiple scan options can be provided as an array. The default value is 'All'.
-        The available scan options are: 'Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'ESC11', 'All', 'PromptMe'.
+        The available scan options are: 'Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'ESC11', 'ESC13', 'All', 'PromptMe'.
 
     .NOTES
         - The script requires the following functions to be defined: Find-AuditingIssue, Find-ESC1, Find-ESC2, Find-ESC3Condition1,
-          Find-ESC3Condition2, Find-ESC4, Find-ESC5, Find-ESC6, Find-ESC8, Find-ESC8.
+          Find-ESC3Condition2, Find-ESC4, Find-ESC5, Find-ESC6, Find-ESC8, Find-ESC11, Find-ESC13
         - The script uses Out-GridView or Out-ConsoleGridView for interactive selection when the 'PromptMe' scan option is chosen.
         - The script returns a hash table containing the results of the scans.
 
     .EXAMPLE
-        # Perform all scans
-        Invoke-Scans
+    Invoke-Scans
+    # Perform all scans
 
     .EXAMPLE
-        # Perform only the 'Auditing' and 'ESC1' scans
-        Invoke-Scans -Scans 'Auditing', 'ESC1'
+    Invoke-Scans -Scans 'Auditing', 'ESC1'
+    # Perform only the 'Auditing' and 'ESC1' scans
 
     .EXAMPLE
-        # Prompt the user to select the scans to perform
-        Invoke-Scans -Scans 'PromptMe'
+    Invoke-Scans -Scans 'PromptMe'
+    # Prompt the user to select the scans to perform
     #>
 
     [CmdletBinding()]
@@ -1765,7 +2124,7 @@ function Invoke-Scans {
         [int]$Mode,
         $SafeObjectTypes,
         $SafeOwners,
-        [ValidateSet('Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'ESC11', 'All', 'PromptMe')]
+        [ValidateSet('Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'ESC11', 'ESC13', 'All', 'PromptMe')]
         [array]$Scans = 'All',
         $UnsafeOwners,
         $UnsafeUsers,
@@ -1836,7 +2195,7 @@ function Invoke-Scans {
             Write-Host 'Identifying auditing issues...'
             [array]$AuditingIssues = Find-AuditingIssue -ADCSObjects $ADCSObjects
             Write-Host 'Identifying AD CS templates with dangerous ESC1 configurations...'
-            [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+            [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEkus
             Write-Host 'Identifying AD CS templates with dangerous ESC2 configurations...'
             [array]$ESC2 = Find-ESC2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
             Write-Host 'Identifying AD CS templates with dangerous ESC3 configurations...'
@@ -1852,14 +2211,16 @@ function Invoke-Scans {
             [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects
             Write-Host 'Identifying Certificate Authorities with IF_ENFORCEENCRYPTICERTREQUEST disabled (ESC11)...'
             [array]$ESC11 = Find-ESC11 -ADCSObjects $ADCSObjects
+            Write-Host 'Identifying AD CS templates with dangerous ESC13 configurations...'
+            [array]$ESC13 = Find-ESC13 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEkus
             Write-Host
         }
     }
 
-    [array]$AllIssues = $AuditingIssues + $ESC1 + $ESC2 + $ESC3 + $ESC4 + $ESC5 + $ESC6 + $ESC8 + $ESC11
+    [array]$AllIssues = $AuditingIssues + $ESC1 + $ESC2 + $ESC3 + $ESC4 + $ESC5 + $ESC6 + $ESC8 + $ESC11 + $ESC13
 
     # If these are all empty = no issues found, exit
-    if ((!$AuditingIssues) -and (!$ESC1) -and (!$ESC2) -and (!$ESC3) -and (!$ESC4) -and (!$ESC5) -and (!$ESC6) -and (!$ESC8) -and ($ESC11) ) {
+    if ((!$AuditingIssues) -and (!$ESC1) -and (!$ESC2) -and (!$ESC3) -and (!$ESC4) -and (!$ESC5) -and (!$ESC6) -and (!$ESC8) -and ($ESC11) -and ($ESC13) ) {
         Write-Host "`n$(Get-Date) : No ADCS issues were found." -ForegroundColor Green
         break
     }
@@ -1876,6 +2237,7 @@ function Invoke-Scans {
         ESC6           = $ESC6
         ESC8           = $ESC8
         ESC11          = $ESC11
+        ESC13          = $ESC13
     }
 }
 
@@ -2014,6 +2376,15 @@ function New-Dictionary {
             FindIt        = { Find-ESC11 }
             FixIt         = { Write-Output 'Add code to fix the vulnerable configuration.' }
             ReferenceUrls = 'https://blog.compass-security.com/2022/11/relaying-to-ad-certificate-services-over-rpc/'
+        },
+        [VulnerableConfigurationItem]@{
+            Name          = 'ESC13'
+            Category      = 'Escalation Path'
+            Subcategory   = 'Certificate Template linked to Group'
+            Summary       = ''
+            FindIt        = { Find-ESC13 }
+            FixIt         = { Write-Output 'Add code to fix the vulnerable configuration.' }
+            ReferenceUrls = 'https://posts.specterops.io/adcs-esc13-abuse-technique-fda4272fbd53'
         },
         [VulnerableConfigurationItem]@{
             Name          = 'Auditing'
@@ -2276,7 +2647,7 @@ function Set-Severity {
     [OutputType([string])]
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [array]$Issue
     )
     foreach ($Finding in $Issue) {
@@ -2769,7 +3140,7 @@ function Invoke-Locksmith {
     Finds the most common malconfigurations of Active Directory Certificate Services (AD CS).
 
     .DESCRIPTION
-    Locksmith uses the Active Directory (AD) Powershell (PS) module to identify 7 misconfigurations
+    Locksmith uses the Active Directory (AD) Powershell (PS) module to identify 10 misconfigurations
     commonly found in Enterprise mode AD CS installations.
 
     .COMPONENT
@@ -2854,7 +3225,8 @@ function Invoke-Locksmith {
         [System.Management.Automation.PSCredential]$Credential
     )
 
-    $Version = '2024.11'
+    $Version = '2024.11.10'
+
     $LogoPart1 = @"
     _       _____  _______ _     _ _______ _______ _____ _______ _     _
     |      |     | |       |____/  |______ |  |  |   |      |    |_____|
@@ -2891,7 +3263,7 @@ function Invoke-Locksmith {
     # For output filenames
     [string]$FilePrefix = "Locksmith $(Get-Date -Format 'yyyy-MM-dd hh-mm-ss')"
 
-    # Extended Key Usages for client authentication. A requirement for ESC1
+    # Extended Key Usages for client authentication. A requirement for ESC1, ESC3 Condition 2, and ESC13
     $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
 
     # GenericAll, WriteDacl, and WriteOwner all permit full control of an AD object.
@@ -3025,6 +3397,7 @@ function Invoke-Locksmith {
     $ESC6 = $Results['ESC6']
     $ESC8 = $Results['ESC8']
     $ESC11 = $Results['ESC11']
+    $ESC13 = $Results['ESC13']
 
     # If these are all empty = no issues found, exit
     if ($null -eq $Results) {
@@ -3045,6 +3418,7 @@ function Invoke-Locksmith {
             Format-Result $ESC6 '0'
             Format-Result $ESC8 '0'
             Format-Result $ESC11 '0'
+            Format-Result $ESC13 '0'
         }
         1 {
             Format-Result $AuditingIssues '1'
@@ -3056,6 +3430,7 @@ function Invoke-Locksmith {
             Format-Result $ESC6 '1'
             Format-Result $ESC8 '1'
             Format-Result $ESC11 '1'
+            Format-Result $ESC13 '1'
         }
         2 {
             $Output = Join-Path -Path $OutputPath -ChildPath "$FilePrefix ADCSIssues.CSV"
@@ -3089,6 +3464,7 @@ function Invoke-Locksmith {
                 ESC5           = $ESC5
                 ESC6           = $ESC6
                 ESC11          = $ESC11
+                ESC13          = $ESC13
             }
             Invoke-Remediation @params
         }

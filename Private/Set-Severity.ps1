@@ -2,7 +2,7 @@ function Set-Severity {
     [OutputType([string])]
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [array]$Issue
     )
     foreach ($Finding in $Issue) {

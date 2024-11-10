@@ -26,7 +26,7 @@ function Format-Result {
     [CmdletBinding()]
     param(
         $Issue,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [int]$Mode
     )
 
@@ -40,23 +40,26 @@ function Format-Result {
         ESC6   = 'ESC6 - EDITF_ATTRIBUTESUBJECTALTNAME2 Flag Enabled'
         ESC8   = 'ESC8 - HTTP/S Enrollment Enabled'
         ESC11  = 'ESC11 - IF_ENFORCEENCRYPTICERTREQUEST Flag Disabled'
+        ESC13  = 'ESC13 - Vulnerable Certificate Temple - Group-Linked'
     }
 
     if ($null -ne $Issue) {
         $UniqueIssue = $Issue.Technique | Sort-Object -Unique
         $Title = $($IssueTable[$UniqueIssue])
-        Write-Host "$('-'*($($Title.ToString().Length + 10)))" -ForeGroundColor Magenta -BackgroundColor Magenta -NoNewline; Write-Host
+        Write-Host "$('-'*($($Title.ToString().Length + 10)))" -ForeGroundColor Black -BackgroundColor Magenta -NoNewline; Write-Host
         Write-Host "     " -BackgroundColor Magenta -NoNewline
-        Write-Host $Title -BackgroundColor Magenta -ForeGroundColor White -NoNewline
+        Write-Host $Title -BackgroundColor Magenta -ForeGroundColor Black -NoNewline
         Write-Host "     " -BackgroundColor Magenta -NoNewline; Write-Host
-        Write-Host "$('-'*($($Title.ToString().Length + 10)))" -ForeGroundColor Magenta -BackgroundColor Magenta -NoNewline; Write-Host
+        Write-Host "$('-'*($($Title.ToString().Length + 10)))" -ForeGroundColor Black -BackgroundColor Magenta -NoNewline; Write-Host
 
         switch ($Mode) {
             0 {
                 $Issue | Format-Table Technique, Name, Issue -Wrap
             }
             1 {
-                if ($Issue.Technique -eq 'ESC8') {
+                if ($Issue.Technique -eq 'ESC5') {
+                    $Issue | Format-List Technique, Name, objectClass, DistinguishedName, Issue, Fix
+                } elseif ($Issue.Technique -eq 'ESC8') {
                     $Issue | Format-List Technique, Name, DistinguishedName, CAEnrollmentEndpoint, AuthType, Issue, Fix
                 } else {
                     $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix
