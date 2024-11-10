@@ -32,6 +32,10 @@ A ~~tiny~~ small tool built to find and fix common misconfigurations in Active D
    6. [Scans](#Scans)
 
 # Installation
+## Prerequisites
+1. Locksmith (both script and module versions) must be run on a domain joined system.
+2. Locksmith (module version only) needs the ActiveDirectory and ServerManager PowerShell modules installed.
+
 ## Module
 ### Install module from the PowerShell Gallery (preferred):
 1. Open a PowerShell prompt and run `Install-Module -Name Locksmith -Scope CurrentUser`
@@ -39,12 +43,12 @@ A ~~tiny~~ small tool built to find and fix common misconfigurations in Active D
 ### Install module manually from GitHub:
 1. Download the [latest module version](https://github.com/TrimarcJake/Locksmith/releases/latest) ( **Locksmith-v**\<YEAR\>**.**\<MONTH\>**.zip** )
 2. Extract the downloaded zip file
-3. Open a PowerShell prompt to the location of the extracted file and run `Import-Module Locksmith.psd1`
+3. Open a PowerShell prompt to the location of the extracted file and run `Import-Module .\Locksmith.psd1`
 
 ## Script
 ### Download the standalone script (classic) without module:
 1. Download the latest script version: [https://github.com/TrimarcJake/Locksmith/releases/latest/download/Invoke-Locksmith.zip](https://github.com/TrimarcJake/Locksmith/releases/latest/download/Invoke-Locksmith.zip)
-2. Extract the downloaded zip file
+2. Open a PowerShell prompt to the location of the downloaded file and run `.\Invoke-Locksmith.ps1`
 
 <a name="RunLocksmith" id="RunLocksmith"></a>
 # Run Locksmith
