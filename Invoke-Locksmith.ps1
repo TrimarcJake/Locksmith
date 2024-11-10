@@ -1144,7 +1144,7 @@ function Find-ESC6 {
                 Name              = $_.Name
                 DistinguishedName = $_.DistinguishedName
                 Technique         = 'ESC6'
-                Issue             = $_.AuditFilter
+                Issue             = $_.SANFlag
                 Fix               = 'N/A'
                 Revert            = 'N/A'
             }
@@ -2468,17 +2468,35 @@ function Set-AdditionalCAProperty {
 
     begin {
         $CAEnrollmentEndpoint = @()
-        $code = @"
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-public class TrustAllCertsPolicy : ICertificatePolicy {
-    public bool CheckValidationResult(ServicePoint srvPoint, X509Certificate certificate, WebRequest request, int certificateProblem) {
-        return true;
-    }
-}
+        if (-not ([System.Management.Automation.PSTypeName]'TrustAllCertsPolicy') ) {
+            if ($PSVersionTable.PSEdition -eq 'Desktop') {
+                $code = @"
+                    using System.Net;
+                    using System.Security.Cryptography.X509Certificates;
+                    public class TrustAllCertsPolicy : ICertificatePolicy {
+                        public bool CheckValidationResult(ServicePoint srvPoint, X509Certificate certificate, WebRequest request, int certificateProblem) {
+                            return true;
+                        }
+                    }
 "@
-        Add-Type -TypeDefinition $code -Language CSharp
-        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+                Add-Type -TypeDefinition $code -Language CSharp
+                [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+            }
+            else {
+                Add-Type @"
+                    using System.Net;
+                    using System.Security.Cryptography.X509Certificates;
+                    using System.Net.Security;
+                    public class TrustAllCertsPolicy {
+                        public static bool TrustAllCerts(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) {
+                            return true;
+                        }
+                    }
+"@
+                # Set the ServerCertificateValidationCallback
+                [System.Net.ServicePointManager]::ServerCertificateValidationCallback = [TrustAllCertsPolicy]::TrustAllCerts
+            }
+        }
     }
 
     process {
@@ -2660,6 +2678,44 @@ function Set-Severity {
             return 'Unknown Failure'
         }
     }
+}
+
+function Show-LocksmithLogo {
+    Write-Host '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+    Write-Host '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+    Write-Host '%%%%%%%%%%%%%%%%%#+==============#%%%%%%%%%%%%%%%%%'
+    Write-Host '%%%%%%%%%%%%%%#=====================#%%%%%%%%%%%%%%'
+    Write-Host '%%%%%%%%%%%%#=========================#%%%%%%%%%%%%'
+    Write-Host '%%%%%%%%%%%=============================%%%%%%%%%%%'
+    Write-Host '%%%%%%%%%#==============+++==============#%%%%%%%%%'
+    Write-Host '%%%%%%%%#===========#%%%%%%%%%#===========#%%%%%%%%'
+    Write-Host '%%%%%%%%==========%%%%%%%%%%%%%%%==========%%%%%%%%'
+    Write-Host '%%%%%%%*=========%%%%%%%%%%%%%%%%%=========*%%%%%%%'
+    Write-Host '%%%%%%%+========*%%%%%%%%%%%%%%%%%#=========%%%%%%%'
+    Write-Host '%%%%%%%+========#%%%%%%%%%%%%%%%%%#=========%%%%%%%'
+    Write-Host '%%%%%%%+========#%%%%%%%%%%%%%%%%%#=========%%%%%%%'
+    Write-Host '%%%%%%%+========#%%%%%%%%%%%%%%%%%#=========%%%%%%%'
+    Write-Host '%%%%%%%+========#%%%%%%%%%%%%%%%%%#=========%%%%%%%'
+    Write-Host '%%%%%%%+========#%%%%%%%%%%%%%%%%%#=========%%%%%%%'
+    Write-Host '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+    Write-Host '#=================================================#'
+    Write-Host '#=================================================#'
+    Write-Host '#=================+%%%============================#'
+    Write-Host '#==================%%%%*==========================#'
+    Write-Host '#===================*%%%%+========================#'
+    Write-Host '#=====================#%%%%=======================#'
+    Write-Host '#======================+%%%%#=====================#'
+    Write-Host '#========================*%%%%*===================#'
+    Write-Host '#========================+%%%%%===================#'
+    Write-Host '#======================#%%%%%+====================#'
+    Write-Host '#===================+%%%%%%=======================#'
+    Write-Host '#=================#%%%%%+=========================#'
+    Write-Host '#==============+%%%%%#============================#'
+    Write-Host '#============*%%%%%+====+%%%%%%%%%%===============#'
+    Write-Host '#=============%%*========+********+===============#'
+    Write-Host '#=================================================#'
+    Write-Host '#=================================================#'
+    Write-Host '#=================================================#'
 }
 
 function Test-IsADAdmin {
@@ -3170,6 +3226,7 @@ function Invoke-Locksmith {
     )
 
     $Version = '2024.11.10'
+
     $LogoPart1 = @"
     _       _____  _______ _     _ _______ _______ _____ _______ _     _
     |      |     | |       |____/  |______ |  |  |   |      |    |_____|

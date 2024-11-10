@@ -99,9 +99,9 @@ function Invoke-Scans {
             Write-Host 'Identifying HTTP-based certificate enrollment interfaces (ESC8)...'
             [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects
         }
-        ESC6 {
+        ESC11 {
             Write-Host 'Identifying Issuing CAs with IF_ENFORCEENCRYPTICERTREQUEST disabled (ESC11)...'
-            [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects
+            [array]$ESC11 = Find-ESC11 -ADCSObjects $ADCSObjects
         }
         All {
             Write-Host 'Identifying auditing issues...'
