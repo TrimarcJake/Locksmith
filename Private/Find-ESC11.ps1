@@ -1,11 +1,11 @@
-﻿function Find-ESC6 {
+﻿function Find-ESC11 {
     <#
     .SYNOPSIS
-        This script finds AD CS (Active Directory Certificate Services) objects that have the ESC6 vulnerability.
+        This script finds AD CS (Active Directory Certificate Services) objects that have the ESC11 vulnerability.
 
     .DESCRIPTION
         The script takes an array of ADCS objects as input and filters them based on objects that have the objectClass
-        'pKIEnrollmentService' and the SANFlag set to 'Yes'. For each matching object, it creates a custom object with
+        'pKIEnrollmentService' and the InterfaceFlag set to 'No'. For each matching object, it creates a custom object with
         properties representing various information about the object, such as Forest, Name, DistinguishedName, Technique,
         Issue, Fix, and Revert.
 
@@ -16,8 +16,8 @@
         The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
 
     .EXAMPLE
-        $ADCSObjects = Get-ADCSObjects
-        $Results = $ADCSObjects | Find-ESC6
+        $ADCSObjects = Get-ADCSObject -Target (Get-Target)
+        Find-ESC11 -ADCSObjects $ADCSObjects
         $Results
     #>
     [CmdletBinding()]
@@ -28,34 +28,32 @@
     process {
         $ADCSObjects | Where-Object {
             ($_.objectClass -eq 'pKIEnrollmentService') -and
-            ($_.SANFlag -ne 'No')
+            ($_.InterfaceFlag -ne 'Yes')
         } | ForEach-Object {
             [string]$CAFullName = "$($_.dNSHostName)\$($_.Name)"
             $Issue = [pscustomobject]@{
                 Forest            = $_.CanonicalName.split('/')[0]
                 Name              = $_.Name
                 DistinguishedName = $_.DistinguishedName
-                Technique         = 'ESC6'
-                Issue             = $_.SANFlag
+                Technique         = 'ESC11'
+                Issue             = $_.InterfaceFlag
                 Fix               = 'N/A'
                 Revert            = 'N/A'
             }
-            if ($_.SANFlag -eq 'Yes') {
+            if ($_.InterfaceFlag -eq 'No') {
                 $Issue.Issue = @"
-The dangerous EDITF_ATTRIBUTESUBJECTALTNAME2 flag is enabled on $CAFullname.
-All templates published on this CA will accept a Subject Alternative Name (SAN)
-during enrollment even if the template is not specifically configured to allow a SAN.
+The IF_ENFORCEENCRYPTICERTREQUEST flag is disabled on this Certification
+Authority (CA). It is possible to relay NTLM authentication to the RPC interface
+of this CA.
 
-As of May 2022, Microsoft has neutered this situation by requiring all SANs to
-be strongly mapped to certificates.
-
-However, if strong mapping has been explicitly disabled on Domain Controllers,
-this configuration remains vulnerable to privilege escalation attacks.
+If the LAN Manager authentication level of any domain in this forest is 2 or
+less, an attacker can coerce authentication from a Domain Controller (DC) to
+receive a certificate which can be used to authenticate as that DC.
 
 "@
                 $Issue.Fix = @"
-# Disable the flag
-certutil -config $CAFullname -setreg policy\EditFlags -EDITF_ATTRIBUTESUBJECTALTNAME2
+# Enable the flag
+certutil -config $CAFullname -setreg CA\InterfaceFlags +IF_ENFORCEENCRYPTICERTREQUEST
 
 # Restart the Ceritification Authority service
 Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
@@ -63,8 +61,8 @@ Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
 }
 "@
                 $Issue.Revert = @"
-# Enable the flag
-certutil -config $CAFullname -setreg policy\EditFlags +EDITF_ATTRIBUTESUBJECTALTNAME2
+# Disable the flag
+certutil -config $CAFullname -setreg CA\InterfaceFlags -IF_ENFORCEENCRYPTICERTREQUEST
 
 # Restart the Ceritification Authority service
 Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {

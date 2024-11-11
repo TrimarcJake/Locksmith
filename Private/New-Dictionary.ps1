@@ -21,7 +21,7 @@ descriptions, code used to find, code used to fix, and reference URLs. This is i
 
 function New-Dictionary {
     class VulnerableConfigurationItem {
-        static [string] $Version = '2023.10.01.000'
+        static [string] $Version = '2024.11.03.000'
         [string]$Name
         [ValidateSet('Escalation Path','Server Configuration','GPO Setting')][string]$Category
         [string]$Subcategory
@@ -125,15 +125,24 @@ function New-Dictionary {
         #     FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
         #     ReferenceUrls = ''
         # },
-        # [VulnerableConfigurationItem]@{
-        #     Name = 'ESC11'
-        #     Category = 'Escalation Path'
-        #     Subcategory = ''
-        #     Summary = ''
-        #     FindIt =  {Find-ESC11}
-        #     FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
-        #     ReferenceUrls = ''
-        # },
+        [VulnerableConfigurationItem]@{
+            Name = 'ESC11'
+            Category = 'Escalation Path'
+            Subcategory = 'IF_ENFORCEENCRYPTICERTREQUEST'
+            Summary = ''
+            FindIt =  {Find-ESC11}
+            FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
+            ReferenceUrls = 'https://blog.compass-security.com/2022/11/relaying-to-ad-certificate-services-over-rpc/'
+        },
+        [VulnerableConfigurationItem]@{
+            Name = 'ESC13'
+            Category = 'Escalation Path'
+            Subcategory = 'Certificate Template linked to Group'
+            Summary = ''
+            FindIt =  {Find-ESC13}
+            FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
+            ReferenceUrls = 'https://posts.specterops.io/adcs-esc13-abuse-technique-fda4272fbd53'
+        },
         [VulnerableConfigurationItem]@{
             Name = 'Auditing'
             Category = 'Server Configuration'

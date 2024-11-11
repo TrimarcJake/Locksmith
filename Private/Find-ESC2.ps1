@@ -25,15 +25,14 @@
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [array]$ADCSObjects,
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory)]
         [string]$SafeUsers
     )
     $ADCSObjects | Where-Object {
         ($_.ObjectClass -eq 'pKICertificateTemplate') -and
-        ( (!$_.pkiExtendedKeyUsage) -or ($_.pkiExtendedKeyUsage -match '2.5.29.37.0') )-and
-        ($_.'msPKI-Certificate-Name-Flag' -band 1) -and
+        ( (!$_.pkiExtendedKeyUsage) -or ($_.pkiExtendedKeyUsage -match '2.5.29.37.0') ) -and
         !($_.'msPKI-Enrollment-Flag' -band 2) -and
         ( ($_.'msPKI-RA-Signature' -eq 0) -or ($null -eq $_.'msPKI-RA-Signature') )
     } | ForEach-Object {
@@ -44,21 +43,37 @@
             } else {
                 $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
             }
-            if ( ($SID -notmatch $SafeUsers) -and ($entry.ActiveDirectoryRights -match 'ExtendedRight') ) {
+            if ( ($SID -notmatch $SafeUsers) -and ( ($entry.ActiveDirectoryRights -match 'ExtendedRight') -or ($entry.ActiveDirectoryRights -match 'GenericAll') ) ) {
                 $Issue = [pscustomobject]@{
                     Forest                = $_.CanonicalName.split('/')[0]
                     Name                  = $_.Name
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
-                    Issue                 = "$($entry.IdentityReference) can request a SubCA certificate without Manager Approval"
-                    Fix = @"
-`$Object = `'$($_.DistinguishedName)`'
-Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}
+                    Issue                 = @"
+$($entry.IdentityReference) can use this template to request a Subordinate
+Certification Authority (SubCA) certificate without Manager Approval.
+
+The resultant certificate can be used by an attacker to instantiate their own
+SubCA which is trusted by AD.
+
+By default, certificates created from this attacker-controlled SubCA cannot be
+used for authentication, but they can be used for other purposes such as TLS
+certs and code signing.
+
+However, if an attacker can modify the NtAuthCertificates object (see ESC5),
+they can convert their rogue CA into one trusted for authentication.
+
 "@
-                    Revert = @"
+                    Fix                   = @"
+# Enable Manager Approval
 `$Object = `'$($_.DistinguishedName)`'
-Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 2}
+"@
+                    Revert                = @"
+# Disable Manager Approval
+`$Object = `'$($_.DistinguishedName)`'
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@
                     Technique             = 'ESC2'
                 }

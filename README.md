@@ -41,7 +41,7 @@ A ~~tiny~~ small tool built to find and fix common misconfigurations in Active D
 1. Open a PowerShell prompt and run `Install-Module -Name Locksmith -Scope CurrentUser`
 
 ### Install module manually from GitHub:
-1. Download the [latest module version](https://github.com/TrimarcJake/Locksmith/releases/latest) ( **Locksmith-v**\<YEAR\>**.**\<MONTH\>**.zip** )
+1. Download the latest module version: [https://github.com/TrimarcJake/Locksmith/releases/latest/download/Locksmith.zip](https://github.com/TrimarcJake/Locksmith/releases/latest/download/Locksmith.zip)
 2. Extract the downloaded zip file
 3. Open a PowerShell prompt to the location of the extracted file and run `Import-Module .\Locksmith.psd1`
 

@@ -140,11 +140,21 @@
                         $CertutilFlag = certutil -config $CAFullName -getreg policy\EditFlags
                     }
                 } catch {
-                    $AuditFilter = 'Failure'
+                    $SANFlag = 'Failure'
+                }
+                try {
+                    if ($Credential) {
+                        $CertutilInterfaceFlag = Invoke-Command -ComputerName $CAHostname -Credential $Credential -ScriptBlock { param($CAFullName); certutil -config $CAFullName -getreg policy\EditFlags } -ArgumentList $CAFullName
+                    } else {
+                        $CertutilInterfaceFlag = certutil -config $CAFullName -getreg CA\InterfaceFlags
+                    }
+                } catch {
+                    $InterfaceFlag = 'Failure'
                 }
             } else {
                 $AuditFilter = 'CA Unavailable'
                 $SANFlag = 'CA Unavailable'
+                $InterfaceFlag = 'CA Unavailable'
             }
             if ($CertutilAudit) {
                 try {
@@ -167,12 +177,21 @@
                     $SANFlag = 'No'
                 }
             }
+            if ($CertutilInterfaceFlag) {
+                [string]$InterfaceFlag = $CertutilInterfaceFlag | Select-String ' IF_ENFORCEENCRYPTICERTREQUEST -- 200 \('
+                if ($InterfaceFlag) {
+                    $InterfaceFlag = 'Yes'
+                } else {
+                    $InterfaceFlag = 'No'
+                }
+            }
             Add-Member -InputObject $_ -MemberType NoteProperty -Name AuditFilter -Value $AuditFilter -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name CAEnrollmentEndpoint -Value $CAEnrollmentEndpoint -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name CAFullName -Value $CAFullName -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name CAHostname -Value $CAHostname -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name CAHostDistinguishedName -Value $CAHostDistinguishedName -Force
             Add-Member -InputObject $_ -MemberType NoteProperty -Name SANFlag -Value $SANFlag -Force
+            Add-Member -InputObject $_ -MemberType NoteProperty -Name InterfaceFlag -Value $InterfaceFlag -Force
         }
     }
 }
