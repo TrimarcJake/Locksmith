@@ -138,6 +138,9 @@ to modify this object in whatever way they wish.
 
 $IssueDetail
 
+More info:
+  - https://posts.specterops.io/certified-pre-owned-d95910965cd2
+  
 "@
                 Fix               = @"
 `$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`')

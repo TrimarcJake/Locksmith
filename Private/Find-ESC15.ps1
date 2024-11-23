@@ -51,9 +51,14 @@ function Find-ESC15 {
 $($_.Name) uses AD CS Template Schema Version 1, and $($entry.IdentityReference)
 is allowed to enroll in this template.
 
-Because this template uses Schema Version 1, it is possible to include arbitrary
-Application Policies in any enrollment request to this template, including
-Application Policies that permit Client Authentication.
+If patches for CVE-2024-49019 have not been applied it may be possible to include
+arbitrary Application Policies while enrolling in this template, including
+Application Policies that permit Client Authentication or allow the creation
+of Subordinate CAs.
+
+More info:
+  - https://trustedsec.com/blog/ekuwu-not-just-another-ad-cs-esc
+  - https://msrc.microsoft.com/update-guide/vulnerability/CVE-2024-49019
 
 "@
                             Fix                   = @"

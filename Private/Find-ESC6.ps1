@@ -52,6 +52,9 @@ be strongly mapped to certificates.
 However, if strong mapping has been explicitly disabled on Domain Controllers,
 this configuration remains vulnerable to privilege escalation attacks.
 
+More info:
+  - https://posts.specterops.io/certified-pre-owned-d95910965cd2
+  
 "@
                 $Issue.Fix = @"
 # Disable the flag

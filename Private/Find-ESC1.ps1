@@ -67,6 +67,9 @@ The resultant certificate can be used by an attacker to authenticate as any
 principal listed in the SAN up to and including Domain Admins, Enterprise Admins,
 or Domain Controllers.
 
+More info:
+  - https://posts.specterops.io/certified-pre-owned-d95910965cd2
+
 "@
                     Fix                   = @"
 # Enable Manager Approval
