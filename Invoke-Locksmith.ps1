@@ -1272,7 +1272,8 @@ this configuration remains vulnerable to privilege escalation attacks.
 
 More info:
   - https://posts.specterops.io/certified-pre-owned-d95910965cd2
-  
+  - https://support.microsoft.com/en-us/topic/kb5014754-certificate-based-authentication-changes-on-windows-domain-controllers-ad2c23b0-15d8-4340-a468-4d4f3b188f16
+
 "@
                 $Issue.Fix = @"
 # Disable the flag
@@ -1561,7 +1562,6 @@ function Format-Result {
         switch ($Mode) {
             0 {
                 $Issue | Format-Table Technique, Name, Issue -Wrap
-
             }
             1 {
                 if ($Issue.Technique -eq 'ESC5') {
