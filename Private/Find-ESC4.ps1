@@ -93,6 +93,9 @@
 $($_.nTSecurityDescriptor.Owner) has Owner rights on this template and can
 modify it into a template that can create ESC1, ESC2, and ESC3 templates.
 
+More info:
+  - https://posts.specterops.io/certified-pre-owned-d95910965cd2
+  
 "@
                 Fix               = @"
 `$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`')

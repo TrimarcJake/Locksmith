@@ -142,6 +142,14 @@ function New-Dictionary {
             FindIt =  {Find-ESC13}
             FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
             ReferenceUrls = 'https://posts.specterops.io/adcs-esc13-abuse-technique-fda4272fbd53'
+        },[VulnerableConfigurationItem]@{
+            Name = 'ESC15/EKUwu'
+            Category = 'Escalation Path'
+            Subcategory = 'Certificate Template using Schema V1'
+            Summary = ''
+            FindIt =  {Find-ESC15}
+            FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
+            ReferenceUrls = 'https://trustedsec.com/blog/ekuwu-not-just-another-ad-cs-esc'
         },
         [VulnerableConfigurationItem]@{
             Name = 'Auditing'
