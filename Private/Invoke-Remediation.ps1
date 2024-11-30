@@ -342,7 +342,7 @@ function Invoke-Remediation {
     Write-Host 'Invoke-RevertLocksmith.ps1 ' -ForegroundColor White
     Write-Host "to revert all changes made by Locksmith. It can be found in the current working directory.`n"
     Write-Host @"
-REMINDER: Locksmith cannot automatically resolve all AD CS issues at this time.
+[!] Locksmith cannot automatically resolve all AD CS issues at this time.
 There may be more AD CS issues remaining in your environment.
 Use Locksmith in Modes 0-3 to further investigate your environment
 or reach out to the Locksmith team for assistance. We'd love to help!`n

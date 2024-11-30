@@ -53,6 +53,9 @@ less, an attacker can coerce authentication from a Domain Controller (DC) and
 relay it to this HTTP enrollment enpoint to receive a certificate which can be
 used to authenticate as that DC.
 
+More info:
+  - https://posts.specterops.io/certified-pre-owned-d95910965cd2
+  
 '@
                     Fix                  = @'
 Disable HTTP access and enforce HTTPS.

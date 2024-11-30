@@ -76,7 +76,21 @@
 
         # The scans to run. Defaults to 'All'.
         [Parameter()]
-        [ValidateSet('Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'All', 'PromptMe')]
+        [ValidateSet('Auditing',
+            'ESC1',
+            'ESC2',
+            'ESC3',
+            'ESC4',
+            'ESC5',
+            'ESC6',
+            'ESC8',
+            'ESC11',
+            'ESC13',
+            'ESC15',
+            'EKUwu',
+            'All',
+            'PromptMe'
+        )]
         [array]$Scans = 'All',
 
         # The directory to save the output in (defaults to the current working directory).
@@ -258,6 +272,7 @@
     $ESC8 = $Results['ESC8']
     $ESC11 = $Results['ESC11']
     $ESC13 = $Results['ESC13']
+    $ESC15 = $Results['ESC15']
 
     # If these are all empty = no issues found, exit
     if ($null -eq $Results) {
@@ -279,6 +294,21 @@
             Format-Result $ESC8 '0'
             Format-Result $ESC11 '0'
             Format-Result $ESC13 '0'
+            Format-Result $ESC15 '0'
+            Write-Host @"
+[!] You ran Locksmith in Mode 0 which only provides an high-level overview of issues
+identified in the environment. For more details including:
+  - DistinguishedName of impacted object(s)
+  - Remediation code
+  - Revert code (in case remediation breaks something!)
+run Locksmith in Mode 1:
+
+# Module version
+Invoke-Locksmith -Mode 1
+
+# Script version
+.\Invoke-Locksmith.ps1 -Mode 1`n
+"@ -ForegroundColor Yellow
         }
         1 {
             Format-Result $AuditingIssues '1'
@@ -291,6 +321,7 @@
             Format-Result $ESC8 '1'
             Format-Result $ESC11 '1'
             Format-Result $ESC13 '1'
+            Format-Result $ESC15 '1'
         }
         2 {
             $Output = Join-Path -Path $OutputPath -ChildPath "$FilePrefix ADCSIssues.CSV"
@@ -328,5 +359,5 @@
         }
     }
     Write-Host 'Thank you for using ' -NoNewline
-    Write-Host "Locksmith ❤`n" -ForegroundColor Magenta
+    Write-Host "Locksmith <3`n" -ForegroundColor Magenta
 }

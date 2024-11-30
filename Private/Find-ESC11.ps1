@@ -50,6 +50,9 @@ If the LAN Manager authentication level of any domain in this forest is 2 or
 less, an attacker can coerce authentication from a Domain Controller (DC) to
 receive a certificate which can be used to authenticate as that DC.
 
+More info:
+  - https://blog.compass-security.com/2022/11/relaying-to-ad-certificate-services-over-rpc/
+
 "@
                 $Issue.Fix = @"
 # Enable the flag

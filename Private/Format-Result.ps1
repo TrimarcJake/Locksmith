@@ -31,16 +31,17 @@ function Format-Result {
     )
 
     $IssueTable = @{
-        DETECT = 'Auditing Not Fully Enabled'
-        ESC1   = 'ESC1 - Vulnerable Certificate Template - Authentication'
-        ESC2   = 'ESC2 - Vulnerable Certificate Template - Subordinate CA'
-        ESC3   = 'ESC3 - Vulnerable Certificate Template - Enrollment Agent'
-        ESC4   = 'ESC4 - Vulnerable Access Control - Certificate Template'
-        ESC5   = 'ESC5 - Vulnerable Access Control - PKI Object'
-        ESC6   = 'ESC6 - EDITF_ATTRIBUTESUBJECTALTNAME2 Flag Enabled'
-        ESC8   = 'ESC8 - HTTP/S Enrollment Enabled'
-        ESC11  = 'ESC11 - IF_ENFORCEENCRYPTICERTREQUEST Flag Disabled'
-        ESC13  = 'ESC13 - Vulnerable Certificate Temple - Group-Linked'
+        DETECT        = 'Auditing Not Fully Enabled'
+        ESC1          = 'ESC1 - Vulnerable Certificate Template - Authentication'
+        ESC2          = 'ESC2 - Vulnerable Certificate Template - Subordinate CA'
+        ESC3          = 'ESC3 - Vulnerable Certificate Template - Enrollment Agent'
+        ESC4          = 'ESC4 - Vulnerable Access Control - Certificate Template'
+        ESC5          = 'ESC5 - Vulnerable Access Control - PKI Object'
+        ESC6          = 'ESC6 - EDITF_ATTRIBUTESUBJECTALTNAME2 Flag Enabled'
+        ESC8          = 'ESC8 - HTTP/S Enrollment Enabled'
+        ESC11         = 'ESC11 - IF_ENFORCEENCRYPTICERTREQUEST Flag Disabled'
+        ESC13         = 'ESC13 - Vulnerable Certificate Temple - Group-Linked'
+        'ESC15/EKUwu' = 'ESC15 - Vulnerable Certificate Temple - Schema V1'
     }
 
     if ($null -ne $Issue) {
@@ -63,7 +64,7 @@ function Format-Result {
                     $Issue | Format-List Technique, Name, DistinguishedName, CAEnrollmentEndpoint, AuthType, Issue, Fix
                 } else {
                     $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix
-                    if(($Issue.Technique -eq "DETECT" -or $Issue.Technique -eq "ESC6") -and (Get-RestrictedAdminModeSetting)){
+                    if (($Issue.Technique -eq "DETECT" -or $Issue.Technique -eq "ESC6") -and (Get-RestrictedAdminModeSetting)) {
                         Write-Warning "Restricted Admin Mode appears to be configured. Certutil.exe may not work from this host, therefore you may need to execute the 'Fix' commands on the CA server itself"
                     }
                 }
