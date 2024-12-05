@@ -2653,7 +2653,7 @@ function Set-AdditionalCAProperty {
                     $Cache = [System.Net.CredentialCache]::New()
                     $Cache.Add([System.Uri]::new($FullURL), $Auth, [System.Net.CredentialCache]::DefaultNetworkCredentials)
                     $Request.Credentials = $Cache
-                    $Request.Timeout = 3000
+                    $Request.Timeout = 1000
                     $Request.GetResponse() | Out-Null
                     $CAEnrollmentEndpoint += @{
                         'URL'  = $FullURL
@@ -2662,9 +2662,13 @@ function Set-AdditionalCAProperty {
                 }
                 catch {
                     try {
+                        $Auth = 'NTLM'
                         $FullURL = "https$URL"
                         $Request = [System.Net.WebRequest]::Create($FullURL)
-
+                        $Cache = [System.Net.CredentialCache]::New()
+                        $Cache.Add([System.Uri]::new($FullURL), $Auth, [System.Net.CredentialCache]::DefaultNetworkCredentials)
+                        $Request.Credentials = $Cache
+                        $Request.Timeout = 1000
                         $Request.GetResponse() | Out-Null
                         $CAEnrollmentEndpoint += @{
                             'URL'  = $FullURL
@@ -2677,8 +2681,9 @@ function Set-AdditionalCAProperty {
                             $FullURL = "https$URL"
                             $Request = [System.Net.WebRequest]::Create($FullURL)
                             $Cache = [System.Net.CredentialCache]::New()
-                            $Cache.Add([System.Uri]::new($FullURL), 'Negotiate', [System.Net.CredentialCache]::DefaultNetworkCredentials)
+                            $Cache.Add([System.Uri]::new($FullURL), $Auth, [System.Net.CredentialCache]::DefaultNetworkCredentials)
                             $Request.Credentials = $Cache
+                            $Request.Timeout = 1000
                             $Request.GetResponse() | Out-Null
                             $CAEnrollmentEndpoint += @{
                                 'URL'  = $FullURL
@@ -3530,7 +3535,7 @@ function Invoke-Locksmith {
         [System.Management.Automation.PSCredential]$Credential
     )
 
-    $Version = '2024.12.4'
+    $Version = '2024.12.5'
     $LogoPart1 = @"
     _       _____  _______ _     _ _______ _______ _____ _______ _     _
     |      |     | |       |____/  |______ |  |  |   |      |    |_____|
@@ -3671,6 +3676,8 @@ function Invoke-Locksmith {
         $CAHosts = Get-CAHostObject -ADCSObjects $ADCSObjects -ForestGC $ForestGC
         $ADCSObjects += $CAHosts
     }
+
+    Set-AdditionalTemplateProperty -ADCSObjects $ADCSObjects
 
     # Add SIDs of CA Hosts to $SafeUsers
     $CAHosts | ForEach-Object { $SafeUsers += '|' + $_.objectSid }

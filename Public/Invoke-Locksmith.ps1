@@ -242,6 +242,8 @@
         $ADCSObjects += $CAHosts
     }
 
+    Set-AdditionalTemplateProperty -ADCSObjects $ADCSObjects
+
     # Add SIDs of CA Hosts to $SafeUsers
     $CAHosts | ForEach-Object { $SafeUsers += '|' + $_.objectSid }
 
