@@ -35,7 +35,9 @@
         [Parameter(Mandatory)]
         [array]$SafeUsers,
         [Parameter(Mandatory)]
-        $ClientAuthEKUs
+        $ClientAuthEKUs,
+        [Parameter(Mandatory)]
+        [int]$Mode
     )
     $ADCSObjects | Where-Object {
         ($_.objectClass -eq 'pKICertificateTemplate') -and
