@@ -68,7 +68,7 @@ function Invoke-Scans {
         }
         ESC1 {
             Write-Host 'Identifying AD CS templates with dangerous ESC1 configurations...'
-            [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEkus
+            [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEkus -Mode $Mode
         }
         ESC2 {
             Write-Host 'Identifying AD CS templates with dangerous ESC2 configurations...'
@@ -81,7 +81,7 @@ function Invoke-Scans {
         }
         ESC4 {
             Write-Host 'Identifying AD CS templates with poor access control (ESC4)...'
-            [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes
+            [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes -Mode $Mode
         }
         ESC5 {
             Write-Host 'Identifying AD CS objects with poor access control (ESC5)...'
@@ -115,7 +115,7 @@ function Invoke-Scans {
             Write-Host 'Identifying auditing issues...'
             [array]$AuditingIssues = Find-AuditingIssue -ADCSObjects $ADCSObjects
             Write-Host 'Identifying AD CS templates with dangerous ESC1 configurations...'
-            [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEkus
+            [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEkus -Mode $Mode
             Write-Host 'Identifying AD CS templates with dangerous ESC2 configurations...'
             [array]$ESC2 = Find-ESC2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
             Write-Host 'Identifying AD CS templates with dangerous ESC3 configurations...'

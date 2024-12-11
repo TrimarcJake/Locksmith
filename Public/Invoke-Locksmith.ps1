@@ -233,14 +233,16 @@
     if ($Credential) {
         $ADCSObjects = Get-ADCSObject -Targets $Targets -Credential $Credential
         Set-AdditionalCAProperty -ADCSObjects $ADCSObjects -Credential $Credential -ForestGC $ForestGC
-        $ADCSObjects += Get-CAHostObject -ADCSObjects $ADCSObjects -Credential $Credential -ForestGC $ForestGC
         $CAHosts = Get-CAHostObject -ADCSObjects $ADCSObjects -Credential $Credential -ForestGC $ForestGC
+        $ADCSObjects += $CAHosts
     } else {
         $ADCSObjects = Get-ADCSObject -Targets $Targets
         Set-AdditionalCAProperty -ADCSObjects $ADCSObjects -ForestGC $ForestGC
-        $ADCSObjects += Get-CAHostObject -ADCSObjects $ADCSObjects -ForestGC $ForestGC
         $CAHosts = Get-CAHostObject -ADCSObjects $ADCSObjects -ForestGC $ForestGC
+        $ADCSObjects += $CAHosts
     }
+
+    Set-AdditionalTemplateProperty -ADCSObjects $ADCSObjects
 
     # Add SIDs of CA Hosts to $SafeUsers
     $CAHosts | ForEach-Object { $SafeUsers += '|' + $_.objectSid }
@@ -298,10 +300,12 @@
             Write-Host @"
 [!] You ran Locksmith in Mode 0 which only provides an high-level overview of issues
 identified in the environment. For more details including:
+
   - DistinguishedName of impacted object(s)
-  - Remediation code
-  - Revert code (in case remediation breaks something!)
-run Locksmith in Mode 1:
+  - Remediation guidance and/or code
+  - Revert guidance and/or code (in case remediation breaks something!)
+
+Run Locksmith in Mode 1!
 
 # Module version
 Invoke-Locksmith -Mode 1

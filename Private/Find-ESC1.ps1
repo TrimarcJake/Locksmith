@@ -35,7 +35,9 @@
         [Parameter(Mandatory)]
         [array]$SafeUsers,
         [Parameter(Mandatory)]
-        $ClientAuthEKUs
+        $ClientAuthEKUs,
+        [Parameter(Mandatory)]
+        [int]$Mode
     )
     $ADCSObjects | Where-Object {
         ($_.objectClass -eq 'pKICertificateTemplate') -and
@@ -83,6 +85,11 @@ Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@
                     Technique             = 'ESC1'
                 }
+
+                if ( $Mode -in @(1, 3, 4) ) {
+                    Update-ESC1Remediation -Issue $Issue
+                }
+
                 $Issue
             }
         }
