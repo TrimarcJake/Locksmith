@@ -280,6 +280,11 @@ Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@
                     Technique             = 'ESC1'
                 }
+
+                if ( $Mode -in @(1, 3, 4) ) {
+                    Update-ESC1Remediation -Issue $Issue
+                }
+
                 $Issue
             }
         }
@@ -3113,6 +3118,109 @@ function Test-IsRSATInstalled {
         $false
     }
 }
+function Update-ESC1Remediation {
+    <#
+    .SYNOPSIS
+        This function asks the user a set of questions to provide the most appropriate remediation for ESC1 issues.
+
+    .DESCRIPTION
+        This function takes a single ESC1 issue as input then asks a series of questions to determine the correct
+        remediation.
+
+        Questions:
+        TODO: Is this template published?
+        1. Does the identified principal need to enroll in this template? [Yes/No/Unsure]
+        2. Is this certificate widely used and/or frequently requested? [Yes/No/Unsure]
+
+        Depending on answers to these questions, the Issue and Fix attributes on the Issue object are updated.
+
+    .PARAMETER Issue
+        A pscustomobject that includes all pertinent information about the ESC1 issue.
+
+    .OUTPUTS
+        This function updates ESC1 remediations customized to the user's needs.
+
+    .EXAMPLE
+        $Targets = Get-Target
+        $ADCSObjects = Get-ADCSObject -Targets $Targets
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $ESC1Issues = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+        foreach ($issue in $ESC1Issues) { Update-ESC1Remediation -Issue $Issue }
+    #>
+    [CmdletBinding()]
+    param(
+        $Issue
+    )
+
+    $Header = "`n[!] ESC1 Issue detected in $($Issue.Name)"
+    Write-Host $Header -ForegroundColor Yellow
+    Write-Host $('-' * $Header.Length) -ForegroundColor Yellow
+    Write-Host "$($Issue.IdentityReference) can provide a Subject Alternative Name (SAN) while enrolling in this"
+    Write-Host "template. Manager approval is not required for a certificate to be issued.`n"
+    Write-Host 'To provide the most appropriate remediation for this issue, Locksmith will now ask you a few questions.'
+
+    $Enroll = ''
+    do {
+        $Enroll = Read-Host "`nDoes $($Issue.IdentityReference) need to Enroll in the $($Issue.Name) template? [y/n/unsure]"
+    } while ( ($Enroll -ne 'y') -and ($Enroll -ne 'n') -and ($Enroll -ne 'unsure'))
+
+    if ($Enroll -eq 'y') {
+        $Frequent = ''
+        do {
+            $Frequent = Read-Host "`nIs the $($Issue.Name) certificate frequently requested? [y/n/unsure]"
+        } while ( ($Frequent -ne 'y') -and ($Frequent -ne 'n') -and ($Frequent -ne 'unsure'))
+
+        if ($Frequent -ne 'n') {
+            $Issue.Fix = @"
+# Locksmith cannot currently determine the best remediation course.
+# Remediation Options:
+# 1. If $($Issue.IdentityReference) is a group, remove its Enroll/AutoEnroll rights and grant those rights
+#   to a smaller group or a single user/service account.
+
+# 2. Remove the ability to submit a SAN (aka disable "Supply in the request").
+`$Object = `'$($_.DistinguishedName)`'
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 0}
+
+# 3. Enable Manager Approval
+`$Object = `'$($_.DistinguishedName)`'
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 2}
+"@
+
+            $Issue.Revert = @"
+# 1. Replace Enroll/AutoEnroll rights from the smaller group/single user/service account and grant those rights
+#   back to $($Issue.IdentityReference).
+
+# 2. Restore the ability to submit a SAN.
+`$Object = `'$($_.DistinguishedName)`'
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Certificate-Name-Flag' = 1}
+
+# 3. Disable Manager Approval
+`$Object = `'$($_.DistinguishedName)`'
+Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
+"@
+        }
+    }
+    elseif ($Enroll -eq 'n') {
+        $Issue.Fix = @"
+# 1. Open the Certification Templates Console: certtmpl.msc
+# 2. Double-click the $($Issue.Name) template to open its Properties page.
+# 3. Select the Security tab.
+# 4. Select the entry for $($Issue.IdentityReference).
+# 5. Uncheck the "Enroll" and/or "Autoenroll" boxes.
+# 6. Click OK.
+"@
+
+        $Issue.Revert = @"
+# 1. Open the Certification Templates Console: certtmpl.msc
+# 2. Double-click the $($Issue.Name) template to open its Properties page.
+# 3. Select the Security tab.
+# 4. Select the entry for $($Issue.IdentityReference).
+# 5. Check the "Enroll" and/or "Autoenroll" boxes depending on your specific needs.
+# 6. Click OK.
+"@
+    }
+}
+
 function Update-ESC4Remediation {
     <#
     .SYNOPSIS
@@ -3121,8 +3229,8 @@ function Update-ESC4Remediation {
     .DESCRIPTION
         This function takes a single ESC4 issue as input. It then prompts the user if the principal with the ESC4 rights
         administers the template in question.
-        If the principal is an admin of the template, the Issue attribute to indicate this configuration is expected, and
-        the Fix attribute for the issue is updated to indicate no remediation is needed.
+        If the principal is an admin of the template, the Issue attribute is updated to indicate this configuration is
+        expected, and the Fix attribute for the issue is updated to indicate no remediation is needed.
         If the the principal is not an admin of the template AND the rights assigned is GenericAll, Locksmith will ask
         if Enroll or AutoEnroll rights are needed.
         Depending on the answers to the listed questions, the Fix attribute is updated accordingly.
@@ -3134,14 +3242,14 @@ function Update-ESC4Remediation {
         This function updates ESC4 remediations customized to the user's needs.
 
     .EXAMPLE
-        $Target = Get-Target
-        $ADCSObjects = Get-ADCSObject -Target $Target
+        $Targets = Get-Target
+        $ADCSObjects = Get-ADCSObject -Targets $Targets
         $DangerousRights = @('GenericAll', 'WriteProperty', 'WriteOwner', 'WriteDacl')
         $SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$'
         $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
         $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
         $ESC4Issues = Find-ESC4 -ADCSObjects $ADCSObjects -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeUsers $SafeUsers -SafeObjectTypes $SafeObjectTypes
-        foreach ($issue in $ESCIssues) { Update-ESC4Remediation -Issue $Issue }
+        foreach ($issue in $ESC4Issues) { Update-ESC4Remediation -Issue $Issue }
     #>
     [CmdletBinding()]
     param(
@@ -3376,7 +3484,7 @@ function Invoke-Locksmith {
         [System.Management.Automation.PSCredential]$Credential
     )
 
-    $Version = '2024.11.23'
+    $Version = '2024.12.4'
     $LogoPart1 = @"
     _       _____  _______ _     _ _______ _______ _____ _______ _     _
     |      |     | |       |____/  |______ |  |  |   |      |    |_____|
