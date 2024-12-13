@@ -32,7 +32,8 @@ function Invoke-Scans {
     [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', 'Invoke-Scans', Justification = 'Performing multiple scans.')]
     param (
         # Could split Scans and PromptMe into separate parameter sets.
-        [Parameter()]
+        [Parameter(Mandatory)]
+        $ADCSObjects,
         $ClientAuthEkus,
         $DangerousRights,
         $EnrollmentAgentEKU,
@@ -125,7 +126,7 @@ function Invoke-Scans {
             [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes -Mode $Mode
             Write-Host 'Identifying AD CS objects with poor access control (ESC5)...'
             [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes
-            Write-Host 'Identifying Certificate Authorities with EDITF_ATTRIBUTESUBJECTALTNAME2 enabled v (ESC6)...'
+            Write-Host 'Identifying Certificate Authorities with EDITF_ATTRIBUTESUBJECTALTNAME2 enabled (ESC6)...'
             [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects
             Write-Host 'Identifying HTTP-based certificate enrollment interfaces (ESC8)...'
             [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects
@@ -148,8 +149,8 @@ function Invoke-Scans {
     }
 
     # Return a hash table of array names (keys) and arrays (values) so they can be directly referenced with other functions
-    Return @{
-        AllIssues      = $AllIssues
+    return @{
+        # AllIssues      = $AllIssues
         AuditingIssues = $AuditingIssues
         ESC1           = $ESC1
         ESC2           = $ESC2

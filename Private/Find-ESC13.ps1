@@ -60,6 +60,8 @@ function Find-ESC13 {
                                 DistinguishedName     = $_.DistinguishedName
                                 IdentityReference     = $entry.IdentityReference
                                 ActiveDirectoryRights = $entry.ActiveDirectoryRights
+                                Enabled               = $_.Enabled
+                                EnabledOn             = $_.EnabledOn
                                 LinkedGroup           = $OidToCheck.'msDS-OIDToGroupLink'
                                 Issue                 = @"
 $($entry.IdentityReference) can enroll in this Client Authentication template

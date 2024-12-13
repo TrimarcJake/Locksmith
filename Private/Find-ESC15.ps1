@@ -31,7 +31,8 @@ function Find-ESC15 {
     )
     $ADCSObjects | Where-Object {
         ($_.objectClass -eq 'pKICertificateTemplate') -and
-        ($_.'msPKI-Template-Schema-Version' -eq 1)
+        ($_.'msPKI-Template-Schema-Version' -eq 1) -and
+        ($Enabled)
     } | ForEach-Object {
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
@@ -47,6 +48,8 @@ function Find-ESC15 {
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
+                    Enabled               = $_.Enabled
+                    EnabledOn             = $_.EnabledOn
                     Issue                 = @"
 $($_.Name) uses AD CS Template Schema Version 1, and $($entry.IdentityReference)
 is allowed to enroll in this template.
@@ -63,8 +66,8 @@ More info:
 "@
                             Fix                   = @"
 # Option 1: Manual Remediation
-# Step 1: Identify if this template is published on any CA.
-# Step 2: If published, identify if this template has recently been used to generate a certificate.
+# Step 1: Identify if this template is Enabled on any CA.
+# Step 2: If Enabled, identify if this template has recently been used to generate a certificate.
 # Step 3a: If recently used, either restrict enrollment scope or convert to the template to Schema V2.
 # Step 3b: If not recently used, unpublish the template from all CAs.
 
