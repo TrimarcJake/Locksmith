@@ -1109,12 +1109,12 @@ act as a member of the linked group (see ESC13).
                 }
                 pKIEnrollmentService {
                     $IssueDetail = @"
-$($_.nTSecurityDescriptor.Owner) can use these elevated rights to publish currently
-unEnabled templates.
+$($_.nTSecurityDescriptor.Owner) can use these elevated rights to enable currently
+disabled templates.
 
-If $($_.nTSecurityDescriptor.Owner) also has control over an unEnabled certificate
+If $($_.nTSecurityDescriptor.Owner) also has control over a disabled certificate
 template (see ESC4), they could modify the template into an ESC1 template then
-publish the certificate. This Enabled certificate could be use for privilege
+enable the certificate. This ensabled certificate could be use for privilege
 escalation and persistence.
 "@
                 }
@@ -1196,9 +1196,9 @@ act as a member of the linked group (see ESC13).
 $($entry.IdentityReference) can use these elevated rights to publish currently
 unEnabled templates.
 
-If $($entry.IdentityReference) also has control over an unEnabled certificate
+If $($entry.IdentityReference) also has control over a disabled certificate
 template (see ESC4), they could modify the template into an ESC1 template then
-publish the certificate. This Enabled certificate could be use for privilege
+enable the certificate. This enabled certificate could be use for privilege
 escalation and persistence.
 "@
                 }
@@ -1297,7 +1297,7 @@ function Find-ESC6 {
             if ($_.SANFlag -eq 'Yes') {
                 $Issue.Issue = @"
 The dangerous EDITF_ATTRIBUTESUBJECTALTNAME2 flag is enabled on $CAFullname.
-All templates Enabled on this CA will accept a Subject Alternative Name (SAN)
+All templates enabled on this CA will accept a Subject Alternative Name (SAN)
 during enrollment even if the template is not specifically configured to allow a SAN.
 
 As of May 2022, Microsoft has neutered this situation by requiring all SANs to
@@ -3170,8 +3170,8 @@ function Test-IsRecentVersion {
         Test-IsRecentVersion -Version "2023.10" -Days 60
         WARNING: Your currently installed version of Locksmith (2.5) is more than 60 days old. We recommend that you update to ensure the latest findings are included.
         Locksmith Module Details:
-        Latest Version:          v2024.1
-        Enabled at:            01/28/2024 12:47:18
+        Latest Version:     2024.12.11
+        Publishing Date:    01/28/2024 12:47:18
         Install Module:     Install-Module -Name Locksmith
         Standalone Script:  https://github.com/trimarcjake/locksmith/releases/download/v2.6/Invoke-Locksmith.zip
     #>
@@ -3192,10 +3192,10 @@ function Test-IsRecentVersion {
         # Checking the most recent release in GitHub, but we could also use PowerShell Gallery.
         $Uri = "https://api.github.com/repos/trimarcjake/locksmith/releases"
         $Releases = Invoke-RestMethod -Uri $uri -Method Get -DisableKeepAlive -ErrorAction Stop
-        $LatestRelease = $Releases | Sort-Object -Property Enabled_At -Descending | Select-Object -First 1
+        $LatestRelease = $Releases | Sort-Object -Property Published_At -Descending | Select-Object -First 1
         # Get the release date of the currently running version via the version parameter
-        [datetime]$InstalledVersionReleaseDate = ($Releases | Where-Object { $_.tag_name -like "?$Version" }).Enabled_at
-        [datetime]$LatestReleaseDate = $LatestRelease.Enabled_at
+        [datetime]$InstalledVersionReleaseDate = ($Releases | Where-Object { $_.tag_name -like "?$Version" }).Published_at
+        [datetime]$LatestReleaseDate = $LatestRelease.Published_at
         # $ModuleDownloadLink   = ( ($LatestRelease.Assets).Where({$_.Name -like "Locksmith-v*.zip"}) ).browser_download_url
         $ScriptDownloadLink = ( ($LatestRelease.Assets).Where({ $_.Name -eq 'Invoke-Locksmith.zip' }) ).browser_download_url
 
@@ -3203,7 +3203,7 @@ function Test-IsRecentVersion {
 Locksmith Module Details:
 
 Latest Version:`t`t $($LatestRelease.name)
-Enabled at: `t`t $LatestReleaseDate
+Publishing Date: `t`t $LatestReleaseDate
 Install Module:`t`t Install-Module -Name Locksmith
 Standalone Script:`t $ScriptDownloadLink
 "@
@@ -3267,11 +3267,13 @@ function Update-ESC1Remediation {
         remediation.
 
         Questions:
-        TODO: Is this template Enabled?
         1. Does the identified principal need to enroll in this template? [Yes/No/Unsure]
         2. Is this certificate widely used and/or frequently requested? [Yes/No/Unsure]
 
         Depending on answers to these questions, the Issue and Fix attributes on the Issue object are updated.
+
+        TODO: More questions:
+        Should the identified principal be able to request certs that include a SAN or SANs?
 
     .PARAMETER Issue
         A pscustomobject that includes all pertinent information about the ESC1 issue.
@@ -3681,7 +3683,7 @@ function Invoke-Locksmith {
         -517$ = Cert Publishers
         -500$ = Built-in Administrator
     #>
-    $SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$|-561$'
+    $SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$'
 
     <#
         -512$    = Domain Admins group
