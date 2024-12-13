@@ -53,21 +53,35 @@ function Format-Result {
         Write-Host "     " -BackgroundColor Magenta -NoNewline; Write-Host
         Write-Host "$('-'*($($Title.ToString().Length + 10)))" -ForeGroundColor Black -BackgroundColor Magenta -NoNewline; Write-Host
 
-        switch ($Mode) {
-            0 {
-                $Issue | Format-Table Technique, Name, Issue -Wrap
+
+        if ($Mode -eq 0) {
+            switch ($UniqueIssue) {
+                'DETECT'      { $Issue | Format-Table Technique, Name, Issue -Wrap }
+                'ESC1'        { $Issue | Format-Table Technique, Name, Enabled, Issue -Wrap }
+                'ESC1'        { $Issue | Format-Table Technique, Name, Enabled, Issue -Wrap }
+                'ESC1'        { $Issue | Format-Table Technique, Name, Enabled, Issue -Wrap }
+                'ESC4'        { $Issue | Format-Table Technique, Name, Enabled, Issue -Wrap }
+                'ESC5'        { $Issue | Format-Table Technique, Name, Issue -Wrap }
+                'ESC6'        { $Issue | Format-Table Technique, Name, Issue -Wrap }
+                'ESC8'        { $Issue | Format-Table Technique, Name, Issue -Wrap }
+                'ESC11'       { $Issue | Format-Table Technique, Name, Enabled, Issue -Wrap }
+                'ESC13'       { $Issue | Format-Table Technique, Name, Enabled, Issue -Wrap }
+                'ESC15/EKUwu' { $Issue | Format-Table Technique, Name, Enabled, Issue -Wrap }
+
             }
-            1 {
-                if ($Issue.Technique -eq 'ESC5') {
-                    $Issue | Format-List Technique, Name, objectClass, DistinguishedName, Issue, Fix
-                } elseif ($Issue.Technique -eq 'ESC8') {
-                    $Issue | Format-List Technique, Name, DistinguishedName, CAEnrollmentEndpoint, AuthType, Issue, Fix
-                } else {
-                    $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix
-                    if (($Issue.Technique -eq "DETECT" -or $Issue.Technique -eq "ESC6") -and (Get-RestrictedAdminModeSetting)) {
-                        Write-Warning "Restricted Admin Mode appears to be configured. Certutil.exe may not work from this host, therefore you may need to execute the 'Fix' commands on the CA server itself"
-                    }
-                }
+        } elseif ($Mode -eq 1) {
+            switch ($UniqueIssue) {
+                'DETECT'      { $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix }
+                'ESC1'        { $Issue | Format-List Technique, Name, DistinguishedName, Enabled, EnabledOn, Issue, Fix }
+                'ESC2'        { $Issue | Format-List Technique, Name, DistinguishedName, Enabled, EnabledOn, Issue, Fix }
+                'ESC3'        { $Issue | Format-List Technique, Name, DistinguishedName, Enabled, EnabledOn, Issue, Fix }
+                'ESC4'        { $Issue | Format-List Technique, Name, DistinguishedName, Enabled, EnabledOn, Issue, Fix }
+                'ESC5'        { $Issue | Format-List Technique, Name, DistinguishedName, objectClass, Issue, Fix }
+                'ESC6'        { $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix }
+                'ESC8'        { $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix }
+                'ESC11'       { $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix }
+                'ESC13'       { $Issue | Format-List Technique, Name, DistinguishedName, Enabled, EnabledOn, Issue, Fix }
+                'ESC15/EKUwu' { $Issue | Format-List Technique, Name, DistinguishedName, Enabled, EnabledOn, Issue, Fix }
             }
         }
     }
