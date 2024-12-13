@@ -50,6 +50,8 @@
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
+                    Enabled               = $_.Enabled
+                    EnabledOn             = $_.EnabledOn
                     Issue                 = @"
 $($entry.IdentityReference) can use this template to request a Subordinate
 Certification Authority (SubCA) certificate without Manager Approval.
@@ -66,7 +68,7 @@ they can convert their rogue CA into one trusted for authentication.
 
 More info:
   - https://posts.specterops.io/certified-pre-owned-d95910965cd2
-  
+
 "@
                     Fix                   = @"
 # Enable Manager Approval

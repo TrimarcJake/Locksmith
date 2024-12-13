@@ -26,8 +26,8 @@ function Test-IsRecentVersion {
         Test-IsRecentVersion -Version "2023.10" -Days 60
         WARNING: Your currently installed version of Locksmith (2.5) is more than 60 days old. We recommend that you update to ensure the latest findings are included.
         Locksmith Module Details:
-        Latest Version:          v2024.1
-        Published at:            01/28/2024 12:47:18
+        Latest Version:     2024.12.11
+        Publishing Date:    01/28/2024 12:47:18
         Install Module:     Install-Module -Name Locksmith
         Standalone Script:  https://github.com/trimarcjake/locksmith/releases/download/v2.6/Invoke-Locksmith.zip
     #>
@@ -50,8 +50,8 @@ function Test-IsRecentVersion {
         $Releases = Invoke-RestMethod -Uri $uri -Method Get -DisableKeepAlive -ErrorAction Stop
         $LatestRelease = $Releases | Sort-Object -Property Published_At -Descending | Select-Object -First 1
         # Get the release date of the currently running version via the version parameter
-        [datetime]$InstalledVersionReleaseDate = ($Releases | Where-Object {$_.tag_name -like "?$Version"}).published_at
-        [datetime]$LatestReleaseDate    = $LatestRelease.published_at
+        [datetime]$InstalledVersionReleaseDate = ($Releases | Where-Object {$_.tag_name -like "?$Version"}).Published_at
+        [datetime]$LatestReleaseDate    = $LatestRelease.Published_at
         # $ModuleDownloadLink   = ( ($LatestRelease.Assets).Where({$_.Name -like "Locksmith-v*.zip"}) ).browser_download_url
         $ScriptDownloadLink   = ( ($LatestRelease.Assets).Where({$_.Name -eq 'Invoke-Locksmith.zip'}) ).browser_download_url
 
@@ -59,7 +59,7 @@ function Test-IsRecentVersion {
 Locksmith Module Details:
 
 Latest Version:`t`t $($LatestRelease.name)
-Published at: `t`t $LatestReleaseDate
+Publishing Date: `t`t $LatestReleaseDate
 Install Module:`t`t Install-Module -Name Locksmith
 Standalone Script:`t $ScriptDownloadLink
 "@

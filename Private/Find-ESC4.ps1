@@ -27,7 +27,7 @@
         The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
 
     .EXAMPLE
-        $ADCSObjects = Get-ADCSObject
+        $ADCSObjects = Get-ADCSObject -Targets (Get-Target)
 
         # GenericAll, WriteDacl, and WriteOwner all permit full control of an AD object.
         # WriteProperty may or may not permit full control depending the specific property and AD object type.
@@ -57,7 +57,10 @@
         # The well-known GUIDs for Enroll and AutoEnroll rights on AD CS templates.
         $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
 
-        $Results = $ADCSObjects | Find-ESC4 -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeUsers $SafeUsers -SafeObjectTypes $SafeObjectTypes
+        # Set output mode
+        $Mode = 1
+
+        $Results = Find-ESC4 -ADCSObjects $ADCSObjects -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeUsers $SafeUsers -SafeObjectTypes $SafeObjectTypes -Mode $Mode
         $Results
     #>
     [CmdletBinding()]
@@ -72,9 +75,10 @@
         $SafeUsers,
         [Parameter(Mandatory)]
         $SafeObjectTypes,
+        [Parameter(Mandatory)]
         [int]$Mode
     )
-    $ADCSObjects | ForEach-Object {
+    $ADCSObjects | Where-Object objectClass -eq 'pKICertificateTemplate' | ForEach-Object {
         if ($_.Name -ne '' -and $null -ne $_.Name) {
             $Principal = [System.Security.Principal.NTAccount]::New($_.nTSecurityDescriptor.Owner)
             if ($Principal -match '^(S-1|O:)') {
@@ -84,18 +88,20 @@
             }
         }
 
-        if ( ($_.objectClass -eq 'pKICertificateTemplate') -and ($SID -notmatch $SafeOwners) ) {
+        if ($SID -notmatch $SafeOwners) {
             $Issue = [pscustomobject]@{
                 Forest            = $_.CanonicalName.split('/')[0]
                 Name              = $_.Name
                 DistinguishedName = $_.DistinguishedName
+                Enabled           = $_.Enabled
+                EnabledOn         = $_.EnabledOn
                 Issue             = @"
 $($_.nTSecurityDescriptor.Owner) has Owner rights on this template and can
 modify it into a template that can create ESC1, ESC2, and ESC3 templates.
 
 More info:
   - https://posts.specterops.io/certified-pre-owned-d95910965cd2
-  
+
 "@
                 Fix               = @"
 `$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`')
@@ -115,14 +121,16 @@ Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
         }
 
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
-            $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
-            if ($Principal -match '^(S-1|O:)') {
-                $SID = $Principal
-            } else {
-                $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+            if ($_.Name -ne '' -and $null -ne $_.Name) {
+                $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
+                if ($Principal -match '^(S-1|O:)') {
+                    $SID = $Principal
+                } else {
+                    $SID = ($Principal.Translate([System.Security.Principal.SecurityIdentifier])).Value
+                }
             }
-            if ( ($_.objectClass -eq 'pKICertificateTemplate') -and
-                ($SID -notmatch $SafeUsers) -and
+
+            if ( ($SID -notmatch $SafeUsers) -and
                 ($entry.AccessControlType -eq 'Allow') -and
                 ($entry.ActiveDirectoryRights -match $DangerousRights) -and
                 ($entry.ObjectType -notmatch $SafeObjectTypes)
@@ -133,9 +141,17 @@ Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
-                    Issue                 = "$($entry.IdentityReference) has been granted " +
-                        "$($entry.ActiveDirectoryRights) rights on this template.`n" +
-                        "$($entry.IdentityReference) can likely modify this template into an ESC1 template."
+                    Enabled               = $_.Enabled
+                    EnabledOn             = $_.EnabledOn
+                    Issue                 = @"
+$($entry.IdentityReference) has been granted $($entry.ActiveDirectoryRights) rights on this template.
+
+$($entry.IdentityReference) can likely modify this template into an ESC1 template.
+
+More info:
+  - https://posts.specterops.io/certified-pre-owned-d95910965cd2
+
+"@
                     Fix                   = @"
 `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
 foreach ( `$ace in `$ACL.access ) {
@@ -152,7 +168,6 @@ Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
                 if ( $Mode -in @(1, 3, 4) ) {
                     Update-ESC4Remediation -Issue $Issue
                 }
-
                 $Issue
             }
         }
