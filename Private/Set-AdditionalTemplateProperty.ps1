@@ -6,7 +6,7 @@
     .DESCRIPTION
         This script sets additional properties on a template object.
         It takes an array of AD CS Objects as input, which includes the templates to be processed and CA objects that
-        detail which templates are published.
+        detail which templates are Enabled.
         The script filters the AD CS Objects based on the objectClass property and performs the necessary operations
         to set the additional properties.
 
@@ -29,17 +29,17 @@
     )
 
     $ADCSObjects | Where-Object objectClass -match 'pKICertificateTemplate' -PipelineVariable template | ForEach-Object {
-        Write-Host "[?] Checking if template `"$($template.Name)`" is published on any Certification Authority." -ForegroundColor Blue
-        $Published = $false
-        $PublishedOn = @()
+        # Write-Host "[?] Checking if template `"$($template.Name)`" is Enabled on any Certification Authority." -ForegroundColor Blue
+        $Enabled = $false
+        $EnabledOn = @()
         foreach ($ca in ($ADCSObjects | Where-Object objectClass -eq 'pKIEnrollmentService')) {
             if ($ca.certificateTemplates -contains $template.Name) {
-                $Published = $true
-                $PublishedOn += $ca.Name
+                $Enabled = $true
+                $EnabledOn += $ca.Name
             }
 
-            $template | Add-Member -NotePropertyName Published -NotePropertyValue $Published -Force
-            $template | Add-Member -NotePropertyName PublishedOn -NotePropertyValue $PublishedOn -Force
+            $template | Add-Member -NotePropertyName Enabled -NotePropertyValue $Enabled -Force
+            $template | Add-Member -NotePropertyName EnabledOn -NotePropertyValue $EnabledOn -Force
         }
     }
 }

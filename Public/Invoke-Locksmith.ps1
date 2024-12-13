@@ -250,6 +250,7 @@
     #if ( $Scans ) {
     # If the Scans parameter was used, Invoke-Scans with the specified checks.
     $ScansParameters = @{
+        ADCSObjects        = $ADCSObjects
         ClientAuthEkus     = $ClientAuthEKUs
         DangerousRights    = $DangerousRights
         EnrollmentAgentEKU = $EnrollmentAgentEKU
@@ -286,17 +287,17 @@
 
     switch ($Mode) {
         0 {
-            Format-Result $AuditingIssues '0'
-            Format-Result $ESC1 '0'
-            Format-Result $ESC2 '0'
-            Format-Result $ESC3 '0'
-            Format-Result $ESC4 '0'
-            Format-Result $ESC5 '0'
-            Format-Result $ESC6 '0'
-            Format-Result $ESC8 '0'
-            Format-Result $ESC11 '0'
-            Format-Result $ESC13 '0'
-            Format-Result $ESC15 '0'
+            Format-Result -Issue $AuditingIssues -Mode 0
+            Format-Result -Issue $ESC1 -Mode 0
+            Format-Result -Issue $ESC2 -Mode 0
+            Format-Result -Issue $ESC3 -Mode 0
+            Format-Result -Issue $ESC4 -Mode 0
+            Format-Result -Issue $ESC5 -Mode 0
+            Format-Result -Issue $ESC6 -Mode 0
+            Format-Result -Issue $ESC8 -Mode 0
+            Format-Result -Issue $ESC11 -Mode 0
+            Format-Result -Issue $ESC13 -Mode 0
+            Format-Result -Issue $ESC15 -Mode 0
             Write-Host @"
 [!] You ran Locksmith in Mode 0 which only provides an high-level overview of issues
 identified in the environment. For more details including:
@@ -315,17 +316,17 @@ Invoke-Locksmith -Mode 1
 "@ -ForegroundColor Yellow
         }
         1 {
-            Format-Result $AuditingIssues '1'
-            Format-Result $ESC1 '1'
-            Format-Result $ESC2 '1'
-            Format-Result $ESC3 '1'
-            Format-Result $ESC4 '1'
-            Format-Result $ESC5 '1'
-            Format-Result $ESC6 '1'
-            Format-Result $ESC8 '1'
-            Format-Result $ESC11 '1'
-            Format-Result $ESC13 '1'
-            Format-Result $ESC15 '1'
+            Format-Result -Issue $AuditingIssues -Mode 1
+            Format-Result -Issue $ESC1 -Mode 1
+            Format-Result -Issue $ESC2 -Mode 1
+            Format-Result -Issue $ESC3 -Mode 1
+            Format-Result -Issue $ESC4 -Mode 1
+            Format-Result -Issue $ESC5 -Mode 1
+            Format-Result -Issue $ESC6 -Mode 1
+            Format-Result -Issue $ESC8 -Mode 1
+            Format-Result -Issue $ESC11 -Mode 1
+            Format-Result -Issue $ESC13 -Mode 1
+            Format-Result -Issue $ESC15 -Mode 1
         }
         2 {
             $Output = Join-Path -Path $OutputPath -ChildPath "$FilePrefix ADCSIssues.CSV"

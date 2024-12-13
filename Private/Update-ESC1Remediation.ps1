@@ -8,11 +8,13 @@ function Update-ESC1Remediation {
         remediation.
 
         Questions:
-        TODO: Is this template published?
         1. Does the identified principal need to enroll in this template? [Yes/No/Unsure]
         2. Is this certificate widely used and/or frequently requested? [Yes/No/Unsure]
 
         Depending on answers to these questions, the Issue and Fix attributes on the Issue object are updated.
+
+        TODO: More questions:
+        Should the identified principal be able to request certs that include a SAN or SANs?
 
     .PARAMETER Issue
         A pscustomobject that includes all pertinent information about the ESC1 issue.
