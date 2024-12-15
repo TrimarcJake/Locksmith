@@ -58,8 +58,8 @@ function Format-Result {
             switch ($UniqueIssue) {
                 'DETECT'      { $Issue | Format-Table Technique, Name, Issue -Wrap }
                 'ESC1'        { $Issue | Format-Table Technique, Name, Enabled, Issue -Wrap }
-                'ESC1'        { $Issue | Format-Table Technique, Name, Enabled, Issue -Wrap }
-                'ESC1'        { $Issue | Format-Table Technique, Name, Enabled, Issue -Wrap }
+                'ESC2'        { $Issue | Format-Table Technique, Name, Enabled, Issue -Wrap }
+                'ESC3'        { $Issue | Format-Table Technique, Name, Enabled, Issue -Wrap }
                 'ESC4'        { $Issue | Format-Table Technique, Name, Enabled, Issue -Wrap }
                 'ESC5'        { $Issue | Format-Table Technique, Name, Issue -Wrap }
                 'ESC6'        { $Issue | Format-Table Technique, Name, Issue -Wrap }

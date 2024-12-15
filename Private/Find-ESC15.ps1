@@ -32,7 +32,7 @@ function Find-ESC15 {
     $ADCSObjects | Where-Object {
         ($_.objectClass -eq 'pKICertificateTemplate') -and
         ($_.'msPKI-Template-Schema-Version' -eq 1) -and
-        ($Enabled)
+        ($_.Enabled)
     } | ForEach-Object {
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)

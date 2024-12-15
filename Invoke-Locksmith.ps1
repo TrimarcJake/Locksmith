@@ -507,7 +507,7 @@ function Find-ESC15 {
     $ADCSObjects | Where-Object {
         ($_.objectClass -eq 'pKICertificateTemplate') -and
         ($_.'msPKI-Template-Schema-Version' -eq 1) -and
-        ($Enabled)
+        ($_.Enabled)
     } | ForEach-Object {
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
@@ -1604,10 +1604,10 @@ function Format-Result {
                 'ESC1' {
                     $Issue | Format-Table Technique, Name, Enabled, Issue -Wrap 
                 }
-                'ESC1' {
+                'ESC2' {
                     $Issue | Format-Table Technique, Name, Enabled, Issue -Wrap 
                 }
-                'ESC1' {
+                'ESC3' {
                     $Issue | Format-Table Technique, Name, Enabled, Issue -Wrap 
                 }
                 'ESC4' {
@@ -3625,7 +3625,7 @@ function Invoke-Locksmith {
         [System.Management.Automation.PSCredential]$Credential
     )
 
-    $Version = '2024.12.13'
+    $Version = '2024.12.14'
     $LogoPart1 = @"
     _       _____  _______ _     _ _______ _______ _____ _______ _     _
     |      |     | |       |____/  |______ |  |  |   |      |    |_____|
