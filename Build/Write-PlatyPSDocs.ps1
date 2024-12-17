@@ -1,15 +1,37 @@
 ﻿function Write-PlatyPSDocs {
+    <#
+    .SYNOPSIS
+    Use PlatyPS to create documentation for the current module.
+
+    .DESCRIPTION
+    This function uses PlatyPS to create documentation for the current module. It will generate markdown files for each
+    function in the module, as well as a generic module page. Borrowing code from the Catesta module, by Jake Morrison
+    (@techthoughts2), this script also checks for issues and missing information in the help documentation before creating
+    an XML help file for online use.
+
+    .EXAMPLE
+    Write-PlatyPSDocs
+
+    Does what it says on the tin.
+    - Create markdown docs from comment-based help in each exported function.
+    - Create a general markdown page for the module.
+    - Create XML-based external help files for the module.
+
+    #>
+    [CmdletBinding()]
+    param ()
+
     $ModuleName = 'Locksmith'
 
     # Remove the module from the current session to ensure we are working with the current source version.
-    Remove-Module -Name $ModuleName -ErrorAction SilentlyContinue
+    Remove-Module -Name $ModuleName -Force -ErrorAction SilentlyContinue
 
-    # Get the path to the module manifest.
+    # Get the path to the module manifest. Check for either PSScriptRoot (if running from a script) or PWD (if running from the console).
     $ModulePath = if ($PSScriptRoot) {
         # If the $PSScriptRoot variable exists, check if you are in the build folder or the module folder.
         if ( (Split-Path -Path $PSScriptRoot -Leaf) -eq 'Build' ) {
             Split-Path -Path $PSScriptRoot -Parent
-        } elseif ( (Split-Path -Path $PSScriptRoot -Leaf) -eq $ModuleName ) {
+        } elseif ( (Split-Path -Path $PSScriptRoot -Leaf) -match $ModuleName ) {
             $PSScriptRoot
         } else {
             throw 'Failed to determine module manifest path. Please ensure you are in the module or build folder.'
@@ -24,7 +46,7 @@
             throw 'Failed to determine module manifest path. Please ensure you are in the module or build folder.'
         }
     }
-
+    # All of the above is fun, but is largely not needed if you just run the script file instead of pasting the code into the console.
     $ModuleManifestPath = Join-Path -Path $ModulePath -ChildPath "${ModuleName}.psd1"
 
     try {
@@ -38,7 +60,7 @@
     # Module Details
     $ModuleVersion = $ModuleInfo.Version
     $ModuleDescription = $ModuleInfo.Description
-    $FunctionsToExport = $ModuleInfo.FunctionsToExport
+    $FunctionsToExport = $ModuleInfo.ExportedFunctions
 
     $DocsFolder = Join-Path -Path $ModulePath -ChildPath 'Docs'
     $ModulePage = Join-Path -Path $DocsFolder -ChildPath "$($ModuleName).md"
@@ -124,42 +146,4 @@
 
 } # end function Write-PlatyPSDocs
 
-function Write-HelpOutDocs {
-    $ModuleName = 'Locksmith'
-
-    # Remove the module from the current session to ensure we are working with the current source version.
-    Remove-Module -Name $ModuleName -ErrorAction SilentlyContinue
-
-    # Get the path to the module manifest.
-    $ModulePath = if ($PSScriptRoot) {
-        # If the $PSScriptRoot variable exists, check if you are in the build folder or the module folder.
-        if ( (Split-Path -Path $PSScriptRoot -Leaf) -eq 'Build' ) {
-            Split-Path -Path $PSScriptRoot -Parent
-        } elseif ( (Split-Path -Path $PSScriptRoot -Leaf) -eq $ModuleName ) {
-            $PSScriptRoot
-        } else {
-            throw 'Failed to determine module manifest path. Please ensure you are in the module or build folder.'
-        }
-    } else {
-        # If the $PSScriptRoot variable does not exist, check if you are in the build folder or the module folder.
-        if ( (Split-Path -Path $PWD.Path -Leaf) -eq 'Build' ) {
-            Split-Path -Path $PWD -Parent
-        } elseif ( (Split-Path -Path $pwd -Leaf) -match $ModuleName ) {
-            $PWD
-        } else {
-            throw 'Failed to determine module manifest path. Please ensure you are in the module or build folder.'
-        }
-    }
-
-    $ModuleManifestPath = Join-Path -Path $ModulePath -ChildPath "${ModuleName}.psd1"
-
-    try {
-        Import-Module ServerManager -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Out-Null
-        Import-Module $ModuleManifestPath
-    } catch {
-        throw "Failed to import module manifest at $ModuleManifestPath. $_"
-    }
-
-    Save-MarkdownHelp -Module Locksmith -ExcludeFile @('CODE_OF_CONDUCT.md', 'CONTRIBUTING.md', 'TSS Specs.md')
-    Save-MAML -Module Locksmith
-}
+Write-PlatyPSDocs
