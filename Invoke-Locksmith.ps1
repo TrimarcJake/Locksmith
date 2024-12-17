@@ -4,7 +4,7 @@
     [ValidateSet('Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'All', 'PromptMe')]
     [array]$Scans = 'All'
 )
-function ConvertFrom-IdentityReference {
+function Convert-IdentityReferenceToSid {
     <#
     .SYNOPSIS
         Converts an identity reference to a security identifier (SID).
@@ -190,6 +190,7 @@ Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
             $Issue.Fix = 'N/A'
             $Issue.Revert = 'N/A'
         }
+        Set-RiskRating -Issue $Issue
         $Issue
     }
 }
@@ -256,6 +257,7 @@ function Find-ESC1 {
                     Name                  = $_.Name
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
+                    IdentityReferenceSID  = $SID
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Enabled               = $_.Enabled
                     EnabledOn             = $_.EnabledOn
@@ -288,7 +290,7 @@ Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
                 if ( $Mode -in @(1, 3, 4) ) {
                     Update-ESC1Remediation -Issue $Issue
                 }
-
+                Set-RiskRating -Issue $Issue
                 $Issue
             }
         }
@@ -370,6 +372,7 @@ Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
 }
 "@
             }
+            Set-RiskRating -Issue $Issue
             $Issue
         }
     }
@@ -437,6 +440,7 @@ function Find-ESC13 {
                                 Name                  = $_.Name
                                 DistinguishedName     = $_.DistinguishedName
                                 IdentityReference     = $entry.IdentityReference
+                                IdentityReferenceSID  = $SID
                                 ActiveDirectoryRights = $entry.ActiveDirectoryRights
                                 Enabled               = $_.Enabled
                                 EnabledOn             = $_.EnabledOn
@@ -464,6 +468,7 @@ Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@
                                 Technique             = 'ESC13'
                             }
+                            Set-RiskRating -Issue $Issue
                             $Issue
                         }
                     }
@@ -523,6 +528,7 @@ function Find-ESC15 {
                     Name                  = $_.Name
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
+                    IdentityReferenceSID  = $SID
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Enabled               = $_.Enabled
                     EnabledOn             = $_.EnabledOn
@@ -556,6 +562,7 @@ Invoke-WebRequest -Uri https://bit.ly/Fix-ESC15 | Invoke-Expression
                     Revert                = '[TODO]'
                     Technique             = 'ESC15/EKUwu'
                 }
+                Set-RiskRating -Issue $Issue
                 $Issue
             }
         }
@@ -614,6 +621,7 @@ function Find-ESC2 {
                     Name                  = $_.Name
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
+                    IdentityReferenceSID  = $SID
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Enabled               = $_.Enabled
                     EnabledOn             = $_.EnabledOn
@@ -647,6 +655,7 @@ Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@
                     Technique             = 'ESC2'
                 }
+                Set-RiskRating -Issue $Issue
                 $Issue
             }
         }
@@ -705,6 +714,7 @@ function Find-ESC3Condition1 {
                     Name                  = $_.Name
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
+                    IdentityReferenceSID  = $SID
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Enabled               = $_.Enabled
                     EnabledOn             = $_.EnabledOn
@@ -731,6 +741,7 @@ Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@
                     Technique             = 'ESC3'
                 }
+                Set-RiskRating -Issue $Issue
                 $Issue
             }
         }
@@ -790,6 +801,7 @@ function Find-ESC3Condition2 {
                     Name                  = $_.Name
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
+                    IdentityReferenceSID  = $SID
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Enabled               = $_.Enabled
                     EnabledOn             = $_.EnabledOn
@@ -816,6 +828,7 @@ Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@
                     Technique             = 'ESC3'
                 }
+                Set-RiskRating -Issue $Issue
                 $Issue
             }
         }
@@ -915,12 +928,15 @@ function Find-ESC4 {
 
         if ($SID -notmatch $SafeOwners) {
             $Issue = [pscustomobject]@{
-                Forest            = $_.CanonicalName.split('/')[0]
-                Name              = $_.Name
-                DistinguishedName = $_.DistinguishedName
-                Enabled           = $_.Enabled
-                EnabledOn         = $_.EnabledOn
-                Issue             = @"
+                Forest                = $_.CanonicalName.split('/')[0]
+                Name                  = $_.Name
+                DistinguishedName     = $_.DistinguishedName
+                IdentityReference     = $_.nTSecurityDescriptor.Owner
+                IdentityReferenceSID  = $SID
+                ActiveDirectoryRights = 'Owner'
+                Enabled               = $_.Enabled
+                EnabledOn             = $_.EnabledOn
+                Issue                 = @"
 $($_.nTSecurityDescriptor.Owner) has Owner rights on this template and can
 modify it into a template that can create ESC1, ESC2, and ESC3 templates.
 
@@ -928,20 +944,21 @@ More info:
   - https://posts.specterops.io/certified-pre-owned-d95910965cd2
 
 "@
-                Fix               = @"
+                Fix                   = @"
 `$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`')
 `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
 `$ACL.SetOwner(`$Owner)
 Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
 "@
-                Revert            = @"
+                Revert                = @"
 `$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`')
 `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
 `$ACL.SetOwner(`$Owner)
 Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
 "@
-                Technique         = 'ESC4'
+                Technique             = 'ESC4'
             }
+            Set-RiskRating -Issue $Issue
             $Issue
         }
 
@@ -966,6 +983,7 @@ Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
                     Name                  = $_.Name
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
+                    IdentityReferenceSID  = $SID
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Enabled               = $_.Enabled
                     EnabledOn             = $_.EnabledOn
@@ -994,6 +1012,7 @@ Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
                 if ( $Mode -in @(1, 3, 4) ) {
                     Update-ESC4Remediation -Issue $Issue
                 }
+                Set-RiskRating -Issue $Issue
                 $Issue
             }
         }
@@ -1131,11 +1150,14 @@ certificates generated by the it can be used by the attacker.
             }
 
             $Issue = [pscustomobject]@{
-                Forest            = $_.CanonicalName.split('/')[0]
-                Name              = $_.Name
-                DistinguishedName = $_.DistinguishedName
-                objectClass       = $_.objectClass
-                Issue             = @"
+                Forest                = $_.CanonicalName.split('/')[0]
+                Name                  = $_.Name
+                DistinguishedName     = $_.DistinguishedName
+                IdentityReference     = $_.nTSecurityDescriptor.Owner
+                IdentityReferenceSID  = $SID
+                ActiveDirectoryRights = 'Owner'
+                objectClass           = $_.objectClass
+                Issue                 = @"
 $($_.nTSecurityDescriptor.Owner) has Owner rights on this object. They are able
 to modify this object in whatever way they wish.
 
@@ -1145,21 +1167,22 @@ More info:
   - https://posts.specterops.io/certified-pre-owned-d95910965cd2
 
 "@
-                Fix               = @"
+                Fix                   = @"
 `$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`')
 `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
 `$ACL.SetOwner(`$Owner)
 Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
 "@
-                Revert            = "
+                Revert                = "
 `$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`')
 `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
 `$ACL.SetOwner(`$Owner)
 Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
-                Technique         = 'ESC5'
-            }
+                Technique             = 'ESC5'
+            } # end switch ($_.objectClass)
+            Set-RiskRating -Issue $Issue
             $Issue
-        }
+        } # end if ( ($_.objectClass -ne 'pKICertificateTemplate') -and ($SID -notmatch $SafeOwners) )
 
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
@@ -1202,7 +1225,7 @@ enable the certificate. This enabled certificate could be use for privilege
 escalation and persistence.
 "@
                 }
-            }
+            } # end switch ($_.objectClass)
             if ($_.objectClass -eq 'certificationAuthority' -and $_.Name -eq 'NTAuthCertificates') {
                 $IssueDetail = @"
 The NTAuthCertificates object determines which Certification Authorities are
@@ -1224,6 +1247,7 @@ certificates generated by the it can be used by the attacker.
                     Name                  = $_.Name
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
+                    IdentityReferenceSID  = $SID
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     objectClass           = $_.objectClass
                     Issue                 = @"
@@ -1246,10 +1270,11 @@ Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
                     Revert                = '[TODO]'
                     Technique             = 'ESC5'
                 }
+                Set-RiskRating -Issue $Issue
                 $Issue
-            }
-        }
-    }
+            } # end if ( ($_.objectClass -ne 'pKICertificateTemplate')
+        } # end foreach ($entry in $_.nTSecurityDescriptor.Access)
+    } # end $ADCSObjects | ForEach-Object
 }
 
 function Find-ESC6 {
@@ -1289,10 +1314,10 @@ function Find-ESC6 {
                 Forest            = $_.CanonicalName.split('/')[0]
                 Name              = $_.Name
                 DistinguishedName = $_.DistinguishedName
-                Technique         = 'ESC6'
                 Issue             = $_.SANFlag
                 Fix               = 'N/A'
                 Revert            = 'N/A'
+                Technique         = 'ESC6'
             }
             if ($_.SANFlag -eq 'Yes') {
                 $Issue.Issue = @"
@@ -1330,6 +1355,7 @@ Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
 }
 "@
             }
+            Set-RiskRating -Issue $Issue
             $Issue
         }
     }
@@ -1392,7 +1418,7 @@ used to authenticate as that DC.
 
 More info:
   - https://posts.specterops.io/certified-pre-owned-d95910965cd2
-  
+
 '@
                     Fix                  = @'
 Disable HTTP access and enforce HTTPS.
@@ -1420,6 +1446,7 @@ Ensure EPA is enabled.
 Disable NTLM authentication (if possible.)
 '@
                 }
+                Set-RiskRating -Issue $Issue
                 $Issue
             }
         }
@@ -1582,8 +1609,18 @@ function Format-Result {
         ESC6          = 'ESC6 - EDITF_ATTRIBUTESUBJECTALTNAME2 Flag Enabled'
         ESC8          = 'ESC8 - HTTP/S Enrollment Enabled'
         ESC11         = 'ESC11 - IF_ENFORCEENCRYPTICERTREQUEST Flag Disabled'
-        ESC13         = 'ESC13 - Vulnerable Certificate Temple - Group-Linked'
-        'ESC15/EKUwu' = 'ESC15 - Vulnerable Certificate Temple - Schema V1'
+        ESC13         = 'ESC13 - Vulnerable Certificate Template - Group-Linked'
+        'ESC15/EKUwu' = 'ESC15 - Vulnerable Certificate Template - Schema V1'
+    }
+
+    $RiskTable = @{
+        'Informational' = 'Black, White'
+        'Low'           = 'Black, Yellow'
+        'Medium'        = 'Black, DarkYellow'
+        'High'          = 'Black, Red'
+        'Critical'      = 'White, DarkRed'
+        'True'          = 'Black, Red'
+        # 'False'         = 'Black, Yellow'
     }
 
     if ($null -ne $Issue) {
@@ -1598,42 +1635,25 @@ function Format-Result {
 
         if ($Mode -eq 0) {
             switch ($UniqueIssue) {
-                'DETECT' {
-                    $Issue | Format-Table Technique, Name, Issue -Wrap 
+                { $_ -in @('DETECT', 'ESC6', 'ESC8', 'ESC11') } {
+                    $Issue |
+                        Format-Table Technique, @{l = 'CA Name'; e = { $_.Name } }, @{l = 'Risk'; e = { $_.RiskName } }, Issue -Wrap |
+                            Write-HostColorized -PatternColorMap $RiskTable
                 }
-                'ESC1' {
-                    $Issue | Format-Table Technique, Name, Enabled, Issue -Wrap 
-                }
-                'ESC2' {
-                    $Issue | Format-Table Technique, Name, Enabled, Issue -Wrap 
-                }
-                'ESC3' {
-                    $Issue | Format-Table Technique, Name, Enabled, Issue -Wrap 
-                }
-                'ESC4' {
-                    $Issue | Format-Table Technique, Name, Enabled, Issue -Wrap 
+                { $_ -in @('ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC13', 'ESC15/EKUwu') } {
+                    $Issue |
+                        Format-Table Technique, @{l = 'Template Name'; e = { $_.Name } }, @{l = 'Risk'; e = { $_.RiskName } }, Enabled, Issue -Wrap |
+                            Write-HostColorized -PatternColorMap $RiskTable
                 }
                 'ESC5' {
-                    $Issue | Format-Table Technique, Name, Issue -Wrap 
-                }
-                'ESC6' {
-                    $Issue | Format-Table Technique, Name, Issue -Wrap 
-                }
-                'ESC8' {
-                    $Issue | Format-Table Technique, Name, Issue -Wrap 
-                }
-                'ESC11' {
-                    $Issue | Format-Table Technique, Name, Enabled, Issue -Wrap 
-                }
-                'ESC13' {
-                    $Issue | Format-Table Technique, Name, Enabled, Issue -Wrap 
-                }
-                'ESC15/EKUwu' {
-                    $Issue | Format-Table Technique, Name, Enabled, Issue -Wrap 
+                    $Issue |
+                        Format-Table Technique, @{l = 'Object Name'; e = { $_.Name } }, @{l = 'Risk'; e = { $_.RiskName } }, Issue -Wrap |
+                            Write-HostColorized -PatternColorMap $RiskTable
                 }
             }
         }
         elseif ($Mode -eq 1) {
+            # TODO update switches to use ($_ -in $array)
             switch ($UniqueIssue) {
                 'DETECT' {
                     $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix 
@@ -2338,7 +2358,6 @@ function Invoke-Scans {
         $SafeOwners,
         [ValidateSet('Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'ESC11', 'ESC13', 'ESC15', 'EKUwu', 'All', 'PromptMe')]
         [array]$Scans = 'All',
-        $UnsafeOwners,
         $UnsafeUsers,
         $PreferredOwner
     )
@@ -2448,7 +2467,7 @@ function Invoke-Scans {
 
     # Return a hash table of array names (keys) and arrays (values) so they can be directly referenced with other functions
     return @{
-        # AllIssues      = $AllIssues
+        AllIssues      = $AllIssues
         AuditingIssues = $AuditingIssues
         ESC1           = $ESC1
         ESC2           = $ESC2
@@ -2924,41 +2943,105 @@ function Set-AdditionalTemplateProperty {
     }
 }
 
-function Set-Severity {
-    [OutputType([string])]
+function Set-RiskRating {
+    <#
+        .SYNOPSIS
+        This function takes an Issue object as input and assigns a numerical risk score depending on issue conditions.
+
+        .DESCRIPTION
+        Risk of Issue is based on:
+        - Issue type: Templates issues are more risky than CA/Object issues by default.
+        - Template status: Enabled templates are more risky than disabled templates.
+        - Principals: Single users are less risky than groups, and custom groups are less risky than default groups.
+        - Principal type: AD Admins aren't risky. gMSAs have little risk (assuming proper controls). Non-admins are most risky
+        - Modifiers: Some issues are present a higher risk when certain conditions are met.
+
+        .PARAMETER Issue
+        A PSCustomObject that includes all pertinent information about an AD CS ssue.
+
+        .INPUTS
+        PSCustomObject
+
+        .OUTPUTS
+        None. This function sets a new attribute on each Issue object and returns nothing to the pipeline.
+
+        .EXAMPLE
+        $Targets = Get-Target
+        $ADCSObjects = Get-ADCSObject -Targets $Targets
+        $DangerousRights = @('GenericAll', 'WriteProperty', 'WriteOwner', 'WriteDacl')
+        $SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$'
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
+        $ESC4Issues = Find-ESC4 -ADCSObjects $ADCSObjects -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeUsers $SafeUsers -SafeObjectTypes $SafeObjectTypes -Mode 1
+        foreach ($issue in $ESC4Issues) { Set-RiskRating -Issue $Issue }
+
+        .LINK
+    #>
     [CmdletBinding()]
-    param(
-        [Parameter(Mandatory)]
-        [array]$Issue
+    param (
+        $Issue
     )
-    foreach ($Finding in $Issue) {
-        try {
-            # Auditing
-            if ($Finding.Technique -eq 'DETECT') {
-                return 'Medium'
-            }
-            # ESC6
-            if ($Finding.Technique -eq 'ESC6') {
-                return 'High'
-            }
-            # ESC8
-            if ($Finding.Technique -eq 'ESC8') {
-                return 'High'
-            }
-            # ESC1, ESC2, ESC4, ESC5
-            $SID = ConvertFrom-IdentityReference -Object $Finding.IdentityReference
-            if ($SID -match $SafeUsers -or $SID -match $SafeOwners) {
-                return 'Medium'
-            }
-            if (($SID -notmatch $SafeUsers -and $SID -notmatch $SafeOwners) -and ($Finding.ActiveDirectoryRights -match $DangerousRights)) {
-                return 'Critical'
-            }
+
+    #requires -Version 5
+
+    $RiskValue = 0
+    $RiskName = ''
+
+    if ($Issue.Technique -notin @('DETECT', 'ESC6', 'ESC8', 'ESC11')) {
+        $SID = $Issue.IdentityReferenceSID.ToString()
+        $IdentityReferenceObjectClass = Get-ADObject -Filter { objectSid -eq $SID }  | Select-Object objectClass
+    }
+
+    # Templates are more dangerous when enabled.
+    if ($Issue.Technique -in @('ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC13', 'ESC15')) {
+        if ($Issue.Enabled) {
+            $RiskValue += 1
         }
-        catch {
-            Write-Error "Could not determine issue severity for issue: $($Issue.Issue)"
-            return 'Unknown Failure'
+        else {
+            $RiskValue -= 1
         }
     }
+
+    # ESC1 and ESC4 templates are more dangerous than other templates because they can result in immediate compromise.
+    if ($Issue.Technique -in @('ESC1', 'ESC4')) {
+        $RiskValue += 1
+    }
+
+    if ($Issue.IdentityReferenceSID -match $UnsafeUsers) {
+        # Authenticated Users, Domain Users, Domain Computers etc. are very risky
+        $RiskValue += 2
+    }
+    elseif ($IdentityReferenceObjectClass -eq 'group') {
+        # Groups are riskier than individual principals
+        $RiskValue += 1
+    }
+
+    if ($Issue.IdentityReferenceSID -notmatch $SafeUsers -and $IdentityReferenceObjectClass -ne 'msDS-GroupManagedServiceAccount') {
+        $RiskValue += 1
+    }
+
+    # Convert Value to Name
+    $RiskName = switch ($RiskValue) {
+        { $_ -le 1 } {
+            'Informational' 
+        }
+        2 {
+            'Low' 
+        }
+        3 {
+            'Medium' 
+        }
+        4 {
+            'High' 
+        }
+        { $_ -ge 5 } {
+            'Critical' 
+        }
+    }
+
+    # Write Risk attributes
+    $Issue | Add-Member -NotePropertyName RiskValue -NotePropertyValue $RiskValue -Force
+    $Issue | Add-Member -NotePropertyName RiskName -NotePropertyValue $RiskName -Force
 }
 
 function Show-LocksmithLogo {
@@ -3389,7 +3472,7 @@ function Update-ESC4Remediation {
         $SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$'
         $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
         $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
-        $ESC4Issues = Find-ESC4 -ADCSObjects $ADCSObjects -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeUsers $SafeUsers -SafeObjectTypes $SafeObjectTypes
+        $ESC4Issues = Find-ESC4 -ADCSObjects $ADCSObjects -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeUsers $SafeUsers -SafeObjectTypes $SafeObjectTypes -Mode 1
         foreach ($issue in $ESC4Issues) { Update-ESC4Remediation -Issue $Issue }
     #>
     [CmdletBinding()]
@@ -3516,7 +3599,273 @@ foreach ( `$ace in `$ACL.access ) {
 Set-Acl -Path `$Path -AclObject `$ACL
 "@
             }
+        } # end switch ($RightsToRestore)
+    } # end elseif ($Issue.Issue -match 'GenericAll')
+}
+
+<#
+  Prerequisites: PowerShell version 2 or above.
+  License: MIT
+  Author:  Michael Klement <mklement0@gmail.com>
+  DOWNLOAD, from PowerShell version 3 or above:
+    irm https://gist.github.com/mklement0/243ea8297e7db0e1c03a67ce4b1e765d/raw/Out-HostColored.ps1 | iex
+  The above directly defines the function below in your session and offers guidance for making it available in future
+  sessions too.
+
+  Alternatively, download this file manually and dot-source it (e.g.: . /Out-HostColored.ps1)
+  To learn what the function does:
+    * see the next comment block
+    * or, once downloaded, invoke the function with -? or pass its name to Get-Help.
+
+#>
+
+Function Write-HostColorized {
+    <#
+    .SYNOPSIS
+    Colors portions of the default host output that match given patterns.
+    .DESCRIPTION
+    Colors portions of the default-formatted host output based on either
+    regular expressions or literal substrings, assuming the host is a console or
+    supports colored output using console colors.
+    Matching is restricted to a single line at a time, but coloring multiple
+    matches on a given line is supported.
+    Two basic syntax forms are supported:
+      * Single-color, via -Pattern, -ForegroundColor and -BackgroundColor
+      * Multi-color (color per pattern), via a hashtable (dictionary) passed to
+        -PatternColorMap.
+    Note: Since output is sent to the host rather than the pipeline, you cannot
+          chain calls to this function.
+    .PARAMETER Pattern
+    One or more search patterns specifying what parts of the formatted
+    representations of the input objects should be colored.
+     * By default, these patterns are interpreted as regular expressions.
+     * If -SimpleMatch is also specified, the patterns are interpreted as literal
+       substrings.
+    .PARAMETER ForegroundColor
+    The foreground color to use for the matching portions.
+    Defaults to yellow.
+    .PARAMETER BackgroundColor
+    The optional background color to use for the matching portions.
+    .PARAMETER PatternColorMap
+    A hashtable (dictionary) with one or more entries in the following format:
+      <pattern-or-pattern-array> = <color-spec>
+    <pattern-or-pattern-array> is either a single string or an array of strings
+    specifying the regex pattern(s) or literal substring(s) (with -SimpleMatch)
+    to match.
+    NOTE: If you're specifying an array literally, you must enclose it in (...) or
+          @(...), and the individual patterns must all be quoted; e.g.:
+            @('foo', 'bar')
+    <color-spec> is a string that contains either a foreground [ConsoleColor]
+    color alone (e.g. 'red'), a combination with a background color separated by ","
+    (e.g., 'red,white') or just a background color (e.g, ',white').
+    NOTE: If *multiple* patterns stored in a given hashtable may match on a given
+          line and you want the *first* matching pattern to "win" predictably, be
+          sure to pass an [ordered] hashtable ([ordered] @{ Foo = 'red; ... })
+    See the examples for a complete example.
+    .PARAMETER CaseSensitive
+    Matches the patterns case-sensitively.
+    By default, matching is case-insensitive.
+    .PARAMETER WholeLine
+    Specifies that the entire line containing a match should be colored,
+    not just the matching portion.
+    .PARAMETER SimpleMatch
+    Interprets the -Pattern argument(s) as a literal substrings to match rather
+    than as regular expressions.
+    .PARAMETER InputObject
+    The input object(s) whose formatted representations to color selectively.
+    Typically provided via the pipeline.
+    .EXAMPLE
+    'A fool and his money', 'foo bar' | Out-HostColored foo
+    Prints the substring 'foo' in yellow in the two resulting output lines.
+    .EXAMPLE
+    Get-Date | Out-HostColored '\p{L}+' red white
+    Outputs the current date with all tokens composed of letters (p{L}) only in red
+    on a white background.
+    .EXAMPLE
+    Get-Date | Out-HostColored @{ '\p{L}+' = 'red,white' }
+    Same as the previous example, only via the dictionary-based -PatternColorMap
+    parameter (implied).
+    .EXAMPLE
+    'It ain''t easy being green.' | Out-HostColored @{ ('easy', 'green') = 'green'; '\bbe.+?\b' = 'black,yellow' }
+    Prints the words 'easy' and 'green' in green, and the word 'being' in black on yellow.
+    Note the need to enclose pattern array 'easy', 'green' in (...), which also necessitates
+    quoting its element.
+    .EXAMPLE
+    Get-ChildItem | select Name | Out-HostColored -WholeLine -SimpleMatch .txt
+    Highlight all text file names in green.
+    .EXAMPLE
+    'apples', 'kiwi', 'pears' | Out-HostColored '^a', 's$' blue
+    Highlight all "A"s at the beginning and "S"s at the end of lines in blue.
+    #>
+
+    # === IMPORTANT:
+    #   * At least for now, we remain PSv2-COMPATIBLE.
+    #   * Thus:
+    #     * no `[ordered]`, `::new()`, `[pscustomobject]`, ...
+    #     * No implicit Boolean properties in [CmdletBinding()] and [Parameter()] attributes (`Mandatory = $true` instead of just `Mandatory`)
+    # ===
+
+    [CmdletBinding(DefaultParameterSetName = 'SingleColor')]
+    param(
+        [Parameter(ParameterSetName = 'SingleColor', Position = 0, Mandatory = $True)] [string[]] $Pattern,
+        [Parameter(ParameterSetName = 'SingleColor', Position = 1)] [ConsoleColor] $ForegroundColor = [ConsoleColor]::Yellow,
+        [Parameter(ParameterSetName = 'SingleColor', Position = 2)] [ConsoleColor] $BackgroundColor,
+        [Parameter(ParameterSetName = 'PerPatternColor', Position = 0, Mandatory = $True)] [System.Collections.IDictionary] $PatternColorMap,
+        [Parameter(ValueFromPipeline = $True)] $InputObject,
+        [switch] $WholeLine,
+        [switch] $SimpleMatch,
+        [switch] $CaseSensitive
+    )
+
+    begin {
+
+        Set-StrictMode -Version 1
+
+        if ($PSCmdlet.ParameterSetName -eq 'SingleColor') {
+
+            # Translate the indiv. arguments into the dictionary format suppoorted
+            # by -PatternColorMap, so we can process $PatternColorMap uniformly below.
+            $PatternColorMap = @{
+                $Pattern = $ForegroundColor, $BackgroundColor
+            }
         }
+        # Otherwise: $PSCmdlet.ParameterSetName -eq 'PerPatternColor', i.e. a dictionary
+        #            mapping patterns to colors was direclty passed in $PatternColorMap
+
+        try {
+
+            # The options for the [regex] instances to create.
+            # We precompile them for better performance with many input objects.
+            [System.Text.RegularExpressions.RegexOptions] $reOpts =
+            if ($CaseSensitive) {
+                'Compiled, ExplicitCapture' 
+            }
+            else {
+                'Compiled, ExplicitCapture, IgnoreCase' 
+            }
+
+            # Transform the dictionary:
+            #  * Keys: Consolidate multiple patterns into a single one with alternation and
+            #          construct a [regex] instance from it.
+            #  * Values: Transform the "[foregroundColor],[backgroundColor]" strings into an arguments
+            #            hashtable that can be used for splatting with Write-Host.
+            $map = [ordered] @{ } # !! For stable results in repeated enumerations, use [ordered].
+            # !! This matters when multiple patterns match on a given line, and also requires the
+            # !! *caller* to pass an [ordered] hashtable to -PatternColorMap
+            foreach ($entry in $PatternColorMap.GetEnumerator()) {
+
+                # Create a Write-Host color-arguments hashtable for splatting.
+                if ($entry.Value -is [array]) {
+                    $fg, $bg = $entry.Value # [ConsoleColor[]], from the $PSCmdlet.ParameterSetName -eq 'SingleColor' case.
+                }
+                else {
+                    $fg, $bg = $entry.Value -split ','
+                }
+                $colorArgs = @{ }
+                if ($fg) {
+                    $colorArgs['ForegroundColor'] = [ConsoleColor] $fg 
+                }
+                if ($bg) {
+                    $colorArgs['BackgroundColor'] = [ConsoleColor] $bg 
+                }
+
+                # Consolidate the patterns into a single pattern with alternation ('|'),
+                # escape the patterns if -SimpleMatch was passsed.
+                $re = New-Object regex -Args `
+                $(if ($SimpleMatch) {
+                  ($entry.Key | ForEach-Object { [regex]::Escape($_) }) -join '|'
+                    }
+                    else {
+                  ($entry.Key | ForEach-Object { '({0})' -f $_ }) -join '|'
+                    }),
+                $reOpts
+
+                # Add the tansformed entry.
+                $map[$re] = $colorArgs
+            }
+        }
+        catch {
+            throw 
+        }
+
+        # Construct the arguments to pass to Out-String.
+        $htArgs = @{ Stream = $True }
+        if ($PSBoundParameters.ContainsKey('InputObject')) {
+            # !! Do not use `$null -eq $InputObject`, because PSv2 doesn't create this variable if the parameter wasn't bound.
+            $htArgs.InputObject = $InputObject
+        }
+
+        # Construct the script block that is used in the steppable pipeline created
+        # further below.
+        $scriptCmd = {
+
+            # Format the input objects with Out-String and output the results line
+            # by line, then look for matches and color them.
+            & $ExecutionContext.InvokeCommand.GetCommand('Microsoft.PowerShell.Utility\Out-String', 'Cmdlet') @htArgs | ForEach-Object {
+
+                # Match the input line against all regexes and collect the results.
+                $matchInfos = :patternLoop foreach ($entry in $map.GetEnumerator()) {
+                    foreach ($m in $entry.Key.Matches($_)) {
+                        @{ Index = $m.Index; Text = $m.Value; ColorArgs = $entry.Value }
+                        if ($WholeLine) {
+                            break patternLoop 
+                        }
+                    }
+                }
+
+                # # Activate this for debugging.
+                # $matchInfos | Sort-Object { $_.Index } | Out-String | Write-Verbose -vb
+
+                if (-not $matchInfos) {
+                    # No match found - output uncolored.
+                    Write-Host -NoNewline $_
+                }
+                elseif ($WholeLine) {
+                    # Whole line should be colored: Use the first match's color
+                    $colorArgs = $matchInfos.ColorArgs
+                    Write-Host -NoNewline @colorArgs $_
+                }
+                else {
+                    # Parts of the line must be colored:
+                    # Process the matches in ascending order of start position.
+                    $offset = 0
+                    foreach ($mi in $matchInfos | Sort-Object { $_.Index }) {
+                        # !! Use of a script-block parameter is REQUIRED in WinPSv5.1-, because hashtable entries cannot be referred to like properties, unlinke in PSv7+
+                        if ($mi.Index -lt $offset) {
+                            # Ignore subsequent matches that overlap with previous ones whose colored output was already produced.
+                            continue
+                        }
+                        elseif ($offset -lt $mi.Index) {
+                            # Output the part *before* the match uncolored.
+                            Write-Host -NoNewline $_.Substring($offset, $mi.Index - $offset)
+                        }
+                        $offset = $mi.Index + $mi.Text.Length
+                        # Output the match at hand colored.
+                        $colorArgs = $mi.ColorArgs
+                        Write-Host -NoNewline @colorArgs $mi.Text
+                    }
+                    # Print any remaining part of the line uncolored.
+                    if ($offset -lt $_.Length) {
+                        Write-Host -NoNewline $_.Substring($offset)
+                    }
+                }
+                Write-Host '' # Terminate the current output line with a newline - this also serves to reset the console's colors on Unix.
+            }
+        }
+
+        # Create the script block as a *steppable pipeline*, which enables
+        # to perform regular streaming pipeline processing, without having to collect
+        # everything in memory first.
+        $steppablePipeline = $scriptCmd.GetSteppablePipeline($myInvocation.CommandOrigin)
+        $steppablePipeline.Begin($PSCmdlet)
+    } # begin
+
+    process {
+        $steppablePipeline.Process($_)
+    }
+
+    end {
+        $steppablePipeline.End()
     }
 }
 
@@ -3625,7 +3974,7 @@ function Invoke-Locksmith {
         [System.Management.Automation.PSCredential]$Credential
     )
 
-    $Version = '2024.12.14'
+    $Version = '2024.12.17'
     $LogoPart1 = @"
     _       _____  _______ _     _ _______ _______ _____ _______ _     _
     |      |     | |       |____/  |______ |  |  |   |      |    |_____|
@@ -3693,21 +4042,24 @@ function Invoke-Locksmith {
         -517$    = Cert Publishers
         -500$    = Built-in Administrator
         -516$    = Domain Controllers
+        -521$    = Read-Only Domain Controllers
         -9$      = Enterprise Domain Controllers
         -526$    = Key Admins
         -527$    = Enterprise Key Admins
         S-1-5-10 = SELF
     #>
-    $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+    $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-9$|-526$|-527$|S-1-5-10'
 
     <#
-        S-1-1-0 = Everyone
-        -11$    = Authenticated Users
-        -513$   = Domain Users
-        -515$   = Domain Computers
+        S-1-0-0      = NULL SID
+        S-1-1-0      = Everyone
+        S-1-5-7      = Anonymous Logon
+        S-1-5-32-545 = BUILTIN\Users
+        S-1-5-11     = Authenticated Users
+        -513$        = Domain Users
+        -515$        = Domain Computers
     #>
-    $UnsafeOwners = 'S-1-1-0|-11$|-513$|-515$'
-    $UnsafeUsers = 'S-1-1-0|-11$|-513$|-515$'
+    $UnsafeUsers = 'S-1-0-0|S-1-1-0|S-1-5-7|S-1-5-32-545|S-1-5-11|-513$|-515$'
 
     ### Generated variables
     # $Dictionary = New-Dictionary
@@ -3783,7 +4135,6 @@ function Invoke-Locksmith {
         SafeObjectTypes    = $SafeObjectTypes
         SafeOwners         = $SafeOwners
         Scans              = $Scans
-        UnsafeOwners       = $UnsafeOwners
         UnsafeUsers        = $UnsafeUsers
         PreferredOwner     = $PreferredOwner
     }

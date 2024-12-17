@@ -90,12 +90,15 @@
 
         if ($SID -notmatch $SafeOwners) {
             $Issue = [pscustomobject]@{
-                Forest            = $_.CanonicalName.split('/')[0]
-                Name              = $_.Name
-                DistinguishedName = $_.DistinguishedName
-                Enabled           = $_.Enabled
-                EnabledOn         = $_.EnabledOn
-                Issue             = @"
+                Forest                = $_.CanonicalName.split('/')[0]
+                Name                  = $_.Name
+                DistinguishedName     = $_.DistinguishedName
+                IdentityReference     = $_.nTSecurityDescriptor.Owner
+                IdentityReferenceSID  = $SID
+                ActiveDirectoryRights = 'Owner'
+                Enabled               = $_.Enabled
+                EnabledOn             = $_.EnabledOn
+                Issue                 = @"
 $($_.nTSecurityDescriptor.Owner) has Owner rights on this template and can
 modify it into a template that can create ESC1, ESC2, and ESC3 templates.
 
@@ -103,20 +106,21 @@ More info:
   - https://posts.specterops.io/certified-pre-owned-d95910965cd2
 
 "@
-                Fix               = @"
+                Fix                   = @"
 `$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`')
 `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
 `$ACL.SetOwner(`$Owner)
 Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
 "@
-                Revert            = @"
+                Revert                = @"
 `$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`')
 `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
 `$ACL.SetOwner(`$Owner)
 Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
 "@
-                Technique         = 'ESC4'
+                Technique             = 'ESC4'
             }
+            Set-RiskRating -Issue $Issue
             $Issue
         }
 
@@ -140,6 +144,7 @@ Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
                     Name                  = $_.Name
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
+                    IdentityReferenceSID  = $SID
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Enabled               = $_.Enabled
                     EnabledOn             = $_.EnabledOn
@@ -168,6 +173,7 @@ Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
                 if ( $Mode -in @(1, 3, 4) ) {
                     Update-ESC4Remediation -Issue $Issue
                 }
+                Set-RiskRating -Issue $Issue
                 $Issue
             }
         }

@@ -47,6 +47,7 @@ function Find-ESC15 {
                     Name                  = $_.Name
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
+                    IdentityReferenceSID  = $SID
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Enabled               = $_.Enabled
                     EnabledOn             = $_.EnabledOn
@@ -80,6 +81,7 @@ Invoke-WebRequest -Uri https://bit.ly/Fix-ESC15 | Invoke-Expression
                     Revert                = '[TODO]'
                     Technique             = 'ESC15/EKUwu'
                 }
+                Set-RiskRating -Issue $Issue
                 $Issue
             }
         }

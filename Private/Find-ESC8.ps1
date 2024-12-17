@@ -55,7 +55,7 @@ used to authenticate as that DC.
 
 More info:
   - https://posts.specterops.io/certified-pre-owned-d95910965cd2
-  
+
 '@
                     Fix                  = @'
 Disable HTTP access and enforce HTTPS.
@@ -83,6 +83,7 @@ Ensure EPA is enabled.
 Disable NTLM authentication (if possible.)
 '@
                 }
+                Set-RiskRating -Issue $Issue
                 $Issue
             }
         }

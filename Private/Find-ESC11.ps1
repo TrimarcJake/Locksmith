@@ -73,6 +73,7 @@ Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
 }
 "@
             }
+            Set-RiskRating -Issue $Issue
             $Issue
         }
     }

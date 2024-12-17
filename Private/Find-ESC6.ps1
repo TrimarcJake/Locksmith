@@ -35,10 +35,10 @@
                 Forest            = $_.CanonicalName.split('/')[0]
                 Name              = $_.Name
                 DistinguishedName = $_.DistinguishedName
-                Technique         = 'ESC6'
                 Issue             = $_.SANFlag
                 Fix               = 'N/A'
                 Revert            = 'N/A'
+                Technique         = 'ESC6'
             }
             if ($_.SANFlag -eq 'Yes') {
                 $Issue.Issue = @"
@@ -76,6 +76,7 @@ Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
 }
 "@
             }
+            Set-RiskRating -Issue $Issue
             $Issue
         }
     }
