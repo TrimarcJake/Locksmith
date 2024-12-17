@@ -42,7 +42,6 @@ function Invoke-Scans {
         $SafeOwners,
         [ValidateSet('Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'ESC11', 'ESC13', 'ESC15', 'EKUwu', 'All', 'PromptMe')]
         [array]$Scans = 'All',
-        $UnsafeOwners,
         $UnsafeUsers,
         $PreferredOwner
     )
@@ -150,7 +149,7 @@ function Invoke-Scans {
 
     # Return a hash table of array names (keys) and arrays (values) so they can be directly referenced with other functions
     return @{
-        # AllIssues      = $AllIssues
+        AllIssues      = $AllIssues
         AuditingIssues = $AuditingIssues
         ESC1           = $ESC1
         ESC2           = $ESC2
