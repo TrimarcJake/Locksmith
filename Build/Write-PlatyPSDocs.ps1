@@ -22,49 +22,30 @@
     param ()
 
     $ModuleName = 'Locksmith'
+    $ModulePath = Split-Path -Path $PSScriptRoot -Parent
 
     # Remove the module from the current session to ensure we are working with the current source version.
     Remove-Module -Name $ModuleName -Force -ErrorAction SilentlyContinue
 
-    # Get the path to the module manifest. Check for either PSScriptRoot (if running from a script) or PWD (if running from the console).
-    $ModulePath = if ($PSScriptRoot) {
-        # If the $PSScriptRoot variable exists, check if you are in the build folder or the module folder.
-        if ( (Split-Path -Path $PSScriptRoot -Leaf) -eq 'Build' ) {
-            Split-Path -Path $PSScriptRoot -Parent
-        } elseif ( (Split-Path -Path $PSScriptRoot -Leaf) -match $ModuleName ) {
-            $PSScriptRoot
-        } else {
-            throw 'Failed to determine module manifest path. Please ensure you are in the module or build folder.'
-        }
-    } else {
-        # If the $PSScriptRoot variable does not exist, check if you are in the build folder or the module folder.
-        if ( (Split-Path -Path $PWD.Path -Leaf) -eq 'Build' ) {
-            Split-Path -Path $PWD -Parent
-        } elseif ( (Split-Path -Path $pwd -Leaf) -match $ModuleName ) {
-            $PWD
-        } else {
-            throw 'Failed to determine module manifest path. Please ensure you are in the module or build folder.'
-        }
-    }
-    # All of the above is fun, but is largely not needed if you just run the script file instead of pasting the code into the console.
-    $ModuleManifestPath = Join-Path -Path $ModulePath -ChildPath "${ModuleName}.psd1"
+    # Get the path to the module manifest.
+    $ModuleManifestPath = Join-Path -Path $PSScriptRoot -ChildPath "..\${ModuleName}.psd1"
 
     try {
-        Import-Module ServerManager -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Out-Null
-        Import-Module $ModuleManifestPath
+        Import-Module ServerManager -Force -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Out-Null
+        Import-Module $ModuleManifestPath -Force
         $ModuleInfo = Test-ModuleManifest -Path $ModuleManifestPath
     } catch {
         throw "Failed to import module manifest at $ModuleManifestPath. $_"
     }
 
-    # Module Details
+    # Get module details from manifest
     $ModuleVersion = $ModuleInfo.Version
     $ModuleDescription = $ModuleInfo.Description
     $FunctionsToExport = $ModuleInfo.ExportedFunctions
 
+    # Prepare parameters for New-MarkdownHelp
     $DocsFolder = Join-Path -Path $ModulePath -ChildPath 'Docs'
     $ModulePage = Join-Path -Path $DocsFolder -ChildPath "$($ModuleName).md"
-
     $markdownParams = @{
         Module         = $ModuleName
         OutputFolder   = $DocsFolder
@@ -76,7 +57,13 @@
         HelpVersion    = $ModuleVersion
         Encoding       = [System.Text.Encoding]::UTF8
     }
+
+    # Generate markdown help files
     New-MarkdownHelp @markdownParams | Out-Null
+
+
+    # Fixes and cleanup for markdown files #
+
 
     # Fix formatting in multiline examples
     Get-ChildItem -Path $DocsFolder -Recurse -File | ForEach-Object {
@@ -98,21 +85,22 @@
     $ModulePageFileContent = $ModulePageFileContent -replace '{{ Fill in the Description }}', $ModuleDescription
     $ModulePageFileContent | Out-File $ModulePage -Force -Encoding:utf8
 
-    # --- FunctionsToExport Missing Variable value --- #
+    # Replace each missing element we need for a proper function .md file
     $FunctionsToExport | ForEach-Object {
         $TextToReplace = "{{ Manually Enter $($_) Description Here }}"
         $ReplacementText = (Get-Help -Detailed $_).Synopsis
         $ModulePageFileContent = $ModulePageFileContent -replace $TextToReplace, $ReplacementText
     }
     $ModulePageFileContent | Out-File $ModulePage -Force -Encoding:utf8
-    # --- FunctionsToExport Missing Variable value --- #
 
+    # Check for missing or invalid  GUID
     $MissingGUID = Select-String -Path "$DocsFolder\*.md" -Pattern '(00000000-0000-0000-0000-000000000000)'
     if ($MissingGUID.Count -gt 0) {
         Write-Host 'The documentation that got generated resulted in a generic GUID. Check the GUID entry of your module manifest.' -ForegroundColor Yellow
         throw 'Missing GUID. Please review and rebuild.'
     }
 
+    # Check for missing sections in markdown files
     Write-Host 'Checking for missing documentation in MD files...' -ForegroundColor Gray
     $MissingDocumentation = Select-String -Path "$DocsFolder\*.md" -Pattern '({{.*}})'
     if ($MissingDocumentation.Count -gt 0) {
@@ -137,12 +125,24 @@
         $fSynopsisOutput
         throw 'SYNOPSIS information missing. Please review.'
     }
+
+
     Write-Host 'Markdown generation complete.' -ForegroundColor Gray
 
-    # Synopsis: Build the external xml help file from markdown help files with PlatyPS
+    # Build the external xml help file from markdown help files with PlatyPS
     Write-Host 'Creating external xml help file...' -ForegroundColor Gray
-    $null = New-ExternalHelp "$DocsFolder" -OutputPath "$PSScriptRoot\..\Help\en-US\" -Force -Encoding ([System.Text.Encoding]::UTF8)
+    $null = New-ExternalHelp "$DocsFolder" -OutputPath "$PSScriptRoot\..\en-US\" -Force -Encoding ([System.Text.Encoding]::UTF8)
     Write-Host '...External xml help file created!' -ForegroundColor Gray
+
+
+    # Create a CAB file for the external help
+    $params = @{
+        CabFilesFolder  = Join-Path -Path $PSScriptRoot -ChildPath '..\en-US'
+        LandingPagePath = Join-Path -Path $PSScriptRoot -ChildPath '..\Docs\Locksmith.md'
+        OutputFolder    = Join-Path -Path $PSScriptRoot -ChildPath '..\en-US'
+    }
+    New-ExternalHelpCab @params
+
 
 } # end function Write-PlatyPSDocs
 
