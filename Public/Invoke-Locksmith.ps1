@@ -74,7 +74,7 @@ function Invoke-Locksmith {
     The Windows PowerShell cmdlet Restart-Service requires RunAsAdministrator.
     #>
 
-    [CmdletBinding()]
+    [CmdletBinding(HelpUri = 'https://trimarcjake.github.io/Locksmith/Invoke-Locksmith')]
     param (
         #[string]$Forest, # Not used yet
         #[string]$InputPath, # Not used yet

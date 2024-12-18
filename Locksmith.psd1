@@ -19,4 +19,5 @@
     }
     RequiredModules      = @('ActiveDirectory', 'ServerManager', 'Microsoft.PowerShell.Utility', 'Microsoft.PowerShell.LocalAccounts', 'Microsoft.PowerShell.Management', 'Microsoft.PowerShell.Security', 'CimCmdlets', 'Dism')
     RootModule           = 'Locksmith.psm1'
+    HelpInfoURI          = 'https://raw.githubusercontent.com/TrimarcJake/Locksmith/main/en-US/'
 }
