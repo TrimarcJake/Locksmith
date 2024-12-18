@@ -13,5 +13,3 @@ A small tool to find and fix common misconfigurations in Active Directory Certif
 ## Locksmith Cmdlets
 ### [Invoke-Locksmith](Invoke-Locksmith.md)
 A small tool to find and fix common misconfigurations in Active Directory Certificate Services.
-
-
