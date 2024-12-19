@@ -1,12 +1,6 @@
-.DS_Store
-.vs/*
-.vscode/*
-ADCSIssues.CSV
-ADCSRemediation.CSV
 Artefacts/*
 Examples/Output/*
 Ignore/*
-Invoke-RevertLocksmith.ps1
 Lib/Core/*
 Lib/Default/*
 Lib/Standard/*
@@ -19,3 +13,23 @@ Sources/*/bin
 Sources/*/*/obj
 Sources/*/*/bin
 Sources/packages/*
+
+### Visual Studio / Code ###
+.vs/*
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+### Module Output Files ###
+ADCSIssues.CSV
+ADCSRemediation.CSV
+Locksmith*ADCSIssues.CSV
+Locksmith*ADCSRemediation.CSV
+Invoke-RevertLocksmith.ps1
+
+### OS Files ###
+.DS_Store
+Thumbs.db
