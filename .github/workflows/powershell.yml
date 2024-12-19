@@ -13,7 +13,6 @@ on:
   push:
     branches: [ "testing" ]
   pull_request:
-    branches: [ "testing" ]
   schedule:
     - cron: '41 14 * * 4'
 
