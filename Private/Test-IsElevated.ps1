@@ -11,7 +11,7 @@
     .EXAMPLE
         # Prompt to launch elevated if not already running as administrator:
         if (!(Test-IsElevated)) {
-            $arguments = "& '" + $myinvocation.mycommand.definition + "'"
+            $arguments = "& '" + $MyInvocation.MyCommand.definition + "'"
             Start-Process powershell -Verb runAs -ArgumentList $arguments
             Break
         }
