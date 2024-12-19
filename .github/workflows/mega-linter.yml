@@ -58,7 +58,7 @@
 
             # If you use VALIDATE_ALL_CODEBASE = true, you can remove this line to
             # improve performance
-            fetch-depth: 0
+            # fetch-depth: 0
 
         # MegaLinter
         - name: MegaLinter
@@ -78,7 +78,7 @@
             # main. Override with true if you always want to lint all sources
             #
             # To validate the entire codebase, set to:
-            # VALIDATE_ALL_CODEBASE: true
+            VALIDATE_ALL_CODEBASE: true
             #
             # To validate only diff with main, set to:
             # VALIDATE_ALL_CODEBASE: >-
@@ -86,11 +86,11 @@
             #     github.event_name == 'push' &&
             #     contains(fromJSON('["refs/heads/main", "refs/heads/master"]'), github.ref)
             #   }}
-            VALIDATE_ALL_CODEBASE: >-
-              ${{
-                github.event_name == 'push' &&
-                contains(fromJSON('["refs/heads/main", "refs/heads/master"]'), github.ref)
-              }}
+            # VALIDATE_ALL_CODEBASE: >-
+            #   ${{
+            #     github.event_name == 'push' &&
+            #     contains(fromJSON('["refs/heads/main", "refs/heads/master"]'), github.ref)
+            #   }}
 
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
