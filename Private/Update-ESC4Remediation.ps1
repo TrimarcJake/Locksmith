@@ -6,8 +6,8 @@ function Update-ESC4Remediation {
     .DESCRIPTION
         This function takes a single ESC4 issue as input. It then prompts the user if the principal with the ESC4 rights
         administers the template in question.
-        If the principal is an admin of the template, the Issue attribute to indicate this configuration is expected, and
-        the Fix attribute for the issue is updated to indicate no remediation is needed.
+        If the principal is an admin of the template, the Issue attribute is updated to indicate this configuration is
+        expected, and the Fix attribute for the issue is updated to indicate no remediation is needed.
         If the the principal is not an admin of the template AND the rights assigned is GenericAll, Locksmith will ask
         if Enroll or AutoEnroll rights are needed.
         Depending on the answers to the listed questions, the Fix attribute is updated accordingly.
@@ -19,14 +19,14 @@ function Update-ESC4Remediation {
         This function updates ESC4 remediations customized to the user's needs.
 
     .EXAMPLE
-        $Target = Get-Target
-        $ADCSObjects = Get-ADCSObject -Target $Target
+        $Targets = Get-Target
+        $ADCSObjects = Get-ADCSObject -Targets $Targets
         $DangerousRights = @('GenericAll', 'WriteProperty', 'WriteOwner', 'WriteDacl')
         $SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$'
         $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
         $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
         $ESC4Issues = Find-ESC4 -ADCSObjects $ADCSObjects -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeUsers $SafeUsers -SafeObjectTypes $SafeObjectTypes
-        foreach ($issue in $ESCIssues) { Update-ESC4Remediation -Issue $Issue }
+        foreach ($issue in $ESC4Issues) { Update-ESC4Remediation -Issue $Issue }
     #>
     [CmdletBinding()]
     param(

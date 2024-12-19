@@ -22,7 +22,7 @@
 
     .EXAMPLE
         $Targets = Get-Target
-        $ADCSObjects = Get-ADCSObjects -Targets $Targets
+        $ADCSObjects = Get-ADCSObject -Targets $Targets
         $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
         $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
         $Results = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEKUs
@@ -35,7 +35,9 @@
         [Parameter(Mandatory)]
         [array]$SafeUsers,
         [Parameter(Mandatory)]
-        $ClientAuthEKUs
+        $ClientAuthEKUs,
+        [Parameter(Mandatory)]
+        [int]$Mode
     )
     $ADCSObjects | Where-Object {
         ($_.objectClass -eq 'pKICertificateTemplate') -and
@@ -58,6 +60,8 @@
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
+                    Enabled               = $_.Enabled
+                    EnabledOn             = $_.EnabledOn
                     Issue                 = @"
 $($entry.IdentityReference) can provide a Subject Alternative Name (SAN) while
 enrolling in this Client Authentication template, and enrollment does not require
@@ -83,6 +87,11 @@ Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@
                     Technique             = 'ESC1'
                 }
+
+                if ( $Mode -in @(1, 3, 4) ) {
+                    Update-ESC1Remediation -Issue $Issue
+                }
+
                 $Issue
             }
         }

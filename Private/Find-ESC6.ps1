@@ -43,7 +43,7 @@
             if ($_.SANFlag -eq 'Yes') {
                 $Issue.Issue = @"
 The dangerous EDITF_ATTRIBUTESUBJECTALTNAME2 flag is enabled on $CAFullname.
-All templates published on this CA will accept a Subject Alternative Name (SAN)
+All templates enabled on this CA will accept a Subject Alternative Name (SAN)
 during enrollment even if the template is not specifically configured to allow a SAN.
 
 As of May 2022, Microsoft has neutered this situation by requiring all SANs to
