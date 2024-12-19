@@ -21,7 +21,7 @@
         Specifies the list of SIDs of safe users who are allowed to have specific rights on the objects. This parameter is mandatory.
 
     .PARAMETER SafeObjectTypes
-        Specifices a list of ObjectTypes which are not a security concern. This parameter is mandatory.
+        Specifies a list of ObjectTypes which are not a security concern. This parameter is mandatory.
 
     .OUTPUTS
         The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
@@ -95,7 +95,7 @@ modify it into a template that can create ESC1, ESC2, and ESC3 templates.
 
 More info:
   - https://posts.specterops.io/certified-pre-owned-d95910965cd2
-  
+
 "@
                 Fix               = @"
 `$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`')
@@ -134,8 +134,8 @@ Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Issue                 = "$($entry.IdentityReference) has been granted " +
-                        "$($entry.ActiveDirectoryRights) rights on this template.`n" +
-                        "$($entry.IdentityReference) can likely modify this template into an ESC1 template."
+                    "$($entry.ActiveDirectoryRights) rights on this template.`n" +
+                    "$($entry.IdentityReference) can likely modify this template into an ESC1 template."
                     Fix                   = @"
 `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
 foreach ( `$ace in `$ACL.access ) {
