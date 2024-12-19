@@ -1634,6 +1634,7 @@ function Format-Result {
 
 
         if ($Mode -eq 0) {
+            # TODO Refactor this
             switch ($UniqueIssue) {
                 { $_ -in @('DETECT', 'ESC6', 'ESC8', 'ESC11') } {
                     $Issue |
@@ -1653,40 +1654,21 @@ function Format-Result {
             }
         }
         elseif ($Mode -eq 1) {
-            # TODO update switches to use ($_ -in $array)
             switch ($UniqueIssue) {
-                'DETECT' {
-                    $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix 
+                { $_ -in @('DETECT', 'ESC6', 'ESC8', 'ESC11') } {
+                    $Issue |
+                        Format-List Technique, @{l = 'CA Name'; e = { $_.Name } }, @{l = 'Risk'; e = { $_.RiskName } }, DistinguishedName, Issue, Fix |
+                            Write-HostColorized -PatternColorMap $RiskTable
                 }
-                'ESC1' {
-                    $Issue | Format-List Technique, Name, DistinguishedName, Enabled, EnabledOn, Issue, Fix 
-                }
-                'ESC2' {
-                    $Issue | Format-List Technique, Name, DistinguishedName, Enabled, EnabledOn, Issue, Fix 
-                }
-                'ESC3' {
-                    $Issue | Format-List Technique, Name, DistinguishedName, Enabled, EnabledOn, Issue, Fix 
-                }
-                'ESC4' {
-                    $Issue | Format-List Technique, Name, DistinguishedName, Enabled, EnabledOn, Issue, Fix 
+                { $_ -in @('ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC13', 'ESC15/EKUwu') } {
+                    $Issue |
+                        Format-List Technique, @{l = 'Template Name'; e = { $_.Name } }, @{l = 'Risk'; e = { $_.RiskName } }, DistinguishedName, Enabled, EnabledOn, Issue, Fix |
+                            Write-HostColorized -PatternColorMap $RiskTable
                 }
                 'ESC5' {
-                    $Issue | Format-List Technique, Name, DistinguishedName, objectClass, Issue, Fix 
-                }
-                'ESC6' {
-                    $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix 
-                }
-                'ESC8' {
-                    $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix 
-                }
-                'ESC11' {
-                    $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix 
-                }
-                'ESC13' {
-                    $Issue | Format-List Technique, Name, DistinguishedName, Enabled, EnabledOn, Issue, Fix 
-                }
-                'ESC15/EKUwu' {
-                    $Issue | Format-List Technique, Name, DistinguishedName, Enabled, EnabledOn, Issue, Fix 
+                    $Issue |
+                        Format-List Technique, @{l = 'Object Name'; e = { $_.Name } }, @{l = 'Risk'; e = { $_.RiskName } }, DistinguishedName, objectClass, Issue, Fix |
+                            Write-HostColorized -PatternColorMap $RiskTable
                 }
             }
         }
@@ -2987,9 +2969,15 @@ function Set-RiskRating {
     $RiskValue = 0
     $RiskName = ''
 
+    # The principal's objectClass impacts the Issue's risk
     if ($Issue.Technique -notin @('DETECT', 'ESC6', 'ESC8', 'ESC11')) {
         $SID = $Issue.IdentityReferenceSID.ToString()
         $IdentityReferenceObjectClass = Get-ADObject -Filter { objectSid -eq $SID }  | Select-Object objectClass
+    }
+
+    # CA issues don't rely on a principal and have a base risk of Medium.
+    if ($Issue.Technique -in @('DETECT', 'ESC6', 'ESC8', 'ESC11')) {
+        $RiskValue += 2
     }
 
     # Templates are more dangerous when enabled.
@@ -3016,7 +3004,8 @@ function Set-RiskRating {
         $RiskValue += 1
     }
 
-    if ($Issue.IdentityReferenceSID -notmatch $SafeUsers -and $IdentityReferenceObjectClass -ne 'msDS-GroupManagedServiceAccount') {
+    # Safe users and managed service accounts are inherently safer than other principals.
+    if ($Issue.IdentityReferenceSID -notmatch $SafeUsers -and $IdentityReferenceObjectClass -notlike '*ManagedServiceAccount') {
         $RiskValue += 1
     }
 
@@ -3974,7 +3963,7 @@ function Invoke-Locksmith {
         [System.Management.Automation.PSCredential]$Credential
     )
 
-    $Version = '2024.12.17'
+    $Version = '2024.12.19'
     $LogoPart1 = @"
     _       _____  _______ _     _ _______ _______ _____ _______ _     _
     |      |     | |       |____/  |______ |  |  |   |      |    |_____|

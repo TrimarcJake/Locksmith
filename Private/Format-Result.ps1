@@ -65,6 +65,7 @@ function Format-Result {
 
 
         if ($Mode -eq 0) {
+            # TODO Refactor this
             switch ($UniqueIssue) {
                 {$_ -in @('DETECT','ESC6','ESC8','ESC11')} {
                     $Issue |
@@ -83,19 +84,22 @@ function Format-Result {
                 }
             }
         } elseif ($Mode -eq 1) {
-            # TODO update switches to use ($_ -in $array)
             switch ($UniqueIssue) {
-                'DETECT' { $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix }
-                'ESC1' { $Issue | Format-List Technique, Name, DistinguishedName, Enabled, EnabledOn, Issue, Fix }
-                'ESC2' { $Issue | Format-List Technique, Name, DistinguishedName, Enabled, EnabledOn, Issue, Fix }
-                'ESC3' { $Issue | Format-List Technique, Name, DistinguishedName, Enabled, EnabledOn, Issue, Fix }
-                'ESC4' { $Issue | Format-List Technique, Name, DistinguishedName, Enabled, EnabledOn, Issue, Fix }
-                'ESC5' { $Issue | Format-List Technique, Name, DistinguishedName, objectClass, Issue, Fix }
-                'ESC6' { $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix }
-                'ESC8' { $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix }
-                'ESC11' { $Issue | Format-List Technique, Name, DistinguishedName, Issue, Fix }
-                'ESC13' { $Issue | Format-List Technique, Name, DistinguishedName, Enabled, EnabledOn, Issue, Fix }
-                'ESC15/EKUwu' { $Issue | Format-List Technique, Name, DistinguishedName, Enabled, EnabledOn, Issue, Fix }
+                {$_ -in @('DETECT','ESC6','ESC8','ESC11')} {
+                    $Issue |
+                        Format-List Technique, @{l='CA Name';e={$_.Name}}, @{l='Risk';e={$_.RiskName}}, DistinguishedName, Issue, Fix |
+                        Write-HostColorized -PatternColorMap $RiskTable
+                }
+                {$_ -in @('ESC1','ESC2','ESC3','ESC4','ESC13','ESC15/EKUwu')} {
+                    $Issue |
+                        Format-List Technique, @{l='Template Name';e={$_.Name}}, @{l='Risk';e={$_.RiskName}}, DistinguishedName, Enabled, EnabledOn, Issue, Fix |
+                        Write-HostColorized -PatternColorMap $RiskTable
+                }
+                'ESC5' {
+                    $Issue |
+                    Format-List Technique, @{l='Object Name';e={$_.Name}}, @{l='Risk';e={$_.RiskName}}, DistinguishedName, objectClass, Issue, Fix |
+                    Write-HostColorized -PatternColorMap $RiskTable
+                }
             }
         }
     }
