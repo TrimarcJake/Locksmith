@@ -72,9 +72,9 @@ function Invoke-Remediation {
         Export-RevertScript @params
     } catch {
         Write-Warning 'Creation of Invoke-RevertLocksmith.ps1 failed.'
-        Write-Host "Continue with this operation? [Y] Yes " -NoNewline
-        Write-Host "[N] " -ForegroundColor Yellow -NoNewline
-        Write-Host "No: " -NoNewLine
+        Write-Host 'Continue with this operation? [Y] Yes ' -NoNewline
+        Write-Host '[N] ' -ForegroundColor Yellow -NoNewline
+        Write-Host 'No: ' -NoNewline
         $WarningError = ''
         $WarningError = Read-Host
         if ($WarningError -like 'y') {
@@ -98,9 +98,9 @@ function Invoke-Remediation {
             Write-Host 'OPERATIONAL IMPACT:' -ForegroundColor White
             Write-Host "This change should have little to no impact on the AD CS environment.`n" -ForegroundColor Green
             Write-Host "If you continue, Locksmith will attempt to fix this issue.`n" -ForegroundColor Yellow
-            Write-Host "Continue with this operation? [Y] Yes " -NoNewline
-            Write-Host "[N] " -ForegroundColor Yellow -NoNewline
-            Write-Host "No: " -NoNewLine
+            Write-Host 'Continue with this operation? [Y] Yes ' -NoNewline
+            Write-Host '[N] ' -ForegroundColor Yellow -NoNewline
+            Write-Host 'No: ' -NoNewline
             $WarningError = ''
             $WarningError = Read-Host
             if ($WarningError -like 'y') {
@@ -123,15 +123,15 @@ function Invoke-Remediation {
             Write-Host "$($_.Technique)`n"
             Write-Host 'ACTION TO BE PERFORMED:' -ForegroundColor White
             Write-Host "Locksmith will attempt to enable Manager Approval on the `"$($_.Name)`" template.`n"
-            Write-Host 'CCOMMAND(S) TO BE RUN:'
+            Write-Host 'COMMAND(S) TO BE RUN:'
             Write-Host 'PS> ' -NoNewline
             Write-Host "$($_.Fix)`n" -ForegroundColor Cyan
             Write-Host 'OPERATIONAL IMPACT:' -ForegroundColor White
             Write-Host "WARNING: This change could cause some services to stop working until certificates are approved.`n" -ForegroundColor Yellow
             Write-Host "If you continue, Locksmith will attempt to fix this issue.`n" -ForegroundColor Yellow
-            Write-Host "Continue with this operation? [Y] Yes " -NoNewline
-            Write-Host "[N] " -ForegroundColor Yellow -NoNewline
-            Write-Host "No: " -NoNewLine
+            Write-Host 'Continue with this operation? [Y] Yes ' -NoNewline
+            Write-Host '[N] ' -ForegroundColor Yellow -NoNewline
+            Write-Host 'No: ' -NoNewline
             $WarningError = ''
             $WarningError = Read-Host
             if ($WarningError -like 'y') {
@@ -161,9 +161,9 @@ function Invoke-Remediation {
             Write-Host 'OPERATIONAL IMPACT:' -ForegroundColor White
             Write-Host "WARNING: This change could cause some services to stop working until certificates are approved.`n" -ForegroundColor Yellow
             Write-Host "If you continue, Locksmith will attempt to fix this issue.`n" -ForegroundColor Yellow
-            Write-Host "Continue with this operation? [Y] Yes " -NoNewline
-            Write-Host "[N] " -ForegroundColor Yellow -NoNewline
-            Write-Host "No: " -NoNewLine
+            Write-Host 'Continue with this operation? [Y] Yes ' -NoNewline
+            Write-Host '[N] ' -ForegroundColor Yellow -NoNewline
+            Write-Host 'No: ' -NoNewline
             $WarningError = ''
             $WarningError = Read-Host
             if ($WarningError -like 'y') {
@@ -178,7 +178,7 @@ function Invoke-Remediation {
         }
     }
     if ($ESC4) {
-        $ESC4 | Where-Object Issue -like "* Owner rights *" | ForEach-Object { # This selector sucks - Jake
+        $ESC4 | Where-Object Issue -Like '* Owner rights *' | ForEach-Object { # This selector sucks - Jake
             $FixBlock = [scriptblock]::Create($_.Fix)
             Write-Host 'ISSUE:' -ForegroundColor White
             Write-Host "$($_.Issue)`n"
@@ -192,9 +192,9 @@ function Invoke-Remediation {
             Write-Host 'OPERATIONAL IMPACT:' -ForegroundColor White
             Write-Host "This change should have little to no impact on the AD CS environment.`n" -ForegroundColor Green
             Write-Host "If you continue, Locksmith will attempt to fix this issue.`n" -ForegroundColor Yellow
-            Write-Host "Continue with this operation? [Y] Yes " -NoNewline
-            Write-Host "[N] " -ForegroundColor Yellow -NoNewline
-            Write-Host "No: " -NoNewLine
+            Write-Host 'Continue with this operation? [Y] Yes ' -NoNewline
+            Write-Host '[N] ' -ForegroundColor Yellow -NoNewline
+            Write-Host 'No: ' -NoNewline
             $WarningError = ''
             $WarningError = Read-Host
             if ($WarningError -like 'y') {
@@ -209,7 +209,7 @@ function Invoke-Remediation {
         }
     }
     if ($ESC5) {
-        $ESC5 | Where-Object Issue -like "* Owner rights *" | ForEach-Object { # TODO This selector sucks - Jake
+        $ESC5 | Where-Object Issue -Like '* Owner rights *' | ForEach-Object { # TODO This selector sucks - Jake
             $FixBlock = [scriptblock]::Create($_.Fix)
             Write-Host 'ISSUE:' -ForegroundColor White
             Write-Host "$($_.Issue)`n"
@@ -223,9 +223,9 @@ function Invoke-Remediation {
             Write-Host 'OPERATIONAL IMPACT:' -ForegroundColor White
             Write-Host "This change should have little to no impact on the AD CS environment.`n" -ForegroundColor Green
             Write-Host "If you continue, Locksmith will attempt to fix this issue.`n" -ForegroundColor Yellow
-            Write-Host "Continue with this operation? [Y] Yes " -NoNewline
-            Write-Host "[N] " -ForegroundColor Yellow -NoNewline
-            Write-Host "No: " -NoNewLine
+            Write-Host 'Continue with this operation? [Y] Yes ' -NoNewline
+            Write-Host '[N] ' -ForegroundColor Yellow -NoNewline
+            Write-Host 'No: ' -NoNewline
             $WarningError = ''
             $WarningError = Read-Host
             if ($WarningError -like 'y') {
@@ -247,7 +247,7 @@ function Invoke-Remediation {
             Write-Host 'TECHNIQUE:' -ForegroundColor White
             Write-Host "$($_.Technique)`n"
             Write-Host 'ACTION TO BE PERFORMED:' -ForegroundColor White
-            Write-Host "Locksmith will attempt to disable the EDITF_ATTRIBUTESUBJECTALTNAME2 flag on Certifiction Authority `"$($_.Name)`".`n"
+            Write-Host "Locksmith will attempt to disable the EDITF_ATTRIBUTESUBJECTALTNAME2 flag on the Certificate Authority `"$($_.Name)`".`n"
             Write-Host 'COMMAND(S) TO BE RUN' -ForegroundColor White
             Write-Host 'PS> ' -NoNewline
             Write-Host "$($_.Fix)`n" -ForegroundColor Cyan
@@ -255,9 +255,9 @@ function Invoke-Remediation {
             Write-Host 'OPERATIONAL IMPACT:' -ForegroundColor White
             Write-Host "WARNING: This change could cause some services to stop working.`n" -ForegroundColor Yellow
             Write-Host "If you continue, Locksmith will attempt to fix this issue.`n" -ForegroundColor Yellow
-            Write-Host "Continue with this operation? [Y] Yes " -NoNewline
-            Write-Host "[N] " -ForegroundColor Yellow -NoNewline
-            Write-Host "No: " -NoNewLine
+            Write-Host 'Continue with this operation? [Y] Yes ' -NoNewline
+            Write-Host '[N] ' -ForegroundColor Yellow -NoNewline
+            Write-Host 'No: ' -NoNewline
             $WarningError = ''
             $WarningError = Read-Host
             if ($WarningError -like 'y') {
@@ -280,7 +280,7 @@ function Invoke-Remediation {
             Write-Host 'TECHNIQUE:' -ForegroundColor White
             Write-Host "$($_.Technique)`n"
             Write-Host 'ACTION TO BE PERFORMED:' -ForegroundColor White
-            Write-Host "Locksmith will attempt to enable the IF_ENFORCEENCRYPTICERTREQUEST flag on Certifiction Authority `"$($_.Name)`".`n"
+            Write-Host "Locksmith will attempt to enable the IF_ENFORCEENCRYPTICERTREQUEST flag on the Certificate Authority `"$($_.Name)`".`n"
             Write-Host 'COMMAND(S) TO BE RUN' -ForegroundColor White
             Write-Host 'PS> ' -NoNewline
             Write-Host "$($_.Fix)`n" -ForegroundColor Cyan
@@ -288,9 +288,9 @@ function Invoke-Remediation {
             Write-Host 'OPERATIONAL IMPACT:' -ForegroundColor White
             Write-Host "WARNING: This change could cause some services to stop working.`n" -ForegroundColor Yellow
             Write-Host "If you continue, Locksmith will attempt to fix this issue.`n" -ForegroundColor Yellow
-            Write-Host "Continue with this operation? [Y] Yes " -NoNewline
-            Write-Host "[N] " -ForegroundColor Yellow -NoNewline
-            Write-Host "No: " -NoNewLine
+            Write-Host 'Continue with this operation? [Y] Yes ' -NoNewline
+            Write-Host '[N] ' -ForegroundColor Yellow -NoNewline
+            Write-Host 'No: ' -NoNewline
             $WarningError = ''
             $WarningError = Read-Host
             if ($WarningError -like 'y') {
@@ -320,9 +320,9 @@ function Invoke-Remediation {
             Write-Host 'OPERATIONAL IMPACT:' -ForegroundColor White
             Write-Host "WARNING: This change could cause some services to stop working until certificates are approved.`n" -ForegroundColor Yellow
             Write-Host "If you continue, Locksmith will attempt to fix this issue.`n" -ForegroundColor Yellow
-            Write-Host "Continue with this operation? [Y] Yes " -NoNewline
-            Write-Host "[N] " -ForegroundColor Yellow -NoNewline
-            Write-Host "No: " -NoNewLine
+            Write-Host 'Continue with this operation? [Y] Yes ' -NoNewline
+            Write-Host '[N] ' -ForegroundColor Yellow -NoNewline
+            Write-Host 'No: ' -NoNewline
             $WarningError = ''
             $WarningError = Read-Host
             if ($WarningError -like 'y') {

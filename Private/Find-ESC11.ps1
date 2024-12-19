@@ -41,7 +41,7 @@
                 Revert            = 'N/A'
             }
             if ($_.InterfaceFlag -eq 'No') {
-                $Issue.Issue = @"
+                $Issue.Issue = @'
 The IF_ENFORCEENCRYPTICERTREQUEST flag is disabled on this Certification
 Authority (CA). It is possible to relay NTLM authentication to the RPC interface
 of this CA.
@@ -53,12 +53,12 @@ receive a certificate which can be used to authenticate as that DC.
 More info:
   - https://blog.compass-security.com/2022/11/relaying-to-ad-certificate-services-over-rpc/
 
-"@
+'@
                 $Issue.Fix = @"
 # Enable the flag
 certutil -config $CAFullname -setreg CA\InterfaceFlags +IF_ENFORCEENCRYPTICERTREQUEST
 
-# Restart the Ceritification Authority service
+# Restart the Certificate Authority service
 Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
     Get-Service -Name `'certsvc`' | Restart-Service -Force
 }
@@ -67,7 +67,7 @@ Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
 # Disable the flag
 certutil -config $CAFullname -setreg CA\InterfaceFlags -IF_ENFORCEENCRYPTICERTREQUEST
 
-# Restart the Ceritification Authority service
+# Restart the Certificate Authority service
 Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
     Get-Service -Name `'certsvc`' | Restart-Service -Force
 }
