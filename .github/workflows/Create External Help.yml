@@ -25,8 +25,8 @@ jobs:
           Import-Module -Name PlatyPS -Force
           #Copy-Item ".\Help\en-US\Locksmith-help.xml" ".\Help\en-US"
           $params = @{
-              CabFilesFolder  = ".\Help\en-US"
+              CabFilesFolder  = ".\en-US"
               LandingPagePath = ".\Docs\Locksmith.md"
-              OutputFolder    = ".\Help\en-US"
+              OutputFolder    = ".\en-US"
           }
           New-ExternalHelpCab @params
