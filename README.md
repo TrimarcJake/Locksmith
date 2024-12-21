@@ -18,7 +18,6 @@ A ~~tiny~~ small tool built to find and fix common misconfigurations in Active D
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/trimarcjake/Locksmith/powershell.yml?logo=github&label=PSScriptAnalyzer)
 ![PowerShell Gallery Downloads](https://img.shields.io/powershellgallery/dt/locksmith?logo=powershell&label=PowerShell%20Gallery%20Downloads&color=blue)
-[![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=Checkout+Locksmith+and+fix+common+misconfigurations+in+Active+Directory+Certificate+Services.&url=https://github.com/trimarcjake/locksmith&hashtags=ADCS,PKI,infosec,powershell)
 <!-- locksmith-badges-end -->
 
 # Contents

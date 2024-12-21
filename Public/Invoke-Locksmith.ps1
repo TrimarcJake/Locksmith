@@ -1,4 +1,4 @@
-﻿function Invoke-Locksmith {
+function Invoke-Locksmith {
     <#
     .SYNOPSIS
     Finds the most common malconfigurations of Active Directory Certificate Services (AD CS).
@@ -42,7 +42,7 @@
     Specify which scans you want to run. Available scans: 'All' or Auditing, ESC1, ESC2, ESC3, ESC4, ESC5, ESC6, ESC8, or 'PromptMe'
 
     -Scans All
-    Run all scans (default)
+    Run all scans (default).
 
     -Scans PromptMe
     Presents a grid view of the available scan types that can be selected and run them after you click OK.
@@ -55,16 +55,26 @@
 
     .OUTPUTS
     Output types:
-    1. Console display of identified issues
-    2. Console display of identified issues and their fixes
-    3. CSV containing all identified issues
-    4. CSV containing all identified issues and their fixes
+    1. Console display of identified issues.
+    2. Console display of identified issues and their fixes.
+    3. CSV containing all identified issues.
+    4. CSV containing all identified issues and their fixes.
+
+    .EXAMPLE
+    Invoke-Locksmith -Mode 0 -Scans All -OutputPath 'C:\Temp'
+
+    Finds all malconfigurations and displays them in the console.
+
+    .EXAMPLE
+    Invoke-Locksmith -Mode 2 -Scans All -OutputPath 'C:\Temp'
+
+    Finds all malconfigurations and displays them in the console. The findings are saved in a CSV file in C:\Temp.
 
     .NOTES
-    Windows PowerShell cmdlet Restart-Service requires RunAsAdministrator
+    The Windows PowerShell cmdlet Restart-Service requires RunAsAdministrator.
     #>
 
-    [CmdletBinding()]
+    [CmdletBinding(HelpUri = 'https://trimarcjake.github.io/Locksmith/Invoke-Locksmith')]
     param (
         #[string]$Forest, # Not used yet
         #[string]$InputPath, # Not used yet
@@ -104,17 +114,17 @@
     )
 
     $Version = '<ModuleVersion>'
-    $LogoPart1 = @"
+    $LogoPart1 = @'
     _       _____  _______ _     _ _______ _______ _____ _______ _     _
     |      |     | |       |____/  |______ |  |  |   |      |    |_____|
     |_____ |_____| |_____  |    \_ ______| |  |  | __|__    |    |     |
-"@
-    $LogoPart2 = @"
+'@
+    $LogoPart2 = @'
         .--.                  .--.                  .--.
        /.-. '----------.     /.-. '----------.     /.-. '----------.
        \'-' .---'-''-'-'     \'-' .--'--''-'-'     \'-' .--'--'-''-'
         '--'                  '--'                  '--'
-"@
+'@
     $VersionBanner = "                                                          v$Version"
 
     Write-Host $LogoPart1 -ForegroundColor Magenta
@@ -137,7 +147,7 @@
 
     ### Initial variables
     # For output filenames
-    [string]$FilePrefix = "Locksmith $(Get-Date -format 'yyyy-MM-dd hh-mm-ss')"
+    [string]$FilePrefix = "Locksmith $(Get-Date -Format 'yyyy-MM-dd hh-mm-ss')"
 
     # Extended Key Usages for client authentication. A requirement for ESC1, ESC3 Condition 2, and ESC13
     $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
@@ -190,7 +200,7 @@
     # $Dictionary = New-Dictionary
 
     $Forest = Get-ADForest
-    $ForestGC = $(Get-ADDomainController -Discover -Service GlobalCatalog -ForceDiscover | Select-Object -ExpandProperty Hostname) + ":3268"
+    $ForestGC = $(Get-ADDomainController -Discover -Service GlobalCatalog -ForceDiscover | Select-Object -ExpandProperty Hostname) + ':3268'
     # $DNSRoot = [string]($Forest.RootDomain | Get-ADDomain).DNSRoot
     $EnterpriseAdminsSID = ([string]($Forest.RootDomain | Get-ADDomain).DomainSID) + '-519'
     $PreferredOwner = [System.Security.Principal.SecurityIdentifier]::New($EnterpriseAdminsSID)
