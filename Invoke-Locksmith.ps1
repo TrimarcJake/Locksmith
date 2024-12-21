@@ -3057,7 +3057,7 @@ function Set-RiskRating {
         }
         else {
             $RiskValue -= 2
-            $RiskScoring += 'Disabled: -2'
+            $RiskScoring += 'Disabled: -3'
         }
 
         # The principal's objectClass impacts the Issue's risk
@@ -3146,13 +3146,10 @@ function Set-RiskRating {
                     }
                     if ($PrincipalRisk -ge 2) {
                         $PrincipalRisk = 2
-                        $RiskValue += 2
-                    }
-                    else {
-                        $RiskValue += $PrincipalRisk
                     }
                     $RiskScoring += "Principals ($($CheckedESC3C2Templates.$name -join ', ')) are able to enroll in an enabled ESC3 Condition 2 template ($name): +$PrincipalRisk"
                 } # end foreach ($name)
+                $RiskValue += $PrincipalRisk
             } # end if ($ESC3C2Names)
 
             # Default 'User' and 'Machine' templates are more dangerous
@@ -3201,13 +3198,10 @@ function Set-RiskRating {
                     }
                     if ($PrincipalRisk -ge 2) {
                         $PrincipalRisk = 2
-                        $RiskValue += 2
-                    }
-                    else {
-                        $RiskValue += $PrincipalRisk
                     }
                     $RiskScoring += "Principals ($($CheckedESC15Templates.$name -join ', ')) are able to enroll in an enabled ESC15 template ($name)): +$PrincipalRisk"
                 } # end foreach ($name)
+                $RiskValue += $PrincipalRisk
             } # end if ($ESC15Names)
         }
 
@@ -3246,13 +3240,10 @@ function Set-RiskRating {
                     }
                     if ($PrincipalRisk -ge 2) {
                         $PrincipalRisk = 2
-                        $RiskValue += 2
-                    }
-                    else {
-                        $RiskValue += $PrincipalRisk
                     }
                     $RiskScoring += "Principals ($($CheckedESC2Templates.$name -join ', ')) are able to enroll in an enabled ESC2 template ($name): +$PrincipalRisk"
                 } # end foreach ($name)
+                $RiskValue += $PrincipalRisk
             } # end if ($ESC2Names)
 
             $ESC3C1 = Find-ESC3Condition1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers  -SkipRisk |
@@ -3288,13 +3279,10 @@ function Set-RiskRating {
                     }
                     if ($PrincipalRisk -ge 2) {
                         $PrincipalRisk = 2
-                        $RiskValue += 2
-                    }
-                    else {
-                        $RiskValue += $PrincipalRisk
                     }
                     $RiskScoring += "Principals ($($CheckedESC3C1Templates.$name -join ', ')) are able to enroll in an enabled ESC3C1 template ($name): +$PrincipalRisk"
                 } # end foreach ($name...
+                $RiskValue += $PrincipalRisk
             } # end if ($ESC3C1Names)
         }
     }
