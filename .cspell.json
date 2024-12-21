@@ -1,0 +1,53 @@
+{
+  "import": [
+    "@cspell/dict-powershell/cspell-ext.json",
+    "@cspell/dict-csharp/cspell-ext.json"
+  ],
+
+  "version": "0.2",
+  "language": "en",
+
+    "words": [
+        "RSAT",
+        "Artefacts",
+        "NTDS",
+        "Hildreth"
+    ],
+
+    "ignoreWords": [
+        "malconfiguration",
+        "sarif",
+        "psscriptanalyzer",
+        "DEVSKIM",
+        "KICS",
+        "pscustomobject",
+        "certutil",
+        "certsvc",
+        "setreg",
+        "contoso",
+        "SCHANNEL",
+        "RSATAD",
+        "Dism",
+        "getreg",
+        "Dacl",
+        "Calver"
+    ],
+
+    "flagWords": [
+    ],
+
+    "patterns": [
+        {
+          "name": "ALL-CAPS-WORDS",
+          "pattern": "/\b[A-Z0-9]+\b/g",
+          "description": "Any word in ALL CAPS."
+        }
+    ],
+
+    "ignoreRegExpList": [
+        "ALL-CAPS-WORDS",
+        "Email",
+        "github.com/",
+        "@"
+    ]
+}
