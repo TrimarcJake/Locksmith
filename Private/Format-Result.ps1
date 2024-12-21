@@ -85,17 +85,17 @@ function Format-Result {
             switch ($UniqueIssue) {
                 {$_ -in @('DETECT','ESC6','ESC8','ESC11')} {
                     $Issue |
-                        Format-List Technique, @{l='CA Name';e={$_.Name}}, @{l='Risk';e={$_.RiskName}}, @{l='Risk Scoring';e={$_.RiskScoring -join "`n"}}, DistinguishedName, Issue, Fix |
+                        Format-List Technique, @{l='CA Name';e={$_.Name}}, @{l='Risk';e={$_.RiskName}}, DistinguishedName, Issue, Fix, @{l='Risk Score';e={$_.RiskValue}}, @{l='Risk Score Detail';e={$_.RiskScoring -join "`n"}} |
                         Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
                 }
                 {$_ -in @('ESC1','ESC2','ESC3','ESC4','ESC13','ESC15/EKUwu')} {
                     $Issue |
-                        Format-List Technique, @{l='Template Name';e={$_.Name}}, @{l='Risk';e={$_.RiskName}}, @{l='Risk Scoring';e={$_.RiskScoring -join "`n"}}, DistinguishedName, Enabled, EnabledOn, Issue, Fix |
+                        Format-List Technique, @{l='Template Name';e={$_.Name}}, @{l='Risk';e={$_.RiskName}}, DistinguishedName, Enabled, EnabledOn, Issue, Fix, @{l='Risk Score';e={$_.RiskValue}}, @{l='Risk Score Detail';e={$_.RiskScoring -join "`n"}} |
                         Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
                 }
                 'ESC5' {
                     $Issue |
-                    Format-List Technique, @{l='Object Name';e={$_.Name}}, @{l='Risk';e={$_.RiskName}}, @{l='Risk Scoring';e={$_.RiskScoring -join "`n"}}, DistinguishedName, objectClass, Issue, Fix |
+                    Format-List Technique, @{l='Object Name';e={$_.Name}}, @{l='Risk';e={$_.RiskName}}, @{l='Risk Score';e={$_.RiskValue}}, DistinguishedName, objectClass, Issue, Fix, @{l='Risk Score Detail';e={$_.RiskScoring -join "`n"}} |
                     Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
                 }
             }

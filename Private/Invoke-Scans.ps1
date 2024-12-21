@@ -9,8 +9,8 @@ function Invoke-Scans {
             'ESC13', 'ESC15, 'EKUwu', 'All', 'PromptMe'.
 
     .NOTES
-        - The script requires the following functions to be defined: Find-AuditingIssue, Find-ESC1, Find-ESC2, Find-ESC3Condition1,
-          Find-ESC3Condition2, Find-ESC4, Find-ESC5, Find-ESC6, Find-ESC8, Find-ESC11, Find-ESC13, Find-ESC15
+        - The script requires the following functions to be defined: Find-AuditingIssue, Find-ESC1, Find-ESC2, Find-ESC3C1,
+          Find-ESC3C2, Find-ESC4, Find-ESC5, Find-ESC6, Find-ESC8, Find-ESC11, Find-ESC13, Find-ESC15
         - The script uses Out-GridView or Out-ConsoleGridView for interactive selection when the 'PromptMe' scan option is chosen.
         - The script returns a hash table containing the results of the scans.
 
@@ -76,8 +76,8 @@ function Invoke-Scans {
         }
         ESC3 {
             Write-Host 'Identifying AD CS templates with dangerous ESC3 configurations...'
-            [array]$ESC3 = Find-ESC3Condition1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
-            [array]$ESC3 += Find-ESC3Condition2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+            [array]$ESC3 = Find-ESC3C1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+            [array]$ESC3 += Find-ESC3C2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
         }
         ESC4 {
             Write-Host 'Identifying AD CS templates with poor access control (ESC4)...'
@@ -119,8 +119,8 @@ function Invoke-Scans {
             Write-Host 'Identifying AD CS templates with dangerous ESC2 configurations...'
             [array]$ESC2 = Find-ESC2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
             Write-Host 'Identifying AD CS templates with dangerous ESC3 configurations...'
-            [array]$ESC3 = Find-ESC3Condition1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
-            [array]$ESC3 += Find-ESC3Condition2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+            [array]$ESC3 = Find-ESC3C1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+            [array]$ESC3 += Find-ESC3C2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
             Write-Host 'Identifying AD CS templates with poor access control (ESC4)...'
             [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes -Mode $Mode -UnsafeUsers $UnsafeUsers
             Write-Host 'Identifying AD CS objects with poor access control (ESC5)...'

@@ -1,7 +1,7 @@
-﻿function Find-ESC3Condition1 {
+﻿function Find-ESC3C2 {
     <#
     .SYNOPSIS
-        This script finds AD CS (Active Directory Certificate Services) objects that match the first condition required for ESC3 vulnerability.
+        This script finds AD CS (Active Directory Certificate Services) objects that match the second condition required for ESC3 vulnerability.
 
     .DESCRIPTION
         The script takes an array of ADCS objects as input and filters them based on the specified conditions.
@@ -18,9 +18,9 @@
         The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
 
     .EXAMPLE
-        $ADCSObjects = Get-ADCSObjects
+        $ADCSObjects = Get-ADCSObject -Targets (Get-Target)
         $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
-        $Results = $ADCSObjects | Find-ESC3Condition1 -SafeUsers $SafeUsers
+        $Results = $ADCSObjects | Find-ESC3C2 -SafeUsers $SafeUsers
         $Results
     #>
     [CmdletBinding()]
@@ -34,9 +34,10 @@
     )
     $ADCSObjects | Where-Object {
         ($_.objectClass -eq 'pKICertificateTemplate') -and
-        ($_.pkiExtendedKeyUsage -match $EnrollmentAgentEKU) -and
+        ($_.pkiExtendedKeyUsage -match $ClientAuthEKU) -and
         !($_.'msPKI-Enrollment-Flag' -band 2) -and
-        ( ($_.'msPKI-RA-Signature' -eq 0) -or ($null -eq $_.'msPKI-RA-Signature') )
+        ($_.'msPKI-RA-Application-Policies' -match '1.3.6.1.4.1.311.20.2.1') -and
+        ($_.'msPKI-RA-Signature' -eq 1)
     } | ForEach-Object {
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
@@ -56,28 +57,28 @@
                     Enabled               = $_.Enabled
                     EnabledOn             = $_.EnabledOn
                     Issue                 = @"
-$($entry.IdentityReference) can use this template to request an Enrollment Agent
-certificate without Manager Approval.
-
-The resulting certificate can be used to enroll in any template that requires
-an Enrollment Agent to submit the request.
+If the holder of a SubCA, Any Purpose, or Enrollment Agent certificate requests
+a certificate using this template, they will receive a certificate which allows
+them to authenticate as $($entry.IdentityReference).
 
 More info:
   - https://posts.specterops.io/certified-pre-owned-d95910965cd2
 
 "@
-                    Fix                   = @"
+                    Fix = @"
+First, eliminate unused Enrollment Agent templates.
+Then, tightly scope any Enrollment Agent templates that remain and:
 # Enable Manager Approval
 `$Object = `'$($_.DistinguishedName)`'
 Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 2}
 "@
-                    Revert                = @"
+                    Revert = @"
 # Disable Manager Approval
 `$Object = `'$($_.DistinguishedName)`'
 Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@
                     Technique             = 'ESC3'
-                    Condition             = 1
+                    Condition             = 2
                 }
                 if ($SkipRisk -eq $false) {
                     Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers

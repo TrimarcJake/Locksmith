@@ -56,8 +56,8 @@ function New-Dictionary {
             Subcategory = 'Vulnerable Enrollment Agent Templates'
             Summary = ''
             FindIt =  {
-                Find-ESC3Condition1
-                Find-ESC3Condition2
+                Find-ESC3C1
+                Find-ESC3C2
             }
             FixIt = {Write-Output 'Add code to fix the vulnerable configuration.'}
             ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Enrollment%20Agent%20Templates%20%E2%80%94%20ESC3'
