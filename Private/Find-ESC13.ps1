@@ -60,6 +60,8 @@ function Find-ESC13 {
                                 DistinguishedName     = $_.DistinguishedName
                                 IdentityReference     = $entry.IdentityReference
                                 ActiveDirectoryRights = $entry.ActiveDirectoryRights
+                                Enabled               = $_.Enabled
+                                EnabledOn             = $_.EnabledOn
                                 LinkedGroup           = $OidToCheck.'msDS-OIDToGroupLink'
                                 Issue                 = @"
 $($entry.IdentityReference) can enroll in this Client Authentication template
@@ -67,6 +69,9 @@ which is linked to the group $($OidToCheck.'msDS-OIDToGroupLink').
 
 If $($entry.IdentityReference) uses this certificate for authentication, they
 will gain the rights of the linked group while the group membership appears empty.
+
+More info:
+  - https://posts.specterops.io/adcs-esc13-abuse-technique-fda4272fbd53
 
 "@
                                 Fix                   = @"

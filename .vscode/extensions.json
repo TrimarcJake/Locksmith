@@ -4,5 +4,6 @@
   "recommendations": [
     "editorconfig.editorconfig",
     "ms-vscode.PowerShell",
+    "streetsidesoftware.code-spell-checker"
   ]
 }

@@ -51,10 +51,15 @@
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
+                    Enabled               = $_.Enabled
+                    EnabledOn             = $_.EnabledOn
                     Issue                 = @"
 If the holder of an Enrollment Agent certificate requests a certificate using
 this template, they will receive a certificate which allows them to authenticate
 as $($entry.IdentityReference).
+
+More info:
+  - https://posts.specterops.io/certified-pre-owned-d95910965cd2
 
 "@
                     Fix = @"

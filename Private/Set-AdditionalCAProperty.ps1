@@ -79,7 +79,7 @@
                     $Cache = [System.Net.CredentialCache]::New()
                     $Cache.Add([System.Uri]::new($FullURL), $Auth, [System.Net.CredentialCache]::DefaultNetworkCredentials)
                     $Request.Credentials = $Cache
-                    $Request.Timeout = 3000
+                    $Request.Timeout = 1000
                     $Request.GetResponse() | Out-Null
                     $CAEnrollmentEndpoint += @{
                         'URL'  = $FullURL
@@ -87,9 +87,13 @@
                     }
                 } catch {
                     try {
+                        $Auth = 'NTLM'
                         $FullURL = "https$URL"
                         $Request = [System.Net.WebRequest]::Create($FullURL)
-
+                        $Cache = [System.Net.CredentialCache]::New()
+                        $Cache.Add([System.Uri]::new($FullURL), $Auth, [System.Net.CredentialCache]::DefaultNetworkCredentials)
+                        $Request.Credentials = $Cache
+                        $Request.Timeout = 1000
                         $Request.GetResponse() | Out-Null
                         $CAEnrollmentEndpoint += @{
                             'URL'  = $FullURL
@@ -101,8 +105,9 @@
                             $FullURL = "https$URL"
                             $Request = [System.Net.WebRequest]::Create($FullURL)
                             $Cache = [System.Net.CredentialCache]::New()
-                            $Cache.Add([System.Uri]::new($FullURL), 'Negotiate', [System.Net.CredentialCache]::DefaultNetworkCredentials)
+                            $Cache.Add([System.Uri]::new($FullURL), $Auth, [System.Net.CredentialCache]::DefaultNetworkCredentials)
                             $Request.Credentials = $Cache
+                            $Request.Timeout = 1000
                             $Request.GetResponse() | Out-Null
                             $CAEnrollmentEndpoint += @{
                                 'URL'  = $FullURL
@@ -144,7 +149,7 @@
                 }
                 try {
                     if ($Credential) {
-                        $CertutilInterfaceFlag = Invoke-Command -ComputerName $CAHostname -Credential $Credential -ScriptBlock { param($CAFullName); certutil -config $CAFullName -getreg policy\EditFlags } -ArgumentList $CAFullName
+                        $CertutilInterfaceFlag = Invoke-Command -ComputerName $CAHostname -Credential $Credential -ScriptBlock { param($CAFullName); certutil -config $CAFullName -getreg CA\InterfaceFlags } -ArgumentList $CAFullName
                     } else {
                         $CertutilInterfaceFlag = certutil -config $CAFullName -getreg CA\InterfaceFlags
                     }

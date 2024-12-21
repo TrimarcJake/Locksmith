@@ -50,12 +50,17 @@
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
+                    Enabled               = $_.Enabled
+                    EnabledOn             = $_.EnabledOn
                     Issue                 = @"
 $($entry.IdentityReference) can use this template to request an Enrollment Agent
 certificate without Manager Approval.
 
 The resulting certificate can be used to enroll in any template that requires
 an Enrollment Agent to submit the request.
+
+More info:
+  - https://posts.specterops.io/certified-pre-owned-d95910965cd2
 
 "@
                     Fix                   = @"

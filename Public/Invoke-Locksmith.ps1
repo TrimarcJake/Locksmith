@@ -86,7 +86,21 @@ function Invoke-Locksmith {
 
         # The scans to run. Defaults to 'All'.
         [Parameter()]
-        [ValidateSet('Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'ESC11', 'ESC13', 'All', 'PromptMe')]
+        [ValidateSet('Auditing',
+            'ESC1',
+            'ESC2',
+            'ESC3',
+            'ESC4',
+            'ESC5',
+            'ESC6',
+            'ESC8',
+            'ESC11',
+            'ESC13',
+            'ESC15',
+            'EKUwu',
+            'All',
+            'PromptMe'
+        )]
         [array]$Scans = 'All',
 
         # The directory to save the output in (defaults to the current working directory).
@@ -229,14 +243,16 @@ function Invoke-Locksmith {
     if ($Credential) {
         $ADCSObjects = Get-ADCSObject -Targets $Targets -Credential $Credential
         Set-AdditionalCAProperty -ADCSObjects $ADCSObjects -Credential $Credential -ForestGC $ForestGC
-        $ADCSObjects += Get-CAHostObject -ADCSObjects $ADCSObjects -Credential $Credential -ForestGC $ForestGC
         $CAHosts = Get-CAHostObject -ADCSObjects $ADCSObjects -Credential $Credential -ForestGC $ForestGC
+        $ADCSObjects += $CAHosts
     } else {
         $ADCSObjects = Get-ADCSObject -Targets $Targets
         Set-AdditionalCAProperty -ADCSObjects $ADCSObjects -ForestGC $ForestGC
-        $ADCSObjects += Get-CAHostObject -ADCSObjects $ADCSObjects -ForestGC $ForestGC
         $CAHosts = Get-CAHostObject -ADCSObjects $ADCSObjects -ForestGC $ForestGC
+        $ADCSObjects += $CAHosts
     }
+
+    Set-AdditionalTemplateProperty -ADCSObjects $ADCSObjects
 
     # Add SIDs of CA Hosts to $SafeUsers
     $CAHosts | ForEach-Object { $SafeUsers += '|' + $_.objectSid }
@@ -244,6 +260,7 @@ function Invoke-Locksmith {
     #if ( $Scans ) {
     # If the Scans parameter was used, Invoke-Scans with the specified checks.
     $ScansParameters = @{
+        ADCSObjects        = $ADCSObjects
         ClientAuthEkus     = $ClientAuthEKUs
         DangerousRights    = $DangerousRights
         EnrollmentAgentEKU = $EnrollmentAgentEKU
@@ -268,6 +285,7 @@ function Invoke-Locksmith {
     $ESC8 = $Results['ESC8']
     $ESC11 = $Results['ESC11']
     $ESC13 = $Results['ESC13']
+    $ESC15 = $Results['ESC15']
 
     # If these are all empty = no issues found, exit
     if ($null -eq $Results) {
@@ -279,28 +297,46 @@ function Invoke-Locksmith {
 
     switch ($Mode) {
         0 {
-            Format-Result $AuditingIssues '0'
-            Format-Result $ESC1 '0'
-            Format-Result $ESC2 '0'
-            Format-Result $ESC3 '0'
-            Format-Result $ESC4 '0'
-            Format-Result $ESC5 '0'
-            Format-Result $ESC6 '0'
-            Format-Result $ESC8 '0'
-            Format-Result $ESC11 '0'
-            Format-Result $ESC13 '0'
+            Format-Result -Issue $AuditingIssues -Mode 0
+            Format-Result -Issue $ESC1 -Mode 0
+            Format-Result -Issue $ESC2 -Mode 0
+            Format-Result -Issue $ESC3 -Mode 0
+            Format-Result -Issue $ESC4 -Mode 0
+            Format-Result -Issue $ESC5 -Mode 0
+            Format-Result -Issue $ESC6 -Mode 0
+            Format-Result -Issue $ESC8 -Mode 0
+            Format-Result -Issue $ESC11 -Mode 0
+            Format-Result -Issue $ESC13 -Mode 0
+            Format-Result -Issue $ESC15 -Mode 0
+            Write-Host @"
+[!] You ran Locksmith in Mode 0 which only provides an high-level overview of issues
+identified in the environment. For more details including:
+
+  - DistinguishedName of impacted object(s)
+  - Remediation guidance and/or code
+  - Revert guidance and/or code (in case remediation breaks something!)
+
+Run Locksmith in Mode 1!
+
+# Module version
+Invoke-Locksmith -Mode 1
+
+# Script version
+.\Invoke-Locksmith.ps1 -Mode 1`n
+"@ -ForegroundColor Yellow
         }
         1 {
-            Format-Result $AuditingIssues '1'
-            Format-Result $ESC1 '1'
-            Format-Result $ESC2 '1'
-            Format-Result $ESC3 '1'
-            Format-Result $ESC4 '1'
-            Format-Result $ESC5 '1'
-            Format-Result $ESC6 '1'
-            Format-Result $ESC8 '1'
-            Format-Result $ESC11 '1'
-            Format-Result $ESC13 '1'
+            Format-Result -Issue $AuditingIssues -Mode 1
+            Format-Result -Issue $ESC1 -Mode 1
+            Format-Result -Issue $ESC2 -Mode 1
+            Format-Result -Issue $ESC3 -Mode 1
+            Format-Result -Issue $ESC4 -Mode 1
+            Format-Result -Issue $ESC5 -Mode 1
+            Format-Result -Issue $ESC6 -Mode 1
+            Format-Result -Issue $ESC8 -Mode 1
+            Format-Result -Issue $ESC11 -Mode 1
+            Format-Result -Issue $ESC13 -Mode 1
+            Format-Result -Issue $ESC15 -Mode 1
         }
         2 {
             $Output = Join-Path -Path $OutputPath -ChildPath "$FilePrefix ADCSIssues.CSV"
@@ -338,5 +374,5 @@ function Invoke-Locksmith {
         }
     }
     Write-Host 'Thank you for using ' -NoNewline
-    Write-Host "Locksmith ❤`n" -ForegroundColor Magenta
+    Write-Host "Locksmith <3`n" -ForegroundColor Magenta
 }

@@ -5,11 +5,12 @@ function Invoke-Scans {
 
     .PARAMETER Scans
         Specifies the type of scans to perform. Multiple scan options can be provided as an array. The default value is 'All'.
-        The available scan options are: 'Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'ESC11', 'ESC13', 'All', 'PromptMe'.
+        The available scan options are: 'Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'ESC11',
+            'ESC13', 'ESC15, 'EKUwu', 'All', 'PromptMe'.
 
     .NOTES
         - The script requires the following functions to be defined: Find-AuditingIssue, Find-ESC1, Find-ESC2, Find-ESC3Condition1,
-          Find-ESC3Condition2, Find-ESC4, Find-ESC5, Find-ESC6, Find-ESC8, Find-ESC11, Find-ESC13
+          Find-ESC3Condition2, Find-ESC4, Find-ESC5, Find-ESC6, Find-ESC8, Find-ESC11, Find-ESC13, Find-ESC15
         - The script uses Out-GridView or Out-ConsoleGridView for interactive selection when the 'PromptMe' scan option is chosen.
         - The script returns a hash table containing the results of the scans.
 
@@ -31,24 +32,20 @@ function Invoke-Scans {
     [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', 'Invoke-Scans', Justification = 'Performing multiple scans.')]
     param (
         # Could split Scans and PromptMe into separate parameter sets.
-        [Parameter()]
+        [Parameter(Mandatory)]
+        $ADCSObjects,
         $ClientAuthEkus,
         $DangerousRights,
         $EnrollmentAgentEKU,
         [int]$Mode,
         $SafeObjectTypes,
         $SafeOwners,
-        [ValidateSet('Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'ESC11', 'ESC13', 'All', 'PromptMe')]
+        [ValidateSet('Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'ESC11', 'ESC13', 'ESC15', 'EKUwu', 'All', 'PromptMe')]
         [array]$Scans = 'All',
         $UnsafeOwners,
         $UnsafeUsers,
         $PreferredOwner
     )
-
-    # Is this needed?
-    if ($Scans -eq $IsNullOrEmpty) {
-        $Scans = 'All'
-    }
 
     if ( $Scans -eq 'PromptMe' ) {
         $GridViewTitle = 'Select the tests to run and press Enter or click OK to continue...'
@@ -72,7 +69,7 @@ function Invoke-Scans {
         }
         ESC1 {
             Write-Host 'Identifying AD CS templates with dangerous ESC1 configurations...'
-            [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEkus
+            [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEkus -Mode $Mode
         }
         ESC2 {
             Write-Host 'Identifying AD CS templates with dangerous ESC2 configurations...'
@@ -85,7 +82,7 @@ function Invoke-Scans {
         }
         ESC4 {
             Write-Host 'Identifying AD CS templates with poor access control (ESC4)...'
-            [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes
+            [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes -Mode $Mode
         }
         ESC5 {
             Write-Host 'Identifying AD CS objects with poor access control (ESC5)...'
@@ -107,11 +104,19 @@ function Invoke-Scans {
             Write-Host 'Identifying AD CS templates with dangerous ESC13 configurations...'
             [array]$ESC11 = Find-ESC13 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEKUs
         }
+        ESC15 {
+            Write-Host 'Identifying AD CS templates with dangerous ESC15/EKUwu configurations...'
+            [array]$ESC11 = Find-ESC15 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+        }
+        EKUwu {
+            Write-Host 'Identifying AD CS templates with dangerous ESC15/EKUwu configurations...'
+            [array]$ESC11 = Find-ESC15 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+        }
         All {
             Write-Host 'Identifying auditing issues...'
             [array]$AuditingIssues = Find-AuditingIssue -ADCSObjects $ADCSObjects
             Write-Host 'Identifying AD CS templates with dangerous ESC1 configurations...'
-            [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEkus
+            [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEkus -Mode $Mode
             Write-Host 'Identifying AD CS templates with dangerous ESC2 configurations...'
             [array]$ESC2 = Find-ESC2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
             Write-Host 'Identifying AD CS templates with dangerous ESC3 configurations...'
@@ -121,7 +126,7 @@ function Invoke-Scans {
             [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes -Mode $Mode
             Write-Host 'Identifying AD CS objects with poor access control (ESC5)...'
             [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes
-            Write-Host 'Identifying Certificate Authorities with EDITF_ATTRIBUTESUBJECTALTNAME2 enabled v (ESC6)...'
+            Write-Host 'Identifying Certificate Authorities with EDITF_ATTRIBUTESUBJECTALTNAME2 enabled (ESC6)...'
             [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects
             Write-Host 'Identifying HTTP-based certificate enrollment interfaces (ESC8)...'
             [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects
@@ -129,21 +134,23 @@ function Invoke-Scans {
             [array]$ESC11 = Find-ESC11 -ADCSObjects $ADCSObjects
             Write-Host 'Identifying AD CS templates with dangerous ESC13 configurations...'
             [array]$ESC13 = Find-ESC13 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEkus
+            Write-Host 'Identifying AD CS templates with dangerous ESC15 configurations...'
+            [array]$ESC15 = Find-ESC15 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
             Write-Host
         }
     }
 
-    [array]$AllIssues = $AuditingIssues + $ESC1 + $ESC2 + $ESC3 + $ESC4 + $ESC5 + $ESC6 + $ESC8 + $ESC11 + $ESC13
+    [array]$AllIssues = $AuditingIssues + $ESC1 + $ESC2 + $ESC3 + $ESC4 + $ESC5 + $ESC6 + $ESC8 + $ESC11 + $ESC13 + $ESC15
 
     # If these are all empty = no issues found, exit
-    if ((!$AuditingIssues) -and (!$ESC1) -and (!$ESC2) -and (!$ESC3) -and (!$ESC4) -and (!$ESC5) -and (!$ESC6) -and (!$ESC8) -and (!$ESC11) -and (!$ESC13) ) {
+    if ($AllIssues.Count -lt 1) {
         Write-Host "`n$(Get-Date) : No ADCS issues were found." -ForegroundColor Green
         break
     }
 
     # Return a hash table of array names (keys) and arrays (values) so they can be directly referenced with other functions
-    Return @{
-        AllIssues      = $AllIssues
+    return @{
+        # AllIssues      = $AllIssues
         AuditingIssues = $AuditingIssues
         ESC1           = $ESC1
         ESC2           = $ESC2
@@ -154,5 +161,6 @@ function Invoke-Scans {
         ESC8           = $ESC8
         ESC11          = $ESC11
         ESC13          = $ESC13
+        ESC15          = $ESC15
     }
 }

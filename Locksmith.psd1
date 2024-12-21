@@ -7,7 +7,7 @@
     Description          = 'A small tool to find and fix common misconfigurations in Active Directory Certificate Services.'
     FunctionsToExport    = 'Invoke-Locksmith'
     GUID                 = 'b1325b42-8dc4-4f17-aa1f-dcb5984ca14a'
-    ModuleVersion        = '2024.11.11'
+    ModuleVersion        = '2024.12.13'
     PowerShellVersion    = '5.1'
     PrivateData          = @{
         PSData = @{
