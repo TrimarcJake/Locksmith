@@ -61,7 +61,7 @@ More info:
 # Disable the flag
 certutil -config $CAFullname -setreg policy\EditFlags -EDITF_ATTRIBUTESUBJECTALTNAME2
 
-# Restart the Ceritification Authority service
+# Restart the Certificate Authority service
 Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
     Get-Service -Name `'certsvc`' | Restart-Service -Force
 }
@@ -70,7 +70,7 @@ Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
 # Enable the flag
 certutil -config $CAFullname -setreg policy\EditFlags +EDITF_ATTRIBUTESUBJECTALTNAME2
 
-# Restart the Ceritification Authority service
+# Restart the Certificate Authority service
 Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
     Get-Service -Name `'certsvc`' | Restart-Service -Force
 }
