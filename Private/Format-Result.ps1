@@ -33,7 +33,7 @@ function Format-Result {
     $IssueTable = @{
         DETECT        = 'Auditing Not Fully Enabled'
         ESC1          = 'ESC1 - Vulnerable Certificate Template - Authentication'
-        ESC2          = 'ESC2 - Vulnerable Certificate Template - Subordinate CA'
+        ESC2          = 'ESC2 - Vulnerable Certificate Template - Subordinate CA/Any Purpose'
         ESC3          = 'ESC3 - Vulnerable Certificate Template - Enrollment Agent'
         ESC4          = 'ESC4 - Vulnerable Access Control - Certificate Template'
         ESC5          = 'ESC5 - Vulnerable Access Control - PKI Object'
@@ -50,8 +50,6 @@ function Format-Result {
         'Medium'        = 'Black, DarkYellow'
         'High'          = 'Black, Red'
         'Critical'      = 'White, DarkRed'
-        'True'          = 'Black, Red'
-        # 'False'         = 'Black, Yellow'
     }
 
     if ($null -ne $Issue) {
@@ -70,35 +68,35 @@ function Format-Result {
                 {$_ -in @('DETECT','ESC6','ESC8','ESC11')} {
                     $Issue |
                         Format-Table Technique, @{l='CA Name';e={$_.Name}}, @{l='Risk';e={$_.RiskName}}, Issue -Wrap |
-                        Write-HostColorized -PatternColorMap $RiskTable
+                        Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
                 }
                 {$_ -in @('ESC1','ESC2','ESC3','ESC4','ESC13','ESC15/EKUwu')} {
                     $Issue |
                         Format-Table Technique, @{l='Template Name';e={$_.Name}}, @{l='Risk';e={$_.RiskName}}, Enabled, Issue -Wrap |
-                        Write-HostColorized -PatternColorMap $RiskTable
+                        Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
                 }
                 'ESC5' {
                     $Issue |
                         Format-Table Technique, @{l='Object Name';e={$_.Name}}, @{l='Risk';e={$_.RiskName}}, Issue -Wrap |
-                        Write-HostColorized -PatternColorMap $RiskTable
+                        Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
                 }
             }
         } elseif ($Mode -eq 1) {
             switch ($UniqueIssue) {
                 {$_ -in @('DETECT','ESC6','ESC8','ESC11')} {
                     $Issue |
-                        Format-List Technique, @{l='CA Name';e={$_.Name}}, @{l='Risk';e={$_.RiskName}}, DistinguishedName, Issue, Fix |
-                        Write-HostColorized -PatternColorMap $RiskTable
+                        Format-List Technique, @{l='CA Name';e={$_.Name}}, @{l='Risk';e={$_.RiskName}}, @{l='Risk Scoring';e={$_.RiskScoring -join "`n"}}, DistinguishedName, Issue, Fix |
+                        Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
                 }
                 {$_ -in @('ESC1','ESC2','ESC3','ESC4','ESC13','ESC15/EKUwu')} {
                     $Issue |
-                        Format-List Technique, @{l='Template Name';e={$_.Name}}, @{l='Risk';e={$_.RiskName}}, DistinguishedName, Enabled, EnabledOn, Issue, Fix |
-                        Write-HostColorized -PatternColorMap $RiskTable
+                        Format-List Technique, @{l='Template Name';e={$_.Name}}, @{l='Risk';e={$_.RiskName}}, @{l='Risk Scoring';e={$_.RiskScoring -join "`n"}}, DistinguishedName, Enabled, EnabledOn, Issue, Fix |
+                        Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
                 }
                 'ESC5' {
                     $Issue |
-                    Format-List Technique, @{l='Object Name';e={$_.Name}}, @{l='Risk';e={$_.RiskName}}, DistinguishedName, objectClass, Issue, Fix |
-                    Write-HostColorized -PatternColorMap $RiskTable
+                    Format-List Technique, @{l='Object Name';e={$_.Name}}, @{l='Risk';e={$_.RiskName}}, @{l='Risk Scoring';e={$_.RiskScoring -join "`n"}}, DistinguishedName, objectClass, Issue, Fix |
+                    Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
                 }
             }
         }

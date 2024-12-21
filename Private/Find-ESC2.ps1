@@ -28,7 +28,10 @@
         [Parameter(Mandatory)]
         [array]$ADCSObjects,
         [Parameter(Mandatory)]
-        [string]$SafeUsers
+        [string]$SafeUsers,
+        [Parameter(Mandatory)]
+        $UnsafeUsers,
+        [switch]$SkipRisk
     )
     $ADCSObjects | Where-Object {
         ($_.ObjectClass -eq 'pKICertificateTemplate') -and
@@ -83,7 +86,9 @@ Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@
                     Technique             = 'ESC2'
                 }
-                Set-RiskRating -Issue $Issue
+                if ($SkipRisk -eq $false) {
+                    Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+                }
                 $Issue
             }
         }

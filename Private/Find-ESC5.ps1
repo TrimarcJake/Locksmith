@@ -70,7 +70,9 @@
         [Parameter(Mandatory)]
         $SafeUsers,
         [Parameter(Mandatory)]
-        $SafeObjectTypes
+        $SafeObjectTypes,
+        $UnsafeUsers,
+        [switch]$SkipRisk
     )
     $ADCSObjects | ForEach-Object {
         if ($_.Name -ne '' -and $null -ne $_.Name) {
@@ -158,7 +160,9 @@ Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
 Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
                 Technique             = 'ESC5'
             } # end switch ($_.objectClass)
-            Set-RiskRating -Issue $Issue
+            if ($SkipRisk -eq $false) {
+                    Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+                }
             $Issue
         } # end if ( ($_.objectClass -ne 'pKICertificateTemplate') -and ($SID -notmatch $SafeOwners) )
 
@@ -247,7 +251,9 @@ Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
                     Revert                = '[TODO]'
                     Technique             = 'ESC5'
                 }
-                Set-RiskRating -Issue $Issue
+                if ($SkipRisk -eq $false) {
+                    Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+                }
                 $Issue
             } # end if ( ($_.objectClass -ne 'pKICertificateTemplate')
         } # end foreach ($entry in $_.nTSecurityDescriptor.Access)

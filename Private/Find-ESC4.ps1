@@ -76,7 +76,9 @@
         [Parameter(Mandatory)]
         $SafeObjectTypes,
         [Parameter(Mandatory)]
-        [int]$Mode
+        [int]$Mode,
+        $UnsafeUsers,
+        [switch]$SkipRisk
     )
     $ADCSObjects | Where-Object objectClass -eq 'pKICertificateTemplate' | ForEach-Object {
         if ($_.Name -ne '' -and $null -ne $_.Name) {
@@ -120,7 +122,9 @@ Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
 "@
                 Technique             = 'ESC4'
             }
-            Set-RiskRating -Issue $Issue
+            if ($SkipRisk -eq $false) {
+                    Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+                }
             $Issue
         }
 
@@ -173,7 +177,9 @@ Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
                 if ( $Mode -in @(1, 3, 4) ) {
                     Update-ESC4Remediation -Issue $Issue
                 }
-                Set-RiskRating -Issue $Issue
+                if ($SkipRisk -eq $false) {
+                    Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+                }
                 $Issue
             }
         }

@@ -14,7 +14,7 @@
         Specifies the credentials to use for authentication when retrieving ADCS objects.
 
     .EXAMPLE
-        Get-ADCSObject -Credential $cred
+        Get-ADCSObject -Credential $cred -Targets (Get-Target)
         This example retrieves ADCS objects from the local forest using the specified credentials.
 
     #>

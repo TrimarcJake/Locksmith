@@ -32,9 +32,11 @@ function Find-ESC13 {
         [Parameter(Mandatory)]
         [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
         [Parameter(Mandatory)]
-        [array]$SafeUsers,
+        [string]$SafeUsers,
         [Parameter(Mandatory)]
-        $ClientAuthEKUs
+        $ClientAuthEKUs,
+        $UnsafeUsers,
+        [switch]$SkipRisk
     )
 
     $ADCSObjects | Where-Object {
@@ -87,7 +89,9 @@ Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@
                                 Technique             = 'ESC13'
                             }
-                            Set-RiskRating -Issue $Issue
+                            if ($SkipRisk -eq $false) {
+                                Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+                            }
                             $Issue
                         }
                     }

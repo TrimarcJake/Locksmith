@@ -83,21 +83,25 @@ Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
         }
     } elseif ($Enroll -eq 'n') {
         $Issue.Fix = @"
-# 1. Open the Certification Templates Console: certtmpl.msc
-# 2. Double-click the $($Issue.Name) template to open its Properties page.
-# 3. Select the Security tab.
-# 4. Select the entry for $($Issue.IdentityReference).
-# 5. Uncheck the "Enroll" and/or "Autoenroll" boxes.
-# 6. Click OK.
+<#
+    1. Open the Certification Templates Console: certtmpl.msc
+    2. Double-click the $($Issue.Name) template to open its Properties page.
+    3. Select the Security tab.
+    4. Select the entry for $($Issue.IdentityReference).
+    5. Uncheck the "Enroll" and/or "Autoenroll" boxes.
+    6. Click OK.
+#>
 "@
 
         $Issue.Revert = @"
-# 1. Open the Certification Templates Console: certtmpl.msc
-# 2. Double-click the $($Issue.Name) template to open its Properties page.
-# 3. Select the Security tab.
-# 4. Select the entry for $($Issue.IdentityReference).
-# 5. Check the "Enroll" and/or "Autoenroll" boxes depending on your specific needs.
-# 6. Click OK.
+<#
+    1. Open the Certification Templates Console: certtmpl.msc
+    2. Double-click the $($Issue.Name) template to open its Properties page.
+    3. Select the Security tab.
+    4. Select the entry for $($Issue.IdentityReference).
+    5. Check the "Enroll" and/or "Autoenroll" boxes depending on your specific needs.
+    6. Click OK.
+#>
 "@
-    }
+    } # end if ($Enroll -eq 'y')/elseif ($Enroll -eq 'n')
 }

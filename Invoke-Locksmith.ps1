@@ -1,7 +1,7 @@
 ﻿param (
     [int]$Mode,
     [Parameter()]
-    [ValidateSet('Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'All', 'PromptMe')]
+    [ValidateSet('Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'ESC11', 'ESC13', 'ESC15', 'EKUwu', 'All', 'PromptMe')]
     [array]$Scans = 'All'
 )
 function Convert-IdentityReferenceToSid {
@@ -190,7 +190,9 @@ Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
             $Issue.Fix = 'N/A'
             $Issue.Revert = 'N/A'
         }
-        Set-RiskRating -Issue $Issue
+        if ($SkipRisk -eq $false) {
+            Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+        }
         $Issue
     }
 }
@@ -230,11 +232,13 @@ function Find-ESC1 {
         [Parameter(Mandatory)]
         [array]$ADCSObjects,
         [Parameter(Mandatory)]
-        [array]$SafeUsers,
+        [string]$SafeUsers,
         [Parameter(Mandatory)]
         $ClientAuthEKUs,
         [Parameter(Mandatory)]
-        [int]$Mode
+        [int]$Mode,
+        $UnsafeUsers,
+        [switch]$SkipRisk
     )
     $ADCSObjects | Where-Object {
         ($_.objectClass -eq 'pKICertificateTemplate') -and
@@ -290,7 +294,9 @@ Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
                 if ( $Mode -in @(1, 3, 4) ) {
                     Update-ESC1Remediation -Issue $Issue
                 }
-                Set-RiskRating -Issue $Issue
+                if ($SkipRisk -eq $false) {
+                    Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+                }
                 $Issue
             }
         }
@@ -322,7 +328,9 @@ function Find-ESC11 {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        $ADCSObjects
+        $ADCSObjects,
+        $UnsafeUsers,
+        [switch]$SkipRisk
     )
     process {
         $ADCSObjects | Where-Object {
@@ -372,7 +380,9 @@ Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
 }
 "@
             }
-            Set-RiskRating -Issue $Issue
+            if ($SkipRisk -eq $false) {
+                Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+            }
             $Issue
         }
     }
@@ -412,9 +422,11 @@ function Find-ESC13 {
         [Parameter(Mandatory)]
         [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
         [Parameter(Mandatory)]
-        [array]$SafeUsers,
+        [string]$SafeUsers,
         [Parameter(Mandatory)]
-        $ClientAuthEKUs
+        $ClientAuthEKUs,
+        $UnsafeUsers,
+        [switch]$SkipRisk
     )
 
     $ADCSObjects | Where-Object {
@@ -468,7 +480,9 @@ Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@
                                 Technique             = 'ESC13'
                             }
-                            Set-RiskRating -Issue $Issue
+                            if ($SkipRisk -eq $false) {
+                                Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+                            }
                             $Issue
                         }
                     }
@@ -507,7 +521,9 @@ function Find-ESC15 {
         [Parameter(Mandatory)]
         [array]$ADCSObjects,
         [Parameter(Mandatory)]
-        $SafeUsers
+        $SafeUsers,
+        $UnsafeUsers,
+        [switch]$SkipRisk
     )
     $ADCSObjects | Where-Object {
         ($_.objectClass -eq 'pKICertificateTemplate') -and
@@ -547,22 +563,28 @@ More info:
 
 "@
                     Fix                   = @"
-# Option 1: Manual Remediation
-# Step 1: Identify if this template is Enabled on any CA.
-# Step 2: If Enabled, identify if this template has recently been used to generate a certificate.
-# Step 3a: If recently used, either restrict enrollment scope or convert to the template to Schema V2.
-# Step 3b: If not recently used, unpublish the template from all CAs.
+<#
+    Option 1: Manual Remediation
+    Step 1: Identify if this template is Enabled on any CA.
+    Step 2: If Enabled, identify if this template has recently been used to generate a certificate.
+    Step 3a: If recently used, either restrict enrollment scope or convert to the template to Schema V2.
+    Step 3b: If not recently used, unpublish the template from all CAs.
+#>
 
-# Option 2: Scripted Remediation
-# Step 1: Open an elevated Powershell session as an AD or PKI Admin
-# Step 2: Run Unpublish-SchemaV1Templates.ps1
+<#
+    Option 2: Scripted Remediation
+    Step 1: Open an elevated Powershell session as an AD or PKI Admin
+    Step 2: Run Unpublish-SchemaV1Templates.ps1
+#>
 Invoke-WebRequest -Uri https://bit.ly/Fix-ESC15 | Invoke-Expression
 
 "@
                     Revert                = '[TODO]'
                     Technique             = 'ESC15/EKUwu'
                 }
-                Set-RiskRating -Issue $Issue
+                if ($SkipRisk -eq $false) {
+                    Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+                }
                 $Issue
             }
         }
@@ -599,7 +621,10 @@ function Find-ESC2 {
         [Parameter(Mandatory)]
         [array]$ADCSObjects,
         [Parameter(Mandatory)]
-        [string]$SafeUsers
+        [string]$SafeUsers,
+        [Parameter(Mandatory)]
+        $UnsafeUsers,
+        [switch]$SkipRisk
     )
     $ADCSObjects | Where-Object {
         ($_.ObjectClass -eq 'pKICertificateTemplate') -and
@@ -655,7 +680,9 @@ Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@
                     Technique             = 'ESC2'
                 }
-                Set-RiskRating -Issue $Issue
+                if ($SkipRisk -eq $false) {
+                    Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+                }
                 $Issue
             }
         }
@@ -692,7 +719,9 @@ function Find-ESC3Condition1 {
         [Parameter(Mandatory)]
         [array]$ADCSObjects,
         [Parameter(Mandatory)]
-        [array]$SafeUsers
+        [string]$SafeUsers,
+        $UnsafeUsers,
+        [switch]$SkipRisk
     )
     $ADCSObjects | Where-Object {
         ($_.objectClass -eq 'pKICertificateTemplate') -and
@@ -740,8 +769,11 @@ Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 2}
 Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@
                     Technique             = 'ESC3'
+                    Condition             = 1
                 }
-                Set-RiskRating -Issue $Issue
+                if ($SkipRisk -eq $false) {
+                    Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+                }
                 $Issue
             }
         }
@@ -768,7 +800,7 @@ function Find-ESC3Condition2 {
         The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
 
     .EXAMPLE
-        $ADCSObjects = Get-ADCSObjects
+        $ADCSObjects = Get-ADCSObject -Targets (Get-Target)
         $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
         $Results = $ADCSObjects | Find-ESC3Condition2 -SafeUsers $SafeUsers
         $Results
@@ -778,7 +810,9 @@ function Find-ESC3Condition2 {
         [Parameter(Mandatory)]
         [array]$ADCSObjects,
         [Parameter(Mandatory)]
-        [array]$SafeUsers
+        [string]$SafeUsers,
+        $UnsafeUsers,
+        [switch]$SkipRisk
     )
     $ADCSObjects | Where-Object {
         ($_.objectClass -eq 'pKICertificateTemplate') -and
@@ -806,9 +840,9 @@ function Find-ESC3Condition2 {
                     Enabled               = $_.Enabled
                     EnabledOn             = $_.EnabledOn
                     Issue                 = @"
-If the holder of an Enrollment Agent certificate requests a certificate using
-this template, they will receive a certificate which allows them to authenticate
-as $($entry.IdentityReference).
+If the holder of a SubCA, Any Purpose, or Enrollment Agent certificate requests
+a certificate using this template, they will receive a certificate which allows
+them to authenticate as $($entry.IdentityReference).
 
 More info:
   - https://posts.specterops.io/certified-pre-owned-d95910965cd2
@@ -827,8 +861,11 @@ Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 2}
 Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@
                     Technique             = 'ESC3'
+                    Condition             = 2
                 }
-                Set-RiskRating -Issue $Issue
+                if ($SkipRisk -eq $false) {
+                    Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+                }
                 $Issue
             }
         }
@@ -913,7 +950,9 @@ function Find-ESC4 {
         [Parameter(Mandatory)]
         $SafeObjectTypes,
         [Parameter(Mandatory)]
-        [int]$Mode
+        [int]$Mode,
+        $UnsafeUsers,
+        [switch]$SkipRisk
     )
     $ADCSObjects | Where-Object objectClass -EQ 'pKICertificateTemplate' | ForEach-Object {
         if ($_.Name -ne '' -and $null -ne $_.Name) {
@@ -958,7 +997,9 @@ Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
 "@
                 Technique             = 'ESC4'
             }
-            Set-RiskRating -Issue $Issue
+            if ($SkipRisk -eq $false) {
+                Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+            }
             $Issue
         }
 
@@ -1012,7 +1053,9 @@ Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
                 if ( $Mode -in @(1, 3, 4) ) {
                     Update-ESC4Remediation -Issue $Issue
                 }
-                Set-RiskRating -Issue $Issue
+                if ($SkipRisk -eq $false) {
+                    Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+                }
                 $Issue
             }
         }
@@ -1091,7 +1134,9 @@ function Find-ESC5 {
         [Parameter(Mandatory)]
         $SafeUsers,
         [Parameter(Mandatory)]
-        $SafeObjectTypes
+        $SafeObjectTypes,
+        $UnsafeUsers,
+        [switch]$SkipRisk
     )
     $ADCSObjects | ForEach-Object {
         if ($_.Name -ne '' -and $null -ne $_.Name) {
@@ -1180,7 +1225,9 @@ Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
 Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
                 Technique             = 'ESC5'
             } # end switch ($_.objectClass)
-            Set-RiskRating -Issue $Issue
+            if ($SkipRisk -eq $false) {
+                Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+            }
             $Issue
         } # end if ( ($_.objectClass -ne 'pKICertificateTemplate') -and ($SID -notmatch $SafeOwners) )
 
@@ -1270,7 +1317,9 @@ Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
                     Revert                = '[TODO]'
                     Technique             = 'ESC5'
                 }
-                Set-RiskRating -Issue $Issue
+                if ($SkipRisk -eq $false) {
+                    Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+                }
                 $Issue
             } # end if ( ($_.objectClass -ne 'pKICertificateTemplate')
         } # end foreach ($entry in $_.nTSecurityDescriptor.Access)
@@ -1302,7 +1351,9 @@ function Find-ESC6 {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        $ADCSObjects
+        $ADCSObjects,
+        $UnsafeUsers,
+        [switch]$SkipRisk
     )
     process {
         $ADCSObjects | Where-Object {
@@ -1355,7 +1406,9 @@ Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
 }
 "@
             }
-            Set-RiskRating -Issue $Issue
+            if ($SkipRisk -eq $false) {
+                Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+            }
             $Issue
         }
     }
@@ -1393,7 +1446,9 @@ function Find-ESC8 {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        $ADCSObjects
+        $ADCSObjects,
+        $UnsafeUsers,
+        [switch]$SkipRisk
     )
 
     process {
@@ -1446,7 +1501,9 @@ Ensure EPA is enabled.
 Disable NTLM authentication (if possible.)
 '@
                 }
-                Set-RiskRating -Issue $Issue
+                if ($SkipRisk -eq $false) {
+                    Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+                }
                 $Issue
             }
         }
@@ -1506,7 +1563,9 @@ function Find-ESC9 {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        $ADCSObjects
+        $ADCSObjects,
+        $UnsafeUsers,
+        [switch]$SkipRisk
     )
 
     # Import the required module
@@ -1602,7 +1661,7 @@ function Format-Result {
     $IssueTable = @{
         DETECT        = 'Auditing Not Fully Enabled'
         ESC1          = 'ESC1 - Vulnerable Certificate Template - Authentication'
-        ESC2          = 'ESC2 - Vulnerable Certificate Template - Subordinate CA'
+        ESC2          = 'ESC2 - Vulnerable Certificate Template - Subordinate CA/Any Purpose'
         ESC3          = 'ESC3 - Vulnerable Certificate Template - Enrollment Agent'
         ESC4          = 'ESC4 - Vulnerable Access Control - Certificate Template'
         ESC5          = 'ESC5 - Vulnerable Access Control - PKI Object'
@@ -1619,8 +1678,6 @@ function Format-Result {
         'Medium'        = 'Black, DarkYellow'
         'High'          = 'Black, Red'
         'Critical'      = 'White, DarkRed'
-        'True'          = 'Black, Red'
-        # 'False'         = 'Black, Yellow'
     }
 
     if ($null -ne $Issue) {
@@ -1639,17 +1696,17 @@ function Format-Result {
                 { $_ -in @('DETECT', 'ESC6', 'ESC8', 'ESC11') } {
                     $Issue |
                         Format-Table Technique, @{l = 'CA Name'; e = { $_.Name } }, @{l = 'Risk'; e = { $_.RiskName } }, Issue -Wrap |
-                            Write-HostColorized -PatternColorMap $RiskTable
+                            Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
                 }
                 { $_ -in @('ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC13', 'ESC15/EKUwu') } {
                     $Issue |
                         Format-Table Technique, @{l = 'Template Name'; e = { $_.Name } }, @{l = 'Risk'; e = { $_.RiskName } }, Enabled, Issue -Wrap |
-                            Write-HostColorized -PatternColorMap $RiskTable
+                            Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
                 }
                 'ESC5' {
                     $Issue |
                         Format-Table Technique, @{l = 'Object Name'; e = { $_.Name } }, @{l = 'Risk'; e = { $_.RiskName } }, Issue -Wrap |
-                            Write-HostColorized -PatternColorMap $RiskTable
+                            Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
                 }
             }
         }
@@ -1657,18 +1714,18 @@ function Format-Result {
             switch ($UniqueIssue) {
                 { $_ -in @('DETECT', 'ESC6', 'ESC8', 'ESC11') } {
                     $Issue |
-                        Format-List Technique, @{l = 'CA Name'; e = { $_.Name } }, @{l = 'Risk'; e = { $_.RiskName } }, DistinguishedName, Issue, Fix |
-                            Write-HostColorized -PatternColorMap $RiskTable
+                        Format-List Technique, @{l = 'CA Name'; e = { $_.Name } }, @{l = 'Risk'; e = { $_.RiskName } }, @{l = 'Risk Scoring'; e = { $_.RiskScoring -join "`n" } }, DistinguishedName, Issue, Fix |
+                            Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
                 }
                 { $_ -in @('ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC13', 'ESC15/EKUwu') } {
                     $Issue |
-                        Format-List Technique, @{l = 'Template Name'; e = { $_.Name } }, @{l = 'Risk'; e = { $_.RiskName } }, DistinguishedName, Enabled, EnabledOn, Issue, Fix |
-                            Write-HostColorized -PatternColorMap $RiskTable
+                        Format-List Technique, @{l = 'Template Name'; e = { $_.Name } }, @{l = 'Risk'; e = { $_.RiskName } }, @{l = 'Risk Scoring'; e = { $_.RiskScoring -join "`n" } }, DistinguishedName, Enabled, EnabledOn, Issue, Fix |
+                            Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
                 }
                 'ESC5' {
                     $Issue |
-                        Format-List Technique, @{l = 'Object Name'; e = { $_.Name } }, @{l = 'Risk'; e = { $_.RiskName } }, DistinguishedName, objectClass, Issue, Fix |
-                            Write-HostColorized -PatternColorMap $RiskTable
+                        Format-List Technique, @{l = 'Object Name'; e = { $_.Name } }, @{l = 'Risk'; e = { $_.RiskName } }, @{l = 'Risk Scoring'; e = { $_.RiskScoring -join "`n" } }, DistinguishedName, objectClass, Issue, Fix |
+                            Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
                 }
             }
         }
@@ -1691,7 +1748,7 @@ function Get-ADCSObject {
         Specifies the credentials to use for authentication when retrieving ADCS objects.
 
     .EXAMPLE
-        Get-ADCSObject -Credential $cred
+        Get-ADCSObject -Credential $cred -Targets (Get-Target)
         This example retrieves ADCS objects from the local forest using the specified credentials.
 
     #>
@@ -2368,73 +2425,73 @@ function Invoke-Scans {
         }
         ESC1 {
             Write-Host 'Identifying AD CS templates with dangerous ESC1 configurations...'
-            [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEkus -Mode $Mode
+            [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEkus -Mode $Mode -UnsafeUsers $UnsafeUsers
         }
         ESC2 {
             Write-Host 'Identifying AD CS templates with dangerous ESC2 configurations...'
-            [array]$ESC2 = Find-ESC2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+            [array]$ESC2 = Find-ESC2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
         }
         ESC3 {
             Write-Host 'Identifying AD CS templates with dangerous ESC3 configurations...'
-            [array]$ESC3 = Find-ESC3Condition1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
-            [array]$ESC3 += Find-ESC3Condition2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+            [array]$ESC3 = Find-ESC3Condition1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+            [array]$ESC3 += Find-ESC3Condition2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
         }
         ESC4 {
             Write-Host 'Identifying AD CS templates with poor access control (ESC4)...'
-            [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes -Mode $Mode
+            [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes -Mode $Mode -UnsafeUsers $UnsafeUsers
         }
         ESC5 {
             Write-Host 'Identifying AD CS objects with poor access control (ESC5)...'
-            [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes
+            [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes -UnsafeUsers $UnsafeUsers
         }
         ESC6 {
             Write-Host 'Identifying Issuing CAs with EDITF_ATTRIBUTESUBJECTALTNAME2 enabled (ESC6)...'
-            [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects
+            [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects -UnsafeUsers $UnsafeUsers
         }
         ESC8 {
             Write-Host 'Identifying HTTP-based certificate enrollment interfaces (ESC8)...'
-            [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects
+            [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects -UnsafeUsers $UnsafeUsers
         }
         ESC11 {
             Write-Host 'Identifying Issuing CAs with IF_ENFORCEENCRYPTICERTREQUEST disabled (ESC11)...'
-            [array]$ESC11 = Find-ESC11 -ADCSObjects $ADCSObjects
+            [array]$ESC11 = Find-ESC11 -ADCSObjects $ADCSObjects -UnsafeUsers $UnsafeUsers
         }
         ESC13 {
             Write-Host 'Identifying AD CS templates with dangerous ESC13 configurations...'
-            [array]$ESC11 = Find-ESC13 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEKUs
+            [array]$ESC11 = Find-ESC13 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEKUs -UnsafeUsers $UnsafeUsers
         }
         ESC15 {
             Write-Host 'Identifying AD CS templates with dangerous ESC15/EKUwu configurations...'
-            [array]$ESC11 = Find-ESC15 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+            [array]$ESC11 = Find-ESC15 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
         }
         EKUwu {
             Write-Host 'Identifying AD CS templates with dangerous ESC15/EKUwu configurations...'
-            [array]$ESC11 = Find-ESC15 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+            [array]$ESC11 = Find-ESC15 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
         }
         All {
             Write-Host 'Identifying auditing issues...'
             [array]$AuditingIssues = Find-AuditingIssue -ADCSObjects $ADCSObjects
             Write-Host 'Identifying AD CS templates with dangerous ESC1 configurations...'
-            [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEkus -Mode $Mode
+            [array]$ESC1 = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEkus -Mode $Mode -UnsafeUsers $UnsafeUsers
             Write-Host 'Identifying AD CS templates with dangerous ESC2 configurations...'
-            [array]$ESC2 = Find-ESC2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+            [array]$ESC2 = Find-ESC2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
             Write-Host 'Identifying AD CS templates with dangerous ESC3 configurations...'
-            [array]$ESC3 = Find-ESC3Condition1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
-            [array]$ESC3 += Find-ESC3Condition2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+            [array]$ESC3 = Find-ESC3Condition1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+            [array]$ESC3 += Find-ESC3Condition2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
             Write-Host 'Identifying AD CS templates with poor access control (ESC4)...'
-            [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes -Mode $Mode
+            [array]$ESC4 = Find-ESC4 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes -Mode $Mode -UnsafeUsers $UnsafeUsers
             Write-Host 'Identifying AD CS objects with poor access control (ESC5)...'
-            [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes
+            [array]$ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeObjectTypes $SafeObjectTypes -UnsafeUsers $UnsafeUsers
             Write-Host 'Identifying Certificate Authorities with EDITF_ATTRIBUTESUBJECTALTNAME2 enabled (ESC6)...'
-            [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects
+            [array]$ESC6 = Find-ESC6 -ADCSObjects $ADCSObjects -UnsafeUsers $UnsafeUsers
             Write-Host 'Identifying HTTP-based certificate enrollment interfaces (ESC8)...'
-            [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects
+            [array]$ESC8 = Find-ESC8 -ADCSObjects $ADCSObjects -UnsafeUsers $UnsafeUsers
             Write-Host 'Identifying Certificate Authorities with IF_ENFORCEENCRYPTICERTREQUEST disabled (ESC11)...'
-            [array]$ESC11 = Find-ESC11 -ADCSObjects $ADCSObjects
+            [array]$ESC11 = Find-ESC11 -ADCSObjects $ADCSObjects -UnsafeUsers $UnsafeUsers
             Write-Host 'Identifying AD CS templates with dangerous ESC13 configurations...'
-            [array]$ESC13 = Find-ESC13 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEkus
+            [array]$ESC13 = Find-ESC13 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEkus -UnsafeUsers $UnsafeUsers
             Write-Host 'Identifying AD CS templates with dangerous ESC15 configurations...'
-            [array]$ESC15 = Find-ESC15 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+            [array]$ESC15 = Find-ESC15 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
             Write-Host
         }
     }
@@ -2939,7 +2996,7 @@ function Set-RiskRating {
         - Modifiers: Some issues are present a higher risk when certain conditions are met.
 
         .PARAMETER Issue
-        A PSCustomObject that includes all pertinent information about an AD CS ssue.
+        A PSCustomObject that includes all pertinent information about an AD CS issue.
 
         .INPUTS
         PSCustomObject
@@ -2955,58 +3012,291 @@ function Set-RiskRating {
         $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
         $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
         $ESC4Issues = Find-ESC4 -ADCSObjects $ADCSObjects -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeUsers $SafeUsers -SafeObjectTypes $SafeObjectTypes -Mode 1
-        foreach ($issue in $ESC4Issues) { Set-RiskRating -Issue $Issue }
+        foreach ($issue in $ESC4Issues) { if ($SkipRisk -eq $false) {
+                    Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+                } }
 
         .LINK
     #>
     [CmdletBinding()]
     param (
-        $Issue
+        $Issue,
+        $ADCSObjects,
+        $SafeUsers,
+        $UnsafeUsers
     )
 
     #requires -Version 5
 
     $RiskValue = 0
     $RiskName = ''
-
-    # The principal's objectClass impacts the Issue's risk
-    if ($Issue.Technique -notin @('DETECT', 'ESC6', 'ESC8', 'ESC11')) {
-        $SID = $Issue.IdentityReferenceSID.ToString()
-        $IdentityReferenceObjectClass = Get-ADObject -Filter { objectSid -eq $SID }  | Select-Object objectClass
-    }
+    $RiskScoring = @()
 
     # CA issues don't rely on a principal and have a base risk of Medium.
     if ($Issue.Technique -in @('DETECT', 'ESC6', 'ESC8', 'ESC11')) {
-        $RiskValue += 2
+        $RiskValue += 3
+        $RiskScoring += 'Base Score: 3'
+
+        if ($Issue.CAEnrollmentEndpoint -like 'http:*') {
+            $RiskValue += 2
+            $RiskScoring += 'HTTP Enrollment: +2'
+        }
+
+        # TODO Check NtAuthCertificates for CA thumbnail. If found, +2, else -1
+        # TODO Check if NTLMv1 is allowed.
     }
 
-    # Templates are more dangerous when enabled.
-    if ($Issue.Technique -in @('ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC13', 'ESC15')) {
+    # Template issues have their own scoring.
+    if ($Issue.Technique -notin @('DETECT', 'ESC5', 'ESC6', 'ESC8', 'ESC11')) {
+        $RiskScoring += 'Base Score: 0'
+
+        # Templates are more dangerous when enabled.
         if ($Issue.Enabled) {
             $RiskValue += 1
+            $RiskScoring += 'Enabled: +1'
         }
         else {
-            $RiskValue -= 1
+            $RiskValue -= 2
+            $RiskScoring += 'Disabled: -2'
         }
-    }
 
-    # ESC1 and ESC4 templates are more dangerous than other templates because they can result in immediate compromise.
-    if ($Issue.Technique -in @('ESC1', 'ESC4')) {
-        $RiskValue += 1
-    }
+        # The principal's objectClass impacts the Issue's risk
+        $SID = $Issue.IdentityReferenceSID.ToString()
+        $IdentityReferenceObjectClass = Get-ADObject -Filter { objectSid -eq $SID } | Select-Object objectClass
 
-    if ($Issue.IdentityReferenceSID -match $UnsafeUsers) {
-        # Authenticated Users, Domain Users, Domain Computers etc. are very risky
-        $RiskValue += 2
-    }
-    elseif ($IdentityReferenceObjectClass -eq 'group') {
-        # Groups are riskier than individual principals
-        $RiskValue += 1
-    }
+        # ESC1 and ESC4 templates are more dangerous than other templates because they can result in immediate compromise.
+        if ($Issue.Technique -in @('ESC1', 'ESC4')) {
+            $RiskValue += 1
+            $RiskScoring += 'ESC1/4: +1'
+        }
 
-    # Safe users and managed service accounts are inherently safer than other principals.
-    if ($Issue.IdentityReferenceSID -notmatch $SafeUsers -and $IdentityReferenceObjectClass -notlike '*ManagedServiceAccount') {
-        $RiskValue += 1
+        if ($Issue.IdentityReferenceSID -match $UnsafeUsers) {
+            # Authenticated Users, Domain Users, Domain Computers etc. are very risky
+            $RiskValue += 2
+            $RiskScoring += 'Very Large Group: +2'
+        }
+        elseif ($IdentityReferenceObjectClass -eq 'group') {
+            # Groups are riskier than individual principals
+            $RiskValue += 1
+            $RiskScoring += 'Group: +1'
+        }
+
+        # Safe users and managed service accounts are inherently safer than other principals - except in ESC3 Condition 2!
+        if ($Issue.Technique -eq 'ESC3' -and $Issue.Condition -eq 2) {
+            if ($Issue.IdentityReferenceSID -match $SafeUsers) {
+                # Safe Users are admins. Authenticating as an admin is bad.
+                $RiskValue += 2
+                $RiskScoring += 'Privileged Principal: +2'
+            }
+            elseif ($IdentityReferenceObjectClass -like '*ManagedServiceAccount') {
+                # Managed Service Accounts are *probably* privileged in some way.
+                $RiskValue += 1
+                $RiskScoring += 'Managed Service Account: +1'
+            }
+        }
+        elseif ($Issue.IdentityReferenceSID -notmatch $SafeUsers -and $IdentityReferenceObjectClass -notlike '*ManagedServiceAccount') {
+            $RiskValue += 1
+            $RiskScoring += 'Unprivileged Principal: +1'
+        }
+
+        # Modifiers that rely on the existence of other ESCs
+        # ESC2 and ESC3C1 are more dangerous if ES3C2 templates exist or certain ESC15 templates are enabled
+        if ($Issue.Technique -eq 'ESC2' -or ($Issue.Technique -eq 'ESC3' -and $Issue.Condition -eq 1)) {
+            $ESC3C2 = Find-ESC3Condition2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers  -SkipRisk |
+                Where-Object { $_.Enabled -eq $true }
+            $ESC3C2Names = @(($ESC3C2 | Select-Object -Property Name -Unique).Name)
+            if ($ESC3C2Names) {
+                $CheckedESC3C2Templates = @{}
+                foreach ($name in $ESC3C2Names) {
+                    $PrincipalRisk = 0
+                    $Principals = @()
+                    foreach ($esc in $($ESC3C2 | Where-Object Name -EQ $name) ) {
+                        if ($CheckedESC3C2Templates.GetEnumerator().Name -contains $esc.Name) {
+                            $Principals = $CheckedESC3C2Templates.$($esc.Name)
+                        }
+                        else {
+                            $CheckedESC3C2Templates = @{
+                                $($esc.Name) = @()
+                            }
+                        }
+                        $escSID = $esc.IdentityReferenceSID.ToString()
+                        $escIdentityReferenceObjectClass = Get-ADObject -Filter { objectSid -eq $escSID } | Select-Object objectClass
+                        if ($Issue.IdentityReferenceSID -match $SafeUsers) {
+                            # Safe Users are admins. Authenticating as an admin is bad.
+                            $Principals += $esc.IdentityReference
+                            $PrincipalRisk += 2
+                        }
+                        elseif ($Issue.IdentityReferenceSID -match $UnsafeUsers) {
+                            # Unsafe Users are large groups that contain practically all principals and likely including admins.
+                            # Authenticating as an admin is bad.
+                            $Principals += $esc.IdentityReference
+                            $PrincipalRisk += 2
+                        }
+                        elseif ($escIdentityReferenceObjectClass -like '*ManagedServiceAccount') {
+                            # Managed Service Accounts are *probably* privileged in some way.
+                            $Principals += $esc.IdentityReference
+                            $PrincipalRisk += 1
+                        }
+                        elseif ($escIdentityReferenceObjectClass -eq 'group') {
+                            # Groups are more dangerous than individual principles.
+                            $Principals += $esc.IdentityReference
+                            $PrincipalRisk += 1
+                        }
+                        $CheckedESC3C2Templates.$($esc.Name) = $Principals
+                    }
+                    if ($PrincipalRisk -ge 2) {
+                        $PrincipalRisk = 2
+                        $RiskValue += 2
+                    }
+                    else {
+                        $RiskValue += $PrincipalRisk
+                    }
+                    $RiskScoring += "Principals ($($CheckedESC3C2Templates.$name -join ', ')) are able to enroll in an enabled ESC3 Condition 2 template ($name): +$PrincipalRisk"
+                } # end foreach ($name)
+            } # end if ($ESC3C2Names)
+
+            # Default 'User' and 'Machine' templates are more dangerous
+            $ESC15 = Find-ESC15 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers  -SkipRisk |
+                Where-Object { $_.Enabled -eq $true }
+            $ESC15Names = @('Machine', 'User')
+            if ($ESC15Names) {
+                $CheckedESC15Templates = @{}
+                foreach ($name in $ESC15Names) {
+                    $PrincipalRisk = 0
+                    $Principals = @()
+                    foreach ($esc in $($ESC15 | Where-Object Name -EQ $name) ) {
+                        if ($CheckedESC15Templates.GetEnumerator().Name -contains $esc.Name) {
+                            $Principals = $CheckedESC15Templates.$($esc.Name)
+                        }
+                        else {
+                            $Principals = @()
+                            $CheckedESC15Templates = @{
+                                $($esc.Name) = @()
+                            }
+                        }
+                        $escSID = $esc.IdentityReferenceSID.ToString()
+                        $escIdentityReferenceObjectClass = Get-ADObject -Filter { objectSid -eq $escSID } | Select-Object objectClass
+                        if ($Issue.IdentityReferenceSID -match $SafeUsers) {
+                            # Safe Users are admins. Authenticating as an admin is bad.
+                            $Principals += $esc.IdentityReference
+                            $PrincipalRisk += 2
+                        }
+                        elseif ($Issue.IdentityReferenceSID -match $UnsafeUsers) {
+                            # Unsafe Users are large groups that contain practically all principals and likely including admins.
+                            # Authenticating as an admin is bad.
+                            $Principals += $esc.IdentityReference
+                            $PrincipalRisk += 2
+                        }
+                        elseif ($escIdentityReferenceObjectClass -like '*ManagedServiceAccount') {
+                            # Managed Service Accounts are *probably* privileged in some way.
+                            $Principals += $esc.IdentityReference
+                            $PrincipalRisk += 1
+                        }
+                        elseif ($escIdentityReferenceObjectClass -eq 'group') {
+                            # Groups are more dangerous than individual principals.
+                            $Principals += $esc.IdentityReference
+                            $PrincipalRisk += 1
+                        }
+                        $CheckedESC15Templates.$($esc.Name) = $Principals
+                    }
+                    if ($PrincipalRisk -ge 2) {
+                        $PrincipalRisk = 2
+                        $RiskValue += 2
+                    }
+                    else {
+                        $RiskValue += $PrincipalRisk
+                    }
+                    $RiskScoring += "Principals ($($CheckedESC15Templates.$name -join ', ')) are able to enroll in an enabled ESC15 template ($name)): +$PrincipalRisk"
+                } # end foreach ($name)
+            } # end if ($ESC15Names)
+        }
+
+        # ESC3 Condition 2 templates are only dangerous if ESC2 or ESC3 Condition 1 templates exist.
+        if ($Issue.Technique -eq 'ESC3' -and $Issue.Condition -eq 2) {
+            $ESC2 = Find-ESC2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers  -SkipRisk |
+                Where-Object { $_.Enabled -eq $true }
+            $ESC2Names = @(($ESC2 | Select-Object -Property Name -Unique).Name)
+            if ($ESC2Names) {
+                $CheckedESC2Templates = @{}
+                foreach ($name in $ESC2Names) {
+                    $PrincipalRisk = 0
+                    $Principals = @()
+                    foreach ($esc in $($ESC2 | Where-Object Name -EQ $name) ) {
+                        if ($CheckedESC2Templates.GetEnumerator().Name -contains $esc.Name) {
+                            $Principals = $CheckedESC2Templates.$($esc.Name)
+                        }
+                        else {
+                            $CheckedESC2Templates = @{
+                                $($esc.Name) = @()
+                            }
+                        }
+                        $escSID = $esc.IdentityReferenceSID.ToString()
+                        $escIdentityReferenceObjectClass = Get-ADObject -Filter { objectSid -eq $escSID } | Select-Object objectClass
+                        if ($Issue.IdentityReferenceSID -match $UnsafeUsers) {
+                            # Unsafe Users are large groups.
+                            $Principals += $esc.IdentityReference
+                            $PrincipalRisk += 2
+                        }
+                        elseif ($escIdentityReferenceObjectClass -eq 'group') {
+                            # Groups are more dangerous than individual principles.
+                            $Principals += $esc.IdentityReference
+                            $PrincipalRisk += 1
+                        }
+                        $CheckedESC2Templates.$($esc.Name) = $Principals
+                    }
+                    if ($PrincipalRisk -ge 2) {
+                        $PrincipalRisk = 2
+                        $RiskValue += 2
+                    }
+                    else {
+                        $RiskValue += $PrincipalRisk
+                    }
+                    $RiskScoring += "Principals ($($CheckedESC2Templates.$name -join ', ')) are able to enroll in an enabled ESC2 template ($name): +$PrincipalRisk"
+                } # end foreach ($name)
+            } # end if ($ESC2Names)
+
+            $ESC3C1 = Find-ESC3Condition1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers  -SkipRisk |
+                Where-Object { $_.Enabled -eq $true }
+            $ESC3C1Names = @(($ESC3C1 | Select-Object -Property Name -Unique).Name)
+            if ($ESC3C1Names) {
+                $CheckedESC3C1Templates = @{}
+                foreach ($name in $ESC3C1Names) {
+                    $PrincipalRisk = 0
+                    $Principals = @()
+                    foreach ($esc in $($ESC3C1 | Where-Object Name -EQ $name) ) {
+                        if ($CheckedESC3C1Templates.GetEnumerator().Name -contains $esc.Name) {
+                            $Principals = $CheckedESC3C1Templates.$($esc.Name)
+                        }
+                        else {
+                            $CheckedESC3C1Templates = @{
+                                $($esc.Name) = @()
+                            }
+                        }
+                        $escSID = $esc.IdentityReferenceSID.ToString()
+                        $escIdentityReferenceObjectClass = Get-ADObject -Filter { objectSid -eq $escSID } | Select-Object objectClass
+                        if ($Issue.IdentityReferenceSID -match $UnsafeUsers) {
+                            # Unsafe Users are large groups.
+                            $Principals += $esc.IdentityReference
+                            $PrincipalRisk += 2
+                        }
+                        elseif ($escIdentityReferenceObjectClass -eq 'group') {
+                            # Groups are more dangerous than individual principles.
+                            $Principals += $esc.IdentityReference
+                            $PrincipalRisk += 1
+                        }
+                        $CheckedESC3C1Templates.$($esc.Name) = $Principals
+                    }
+                    if ($PrincipalRisk -ge 2) {
+                        $PrincipalRisk = 2
+                        $RiskValue += 2
+                    }
+                    else {
+                        $RiskValue += $PrincipalRisk
+                    }
+                    $RiskScoring += "Principals ($($CheckedESC3C1Templates.$name -join ', ')) are able to enroll in an enabled ESC3C1 template ($name): +$PrincipalRisk"
+                } # end foreach ($name...
+            } # end if ($ESC3C1Names)
+        }
     }
 
     # Convert Value to Name
@@ -3031,6 +3321,7 @@ function Set-RiskRating {
     # Write Risk attributes
     $Issue | Add-Member -NotePropertyName RiskValue -NotePropertyValue $RiskValue -Force
     $Issue | Add-Member -NotePropertyName RiskName -NotePropertyValue $RiskName -Force
+    $Issue | Add-Member -NotePropertyName RiskScoring -NotePropertyValue $RiskScoring -Force
 }
 
 function Show-LocksmithLogo {
@@ -3415,23 +3706,27 @@ Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
     }
     elseif ($Enroll -eq 'n') {
         $Issue.Fix = @"
-# 1. Open the Certification Templates Console: certtmpl.msc
-# 2. Double-click the $($Issue.Name) template to open its Properties page.
-# 3. Select the Security tab.
-# 4. Select the entry for $($Issue.IdentityReference).
-# 5. Uncheck the "Enroll" and/or "Autoenroll" boxes.
-# 6. Click OK.
+<#
+    1. Open the Certification Templates Console: certtmpl.msc
+    2. Double-click the $($Issue.Name) template to open its Properties page.
+    3. Select the Security tab.
+    4. Select the entry for $($Issue.IdentityReference).
+    5. Uncheck the "Enroll" and/or "Autoenroll" boxes.
+    6. Click OK.
+#>
 "@
 
         $Issue.Revert = @"
-# 1. Open the Certification Templates Console: certtmpl.msc
-# 2. Double-click the $($Issue.Name) template to open its Properties page.
-# 3. Select the Security tab.
-# 4. Select the entry for $($Issue.IdentityReference).
-# 5. Check the "Enroll" and/or "Autoenroll" boxes depending on your specific needs.
-# 6. Click OK.
+<#
+    1. Open the Certification Templates Console: certtmpl.msc
+    2. Double-click the $($Issue.Name) template to open its Properties page.
+    3. Select the Security tab.
+    4. Select the entry for $($Issue.IdentityReference).
+    5. Check the "Enroll" and/or "Autoenroll" boxes depending on your specific needs.
+    6. Click OK.
+#>
 "@
-    }
+    } # end if ($Enroll -eq 'y')/elseif ($Enroll -eq 'n')
 }
 
 function Update-ESC4Remediation {
@@ -3963,7 +4258,7 @@ function Invoke-Locksmith {
         [System.Management.Automation.PSCredential]$Credential
     )
 
-    $Version = '2024.12.19'
+    $Version = '2024.12.20'
     $LogoPart1 = @"
     _       _____  _______ _     _ _______ _______ _____ _______ _     _
     |      |     | |       |____/  |______ |  |  |   |      |    |_____|

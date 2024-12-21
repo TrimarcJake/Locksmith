@@ -64,7 +64,9 @@ Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
             $Issue.Fix    = 'N/A'
             $Issue.Revert = 'N/A'
         }
-        Set-RiskRating -Issue $Issue
+        if ($SkipRisk -eq $false) {
+            Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+        }
         $Issue
     }
 }

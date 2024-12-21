@@ -18,7 +18,7 @@
         The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
 
     .EXAMPLE
-        $ADCSObjects = Get-ADCSObjects
+        $ADCSObjects = Get-ADCSObject -Targets (Get-Target)
         $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
         $Results = $ADCSObjects | Find-ESC3Condition2 -SafeUsers $SafeUsers
         $Results
@@ -28,7 +28,9 @@
         [Parameter(Mandatory)]
         [array]$ADCSObjects,
         [Parameter(Mandatory)]
-        [array]$SafeUsers
+        [string]$SafeUsers,
+        $UnsafeUsers,
+        [switch]$SkipRisk
     )
     $ADCSObjects | Where-Object {
         ($_.objectClass -eq 'pKICertificateTemplate') -and
@@ -55,9 +57,9 @@
                     Enabled               = $_.Enabled
                     EnabledOn             = $_.EnabledOn
                     Issue                 = @"
-If the holder of an Enrollment Agent certificate requests a certificate using
-this template, they will receive a certificate which allows them to authenticate
-as $($entry.IdentityReference).
+If the holder of a SubCA, Any Purpose, or Enrollment Agent certificate requests
+a certificate using this template, they will receive a certificate which allows
+them to authenticate as $($entry.IdentityReference).
 
 More info:
   - https://posts.specterops.io/certified-pre-owned-d95910965cd2
@@ -76,8 +78,11 @@ Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 2}
 Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@
                     Technique             = 'ESC3'
+                    Condition             = 2
                 }
-                Set-RiskRating -Issue $Issue
+                if ($SkipRisk -eq $false) {
+                    Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+                }
                 $Issue
             }
         }

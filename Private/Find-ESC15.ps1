@@ -27,7 +27,9 @@ function Find-ESC15 {
         [Parameter(Mandatory)]
         [array]$ADCSObjects,
         [Parameter(Mandatory)]
-        $SafeUsers
+        $SafeUsers,
+        $UnsafeUsers,
+        [switch]$SkipRisk
     )
     $ADCSObjects | Where-Object {
         ($_.objectClass -eq 'pKICertificateTemplate') -and
@@ -66,22 +68,28 @@ More info:
 
 "@
                             Fix                   = @"
-# Option 1: Manual Remediation
-# Step 1: Identify if this template is Enabled on any CA.
-# Step 2: If Enabled, identify if this template has recently been used to generate a certificate.
-# Step 3a: If recently used, either restrict enrollment scope or convert to the template to Schema V2.
-# Step 3b: If not recently used, unpublish the template from all CAs.
+<#
+    Option 1: Manual Remediation
+    Step 1: Identify if this template is Enabled on any CA.
+    Step 2: If Enabled, identify if this template has recently been used to generate a certificate.
+    Step 3a: If recently used, either restrict enrollment scope or convert to the template to Schema V2.
+    Step 3b: If not recently used, unpublish the template from all CAs.
+#>
 
-# Option 2: Scripted Remediation
-# Step 1: Open an elevated Powershell session as an AD or PKI Admin
-# Step 2: Run Unpublish-SchemaV1Templates.ps1
+<#
+    Option 2: Scripted Remediation
+    Step 1: Open an elevated Powershell session as an AD or PKI Admin
+    Step 2: Run Unpublish-SchemaV1Templates.ps1
+#>
 Invoke-WebRequest -Uri https://bit.ly/Fix-ESC15 | Invoke-Expression
 
 "@
                     Revert                = '[TODO]'
                     Technique             = 'ESC15/EKUwu'
                 }
-                Set-RiskRating -Issue $Issue
+                if ($SkipRisk -eq $false) {
+                    Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+                }
                 $Issue
             }
         }

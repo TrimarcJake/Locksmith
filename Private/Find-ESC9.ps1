@@ -51,7 +51,9 @@ function Find-ESC9 {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        $ADCSObjects
+        $ADCSObjects,
+        $UnsafeUsers,
+        [switch]$SkipRisk
     )
 
     # Import the required module
