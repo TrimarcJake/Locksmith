@@ -1830,7 +1830,7 @@ function Get-RestrictedAdminModeSetting {
         Retrieves the current configuration of the Restricted Admin Mode setting.
 
     .DESCRIPTION
-        This script retrieves the current configuration of the Restricted Admin Mode setting from the registry.
+        This script retrieves the current configuration of the Restricted Admin Mode setting from the registry. 
         It checks if the DisableRestrictedAdmin value is set to '0' and the DisableRestrictedAdminOutboundCreds value is set to '1'.
         If both conditions are met, it returns $true; otherwise, it returns $false.
 
@@ -3121,12 +3121,12 @@ function Set-RiskRating {
                         }
                         $escSID = $esc.IdentityReferenceSID.ToString()
                         $escIdentityReferenceObjectClass = Get-ADObject -Filter { objectSid -eq $escSID } | Select-Object objectClass
-                        if ($Issue.IdentityReferenceSID -match $SafeUsers) {
+                        if ($escSID -match $SafeUsers) {
                             # Safe Users are admins. Authenticating as an admin is bad.
                             $Principals += $esc.IdentityReference
                             $OtherTemplateRisk += 2
                         }
-                        elseif ($Issue.IdentityReferenceSID -match $UnsafeUsers) {
+                        elseif ($escSID -match $UnsafeUsers) {
                             # Unsafe Users are large groups that contain practically all principals and likely including admins.
                             # Authenticating as an admin is bad.
                             $Principals += $esc.IdentityReference
@@ -3172,12 +3172,12 @@ function Set-RiskRating {
                         }
                         $escSID = $esc.IdentityReferenceSID.ToString()
                         $escIdentityReferenceObjectClass = Get-ADObject -Filter { objectSid -eq $escSID } | Select-Object objectClass
-                        if ($Issue.IdentityReferenceSID -match $SafeUsers) {
+                        if ($escSID -match $SafeUsers) {
                             # Safe Users are admins. Authenticating as an admin is bad.
                             $Principals += $esc.IdentityReference
                             $OtherTemplateRisk += 2
                         }
-                        elseif ($Issue.IdentityReferenceSID -match $UnsafeUsers) {
+                        elseif ($escSID -match $UnsafeUsers) {
                             # Unsafe Users are large groups that contain practically all principals and likely including admins.
                             # Authenticating as an admin is bad.
                             $Principals += $esc.IdentityReference
@@ -3188,7 +3188,7 @@ function Set-RiskRating {
                             $Principals += $esc.IdentityReference
                             $OtherTemplateRisk += 1
                         }
-                        elseif ($escIdentityReferenceObjectClass -eq 'group|foreignSecurityPrincipal') {
+                        elseif ($escIdentityReferenceObjectClass -eq 'group') {
                             # Groups are more dangerous than individual principals.
                             $Principals += $esc.IdentityReference
                             $OtherTemplateRisk += 1
@@ -3225,12 +3225,12 @@ function Set-RiskRating {
                         }
                         $escSID = $esc.IdentityReferenceSID.ToString()
                         $escIdentityReferenceObjectClass = Get-ADObject -Filter { objectSid -eq $escSID } | Select-Object objectClass
-                        if ($Issue.IdentityReferenceSID -match $UnsafeUsers) {
+                        if ($escSID -match $UnsafeUsers) {
                             # Unsafe Users are large groups.
                             $Principals += $esc.IdentityReference.Value
                             $OtherTemplateRisk += 2
                         }
-                        elseif ($escIdentityReferenceObjectClass -match 'group|foreignSecurityPrincipal') {
+                        elseif ($escIdentityReferenceObjectClass -eq 'group') {
                             # Groups are more dangerous than individual principles.
                             $Principals += $esc.IdentityReference.Value
                             $OtherTemplateRisk += 1
@@ -3263,7 +3263,7 @@ function Set-RiskRating {
                         }
                         $escSID = $esc.IdentityReferenceSID.ToString()
                         $escIdentityReferenceObjectClass = Get-ADObject -Filter { objectSid -eq $escSID } | Select-Object objectClass
-                        if ($Issue.IdentityReferenceSID -match $UnsafeUsers) {
+                        if ($escSID -match $UnsafeUsers) {
                             # Unsafe Users are large groups.
                             $Principals += $esc.IdentityReference
                             $OtherTemplateRisk += 2
@@ -3288,19 +3288,19 @@ function Set-RiskRating {
     # Convert Value to Name
     $RiskName = switch ($RiskValue) {
         { $_ -le 1 } {
-            'Informational'
+            'Informational' 
         }
         2 {
-            'Low'
+            'Low' 
         }
         3 {
-            'Medium'
+            'Medium' 
         }
         4 {
-            'High'
+            'High' 
         }
         { $_ -ge 5 } {
-            'Critical'
+            'Critical' 
         }
     }
 
@@ -3845,7 +3845,7 @@ Set-Acl -Path `$Path -AclObject `$ACL
 "@
             }
             4 {
-                break
+                break 
             }
             5 {
                 $Issue.Fix = @"
@@ -4008,10 +4008,10 @@ Function Write-HostColorized {
             # We precompile them for better performance with many input objects.
             [System.Text.RegularExpressions.RegexOptions] $reOpts =
             if ($CaseSensitive) {
-                'Compiled, ExplicitCapture'
+                'Compiled, ExplicitCapture' 
             }
             else {
-                'Compiled, ExplicitCapture, IgnoreCase'
+                'Compiled, ExplicitCapture, IgnoreCase' 
             }
 
             # Transform the dictionary:
@@ -4033,10 +4033,10 @@ Function Write-HostColorized {
                 }
                 $colorArgs = @{ }
                 if ($fg) {
-                    $colorArgs['ForegroundColor'] = [ConsoleColor] $fg
+                    $colorArgs['ForegroundColor'] = [ConsoleColor] $fg 
                 }
                 if ($bg) {
-                    $colorArgs['BackgroundColor'] = [ConsoleColor] $bg
+                    $colorArgs['BackgroundColor'] = [ConsoleColor] $bg 
                 }
 
                 # Consolidate the patterns into a single pattern with alternation ('|'),
@@ -4055,7 +4055,7 @@ Function Write-HostColorized {
             }
         }
         catch {
-            throw
+            throw 
         }
 
         # Construct the arguments to pass to Out-String.
@@ -4078,7 +4078,7 @@ Function Write-HostColorized {
                     foreach ($m in $entry.Key.Matches($_)) {
                         @{ Index = $m.Index; Text = $m.Value; ColorArgs = $entry.Value }
                         if ($WholeLine) {
-                            break patternLoop
+                            break patternLoop 
                         }
                     }
                 }
@@ -4244,7 +4244,7 @@ function Invoke-Locksmith {
         [System.Management.Automation.PSCredential]$Credential
     )
 
-    $Version = '2024.12.21'
+    $Version = '2024.12.22'
     $LogoPart1 = @"
     _       _____  _______ _     _ _______ _______ _____ _______ _     _
     |      |     | |       |____/  |______ |  |  |   |      |    |_____|
