@@ -95,7 +95,7 @@ function Format-Result {
                 }
                 'ESC5' {
                     $Issue |
-                    Format-List Technique, @{l='Object Name';e={$_.Name}}, @{l='Risk';e={$_.RiskName}}, @{l='Risk Score';e={$_.RiskValue}}, DistinguishedName, objectClass, Issue, Fix, @{l='Risk Score Detail';e={$_.RiskScoring -join "`n"}} |
+                    Format-List Technique, @{l='Object Name';e={$_.Name}}, @{l='Risk';e={$_.RiskName}}, DistinguishedName, objectClass, Issue, Fix, @{l='Risk Score';e={$_.RiskValue}}, @{l='Risk Score Detail';e={$_.RiskScoring -join "`n"}} |
                     Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
                 }
             }

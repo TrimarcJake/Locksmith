@@ -1724,7 +1724,7 @@ function Format-Result {
                 }
                 'ESC5' {
                     $Issue |
-                        Format-List Technique, @{l = 'Object Name'; e = { $_.Name } }, @{l = 'Risk'; e = { $_.RiskName } }, @{l = 'Risk Score'; e = { $_.RiskValue } }, DistinguishedName, objectClass, Issue, Fix, @{l = 'Risk Score Detail'; e = { $_.RiskScoring -join "`n" } } |
+                        Format-List Technique, @{l = 'Object Name'; e = { $_.Name } }, @{l = 'Risk'; e = { $_.RiskName } }, DistinguishedName, objectClass, Issue, Fix, @{l = 'Risk Score'; e = { $_.RiskValue } }, @{l = 'Risk Score Detail'; e = { $_.RiskScoring -join "`n" } } |
                             Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
                 }
             }
@@ -3012,9 +3012,11 @@ function Set-RiskRating {
         $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
         $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
         $ESC4Issues = Find-ESC4 -ADCSObjects $ADCSObjects -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeUsers $SafeUsers -SafeObjectTypes $SafeObjectTypes -Mode 1
-        foreach ($issue in $ESC4Issues) { if ($SkipRisk -eq $false) {
-                    Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
-                } }
+        foreach ($issue in $ESC4Issues) {
+            if ($SkipRisk -eq $false) {
+                Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+            }
+        }
 
         .LINK
     #>
