@@ -198,7 +198,7 @@ act as a member of the linked group (see ESC13).
                 pKIEnrollmentService {
                     $IssueDetail = @"
 $($entry.IdentityReference) can use these elevated rights to publish currently
-unEnabled templates.
+disabled templates.
 
 If $($entry.IdentityReference) also has control over a disabled certificate
 template (see ESC4), they could modify the template into an ESC1 template then

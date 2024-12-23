@@ -1264,7 +1264,7 @@ act as a member of the linked group (see ESC13).
                 pKIEnrollmentService {
                     $IssueDetail = @"
 $($entry.IdentityReference) can use these elevated rights to publish currently
-unEnabled templates.
+disabled templates.
 
 If $($entry.IdentityReference) also has control over a disabled certificate
 template (see ESC4), they could modify the template into an ESC1 template then
@@ -3046,18 +3046,20 @@ function Set-RiskRating {
         # TODO Check if NTLMv1 is allowed.
     }
 
-    # Template issues have their own scoring.
-    if ($Issue.Technique -notin @('DETECT', 'ESC5', 'ESC6', 'ESC8', 'ESC11')) {
+    # Template and object issues rely on a principal and have complex scoring.
+    if ($Issue.Technique -notin @('DETECT', 'ESC6', 'ESC8', 'ESC11')) {
         $RiskScoring += 'Base Score: 0'
 
-        # Templates are more dangerous when enabled.
-        if ($Issue.Enabled) {
-            $RiskValue += 1
-            $RiskScoring += 'Enabled: +1'
-        }
-        else {
-            $RiskValue -= 2
-            $RiskScoring += 'Disabled: -3'
+        # Templates are more dangerous when enabled, but objects cannot be enabled/disabled.
+        if ($Issue.Technique -ne 'ESC5') {
+            if ($Issue.Enabled) {
+                $RiskValue += 1
+                $RiskScoring += 'Enabled: +1'
+            }
+            else {
+                $RiskValue -= 2
+                $RiskScoring += 'Disabled: -2'
+            }
         }
 
         # The principal's objectClass impacts the Issue's risk
@@ -3282,6 +3284,80 @@ function Set-RiskRating {
                 }
             } # end if ($ESC3C1Names)
             $RiskValue += $OtherTemplateRisk
+        }
+
+        # ESC4 templates are more dangerous if there's an ESC5 on NtAuthCertificates object OR an ESC5 on any CA object
+        if ($Issue.Technique -eq 'ESC4') {
+            $ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers -DangerousRights $DangerousRights -SafeOwners '-519$' -SafeObjectTypes $SafeObjectTypes -SkipRisk |
+                Where-Object { $_.Enabled -eq $true }
+            $ESC5Names = @(($ESC5 | Select-Object -Property Name -Unique).Name)
+            if ($ESC5Names) {
+                $CheckedESC5Templates = @{}
+                foreach ($name in $ESC5Names) {
+                    $OtherObjectRisk = 0
+                    $Principals = @()
+                    foreach ($esc in $($ESC5 | Where-Object Name -EQ $name) ) {
+                        if ($CheckedESC5Templates.GetEnumerator().Name -contains $esc.Name) {
+                            $Principals = $CheckedESC5Templates.$($esc.Name)
+                        }
+                        else {
+                            $CheckedESC5Templates = @{
+                                $($esc.Name) = @()
+                            }
+                        }
+                        $escSID = $esc.IdentityReferenceSID.ToString()
+                        $escIdentityReferenceObjectClass = Get-ADObject -Filter { objectSid -eq $escSID } | Select-Object objectClass
+                        if ($escIdentityReferenceObjectClass -eq 'pKIEnrollmentService') {
+                            $Principals += $esc.IdentityReference
+                            $OtherObjectRisk += 2
+                            $RiskScoring += "Principals ($($CheckedESC5Templates.$name -join ', ')) are able to modify CA Host object ($name): +$OtherObjectRisk"
+                        }
+                        elseif ($escIdentityReferenceObjectClass -eq 'msPKI-Enterprise-Oid' -and (
+                                # Check is EA or SA are empty
+                                (Get-ADGroupMember -Identity 'Enterprise Admins' -Recursive ).count -eq 0 -or
+                                (Get-ADGroupMember -Identity 'Schema Admins' -Recursive ).count -eq 0
+                            )
+                        ) {
+                            # Check is EA or SA are empty
+                            $Principals += $esc.IdentityReference
+                            $OtherObjectRisk += 2
+                            "Principals ($($CheckedESC5Templates.$name -join ', ')) are able to modify OID ($name) and AD Admin groups are empty: +$OtherObjectRisk"
+                        }
+                        $CheckedESC5Templates.$($esc.Name) = $Principals
+                    }
+                } # end foreach ($name...
+                if ($OtherObjectRisk -ge 2) {
+                    $OtherObjectRisk = 2
+                }
+            } # end if ($ESC5Names)
+            $RiskValue += $OtherObjectRisk
+        }
+
+        # ESC5 objectClass determines risk
+        if ($Issue.Technique -eq 'ESC5') {
+            if ($Issue.objectClass -eq 'certificationAuthority' -and $Issue.distinguishedName -like 'CN=NtAuthCertificates*') {
+                # Being able to modify NtAuthCertificates is very bad.
+                $RiskValue += 2
+                $RiskScoring += 'NtAuthCertificates: +2'
+            }
+            switch ($Issue.objectClass) {
+                # Being able to modify CA Objects is very bad.
+                'certificationAuthority' {
+                    $RiskValue += 2; $RiskScoring += 'Certificate Authority Object: +2' 
+                }
+                # Being able to modify CA Hosts is very bad.
+                'computer' {
+                    $RiskValue += 2; $RiskScoring += 'Certificate Authority Host Computer: +2' 
+                }
+                # Being able to modify OIDs could result in ESC13 vulns.
+                'msPKI-Enterprise-Oid' {
+                    $RiskValue += 1; $RiskScoring += 'OID: +1' 
+                }
+                # Being able to modify PKS containers is bad.
+                'container' {
+                    $RiskValue += 1; $RiskScoring += 'Container: +1' 
+                }
+            }
         }
     }
 
