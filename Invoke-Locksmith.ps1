@@ -159,7 +159,8 @@ function Find-AuditingIssue {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        [array]$ADCSObjects
+        [array]$ADCSObjects,
+        [switch]$SkipRisk
     )
 
     $ADCSObjects | Where-Object {
@@ -3127,28 +3128,28 @@ function Set-RiskRating {
                         $escIdentityReferenceObjectClass = Get-ADObject -Filter { objectSid -eq $escSID } | Select-Object objectClass
                         if ($escSID -match $SafeUsers) {
                             # Safe Users are admins. Authenticating as an admin is bad.
-                            $Principals += $esc.IdentityReference
+                            $Principals += $esc.IdentityReference.Value
                             $OtherTemplateRisk += 2
                         }
                         elseif ($escSID -match $UnsafeUsers) {
                             # Unsafe Users are large groups that contain practically all principals and likely including admins.
                             # Authenticating as an admin is bad.
-                            $Principals += $esc.IdentityReference
+                            $Principals += $esc.IdentityReference.Value
                             $OtherTemplateRisk += 2
                         }
                         elseif ($escIdentityReferenceObjectClass -like '*ManagedServiceAccount') {
                             # Managed Service Accounts are *probably* privileged in some way.
-                            $Principals += $esc.IdentityReference
+                            $Principals += $esc.IdentityReference.Value
                             $OtherTemplateRisk += 1
                         }
                         elseif ($escIdentityReferenceObjectClass -eq 'group') {
-                            # Groups are more dangerous than individual principles.
-                            $Principals += $esc.IdentityReference
+                            # Groups are more dangerous than individual principals.
+                            $Principals += $esc.IdentityReference.Value
                             $OtherTemplateRisk += 1
                         }
                         $CheckedESC3C2Templates.$($esc.Name) = $Principals
                     }
-                    $RiskScoring += "Principals ($($CheckedESC3C2Templates.$name -join ', ')) are able to enroll in an enabled ESC3 Condition 2 template ($name): +$OtherTemplateRisk"
+                    $RiskScoring += "Principals ($($CheckedESC3C2Templates.$($esc.Name) -join ', ')) are able to enroll in an enabled ESC3 Condition 2 template ($name): +$OtherTemplateRisk"
                 } # end foreach ($name)
                 if ($OtherTemplateRisk -ge 2) {
                     $OtherTemplateRisk = 2
@@ -3178,28 +3179,28 @@ function Set-RiskRating {
                         $escIdentityReferenceObjectClass = Get-ADObject -Filter { objectSid -eq $escSID } | Select-Object objectClass
                         if ($escSID -match $SafeUsers) {
                             # Safe Users are admins. Authenticating as an admin is bad.
-                            $Principals += $esc.IdentityReference
+                            $Principals += $esc.IdentityReference.Value
                             $OtherTemplateRisk += 2
                         }
                         elseif ($escSID -match $UnsafeUsers) {
                             # Unsafe Users are large groups that contain practically all principals and likely including admins.
                             # Authenticating as an admin is bad.
-                            $Principals += $esc.IdentityReference
+                            $Principals += $esc.IdentityReference.Value
                             $OtherTemplateRisk += 2
                         }
                         elseif ($escIdentityReferenceObjectClass -like '*ManagedServiceAccount') {
                             # Managed Service Accounts are *probably* privileged in some way.
-                            $Principals += $esc.IdentityReference
+                            $Principals += $esc.IdentityReference.Value
                             $OtherTemplateRisk += 1
                         }
                         elseif ($escIdentityReferenceObjectClass -eq 'group') {
                             # Groups are more dangerous than individual principals.
-                            $Principals += $esc.IdentityReference
+                            $Principals += $esc.IdentityReference.Value
                             $OtherTemplateRisk += 1
                         }
                         $CheckedESC15Templates.$($esc.Name) = $Principals
                     }
-                    $RiskScoring += "Principals ($($CheckedESC15Templates.$name -join ', ')) are able to enroll in an enabled ESC15 template ($name)): +$OtherTemplateRisk"
+                    $RiskScoring += "Principals ($($CheckedESC15Templates.$($esc.Name) -join ', ')) are able to enroll in an enabled ESC15/EKUwu template ($name)): +$OtherTemplateRisk"
                 } # end foreach ($name)
                 if ($OtherTemplateRisk -ge 2) {
                     $OtherTemplateRisk = 2
@@ -3208,8 +3209,10 @@ function Set-RiskRating {
             $RiskValue += $OtherTemplateRisk
         }
 
-        # ESC3 Condition 2 and ESC15 templates are only dangerous if ESC2 or ESC3 Condition 1 templates exist.
-        if ($Issue.Technique -eq 'ESC15' -or ($Issue.Technique -eq 'ESC3' -and $Issue.Condition -eq 2) ) {
+        # ESC3 Condition 2 and ESC15 User/Machine templates are only dangerous if ESC2 or ESC3 Condition 1 templates exist.
+        if ( ($Issue.Technique -match 'ESC15' -and $Issue.Name -match 'User|Machine') -or
+            ($Issue.Technique -eq 'ESC3' -and $Issue.Condition -eq 2)
+        ) {
             $ESC2 = Find-ESC2 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers  -SkipRisk |
                 Where-Object { $_.Enabled -eq $true }
             $ESC2Names = @(($ESC2 | Select-Object -Property Name -Unique).Name)
@@ -3235,13 +3238,13 @@ function Set-RiskRating {
                             $OtherTemplateRisk += 2
                         }
                         elseif ($escIdentityReferenceObjectClass -eq 'group') {
-                            # Groups are more dangerous than individual principles.
+                            # Groups are more dangerous than individual principals.
                             $Principals += $esc.IdentityReference.Value
                             $OtherTemplateRisk += 1
                         }
                         $CheckedESC2Templates.$($esc.Name) = $Principals
                     }
-                    $RiskScoring += "Principals ($($CheckedESC2Templates.$name -join ', ')) are able to enroll in an enabled ESC2 template ($name): +$OtherTemplateRisk"
+                    $RiskScoring += "Principals ($($CheckedESC2Templates.$($esc.Name) -join ', ')) are able to enroll in an enabled ESC2 template ($name): +$OtherTemplateRisk"
                 } # end foreach ($name)
                 if ($OtherTemplateRisk -ge 2) {
                     $OtherTemplateRisk = 2
@@ -3269,17 +3272,17 @@ function Set-RiskRating {
                         $escIdentityReferenceObjectClass = Get-ADObject -Filter { objectSid -eq $escSID } | Select-Object objectClass
                         if ($escSID -match $UnsafeUsers) {
                             # Unsafe Users are large groups.
-                            $Principals += $esc.IdentityReference
+                            $Principals += $esc.IdentityReference.Value
                             $OtherTemplateRisk += 2
                         }
                         elseif ($escIdentityReferenceObjectClass -eq 'group') {
-                            # Groups are more dangerous than individual principles.
-                            $Principals += $esc.IdentityReference
+                            # Groups are more dangerous than individual principals.
+                            $Principals += $esc.IdentityReference.Value
                             $OtherTemplateRisk += 1
                         }
                         $CheckedESC3C1Templates.$($esc.Name) = $Principals
                     }
-                    $RiskScoring += "Principals ($($CheckedESC3C1Templates.$name -join ', ')) are able to enroll in an enabled ESC3C1 template ($name): +$OtherTemplateRisk"
+                    $RiskScoring += "Principals ($($CheckedESC3C1Templates.$($esc.Name) -join ', ')) are able to enroll in an enabled ESC3C1 template ($name): +$OtherTemplateRisk"
                 } # end foreach ($name...
                 if ($OtherTemplateRisk -ge 2) {
                     $OtherTemplateRisk = 2
@@ -3288,53 +3291,48 @@ function Set-RiskRating {
             $RiskValue += $OtherTemplateRisk
         }
 
-        # ESC4 templates are more dangerous if there's an ESC5 on NtAuthCertificates object OR an ESC5 on any CA object
-        if ($Issue.Technique -eq 'ESC4') {
+        # ESC1, ESC4, and ESC15 templates are more dangerous if there's an ESC5 on one or more CA objects
+        if ($Issue.Technique -match 'ESC1|ESC4') {
             $ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers -DangerousRights $DangerousRights -SafeOwners '-519$' -SafeObjectTypes $SafeObjectTypes -SkipRisk |
-                Where-Object { $_.Enabled -eq $true }
+                Where-Object { $_.objectClass -eq 'pKIEnrollmentService' }
             $ESC5Names = @(($ESC5 | Select-Object -Property Name -Unique).Name)
             if ($ESC5Names) {
                 $CheckedESC5Templates = @{}
                 foreach ($name in $ESC5Names) {
-                    $OtherObjectRisk = 0
+                    $OtherIssueRisk = 0
                     $Principals = @()
-                    foreach ($esc in $($ESC5 | Where-Object Name -EQ $name) ) {
-                        if ($CheckedESC5Templates.GetEnumerator().Name -contains $esc.Name) {
-                            $Principals = $CheckedESC5Templates.$($esc.Name)
+                    foreach ($OtherIssue in $($ESC5 | Where-Object Name -EQ $name) ) {
+                        if ($CheckedESC5Templates.GetEnumerator().Name -contains $OtherIssue.Name) {
+                            $Principals = $CheckedESC5Templates.$($OtherIssue.Name)
                         }
                         else {
                             $CheckedESC5Templates = @{
-                                $($esc.Name) = @()
+                                $($OtherIssue.Name) = @()
                             }
                         }
-                        $escSID = $esc.IdentityReferenceSID.ToString()
-                        $escIdentityReferenceObjectClass = Get-ADObject -Filter { objectSid -eq $escSID } | Select-Object objectClass
-                        if ($escIdentityReferenceObjectClass -eq 'pKIEnrollmentService') {
-                            $Principals += $esc.IdentityReference
-                            $OtherObjectRisk += 2
-                            $RiskScoring += "Principals ($($CheckedESC5Templates.$name -join ', ')) are able to modify CA Host object ($name): +$OtherObjectRisk"
+                        $OtherIssueSID = $OtherIssue.IdentityReferenceSID.ToString()
+                        $OtherIssueIdentityReferenceObjectClass = (Get-ADObject -Filter { objectSid -eq $OtherIssueSID } | Select-Object objectClass).objectClass
+                        if ($OtherIssueSID -match $UnsafeUsers) {
+                            # Unsafe Users are large groups.
+                            $Principals += $OtherIssue.IdentityReference.Value
+                            $OtherIssueRisk += 2
                         }
-                        elseif ($escIdentityReferenceObjectClass -eq 'msPKI-Enterprise-Oid' -and (
-                                # Check is EA or SA are empty
-                                (Get-ADGroupMember -Identity 'Enterprise Admins' -Recursive ).count -eq 0 -or
-                                (Get-ADGroupMember -Identity 'Schema Admins' -Recursive ).count -eq 0
-                            )
-                        ) {
-                            # Check is EA or SA are empty
-                            $Principals += $esc.IdentityReference
-                            $OtherObjectRisk += 2
-                            "Principals ($($CheckedESC5Templates.$name -join ', ')) are able to modify OID ($name) and AD Admin groups are empty: +$OtherObjectRisk"
+                        elseif ($OtherIssueIdentityReferenceObjectClass -eq 'group') {
+                            # Groups are more dangerous than individual principals.
+                            $Principals += $OtherIssue.IdentityReference.Value
+                            $OtherIssueRisk += 1
                         }
-                        $CheckedESC5Templates.$($esc.Name) = $Principals
+                        $CheckedESC5Templates.$($OtherIssue.Name) = $Principals
+                    } # forech ($OtherIssue)
+                    if ($OtherIssueRisk -ge 2) {
+                        $OtherIssueRisk = 2
                     }
+                    $RiskScoring += "Principals ($($CheckedESC5Templates.$($OtherIssue.Name) -join ', ')) are able to modify CA Host object ($name): +$OtherIssueRisk"
                 } # end foreach ($name...
-                if ($OtherObjectRisk -ge 2) {
-                    $OtherObjectRisk = 2
-                }
             } # end if ($ESC5Names)
-            $RiskValue += $OtherObjectRisk
+            $RiskValue += $OtherIssueRisk
         }
-
+        
         # ESC5 objectClass determines risk
         if ($Issue.Technique -eq 'ESC5') {
             if ($Issue.objectClass -eq 'certificationAuthority' -and $Issue.distinguishedName -like 'CN=NtAuthCertificates*') {
@@ -3343,13 +3341,17 @@ function Set-RiskRating {
                 $RiskScoring += 'NtAuthCertificates: +2'
             }
             switch ($Issue.objectClass) {
-                # Being able to modify CA Objects is very bad.
+                # Being able to modify Root CA Objects is very bad.
                 'certificationAuthority' {
-                    $RiskValue += 2; $RiskScoring += 'Certificate Authority Object: +2' 
+                    $RiskValue += 2; $RiskScoring += 'Root Certification Authority bject: +2' 
                 }
-                # Being able to modify CA Hosts is very bad.
+                # Being able to modify Issuing CA Objects is also very bad.
+                'pKIEnrollmentService' {
+                    $RiskValue += 2; $RiskScoring += 'Issuing Certification Authority Object: +2' 
+                }
+                # Being able to modify CA Hosts? Yeah... very bad.
                 'computer' {
-                    $RiskValue += 2; $RiskScoring += 'Certificate Authority Host Computer: +2' 
+                    $RiskValue += 2; $RiskScoring += 'Certification Authority Host Computer: +2' 
                 }
                 # Being able to modify OIDs could result in ESC13 vulns.
                 'msPKI-Enterprise-Oid' {
@@ -4322,7 +4324,7 @@ function Invoke-Locksmith {
         [System.Management.Automation.PSCredential]$Credential
     )
 
-    $Version = '2024.12.22'
+    $Version = '2024.12.23'
     $LogoPart1 = @"
     _       _____  _______ _     _ _______ _______ _____ _______ _     _
     |      |     | |       |____/  |______ |  |  |   |      |    |_____|

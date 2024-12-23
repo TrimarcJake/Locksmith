@@ -57,11 +57,17 @@
                     Enabled               = $_.Enabled
                     EnabledOn             = $_.EnabledOn
                     Issue                 = @"
-$($entry.IdentityReference) can use this template to request a Subordinate
-Certification Authority (SubCA) certificate without Manager Approval.
+$($entry.IdentityReference) can use this template to request any type
+of certificate - including Enrollment Agent certificates and Subordinate
+Certification Authority (SubCA) certificate - without Manager Approval.
 
-The resultant certificate can be used by an attacker to instantiate their own
-SubCA which is trusted by AD.
+If an attacker requests an Enrollment Agent certificate and there exists at least
+one enabled ESC3 Condition 2 or ESC15 template available that does not require
+Manager Approval, the attacker can request a certificate on behalf of another principal.
+The risk presented depends on the privileges granted to the other principal.
+
+If an attacker requests a SubCA certificate, the resultant certificate can be used
+by an attacker to instantiate their own SubCA which is trusted by AD.
 
 By default, certificates created from this attacker-controlled SubCA cannot be
 used for authentication, but they can be used for other purposes such as TLS

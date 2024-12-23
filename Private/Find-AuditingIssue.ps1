@@ -33,7 +33,8 @@
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        [array]$ADCSObjects
+        [array]$ADCSObjects,
+        [switch]$SkipRisk
     )
 
     $ADCSObjects | Where-Object {
