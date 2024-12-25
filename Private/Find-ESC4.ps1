@@ -21,7 +21,7 @@
         Specifies the list of SIDs of safe users who are allowed to have specific rights on the objects. This parameter is mandatory.
 
     .PARAMETER SafeObjectTypes
-        Specifices a list of ObjectTypes which are not a security concern. This parameter is mandatory.
+        Specifies a list of ObjectTypes which are not a security concern. This parameter is mandatory.
 
     .OUTPUTS
         The script outputs an array of custom objects representing the matching ADCS objects and their associated information.

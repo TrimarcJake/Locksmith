@@ -5,7 +5,7 @@
 
     .DESCRIPTION
         This script is used to revert changes performed by Locksmith.
-        It takes in various arrays of objects representing auditing issues and ESC misconfirugrations.
+        It takes in various arrays of objects representing auditing issues and ESC misconfigurations.
         It creates a new script called 'Invoke-RevertLocksmith.ps1' and adds the necessary commands
         to revert the changes made by Locksmith.
 

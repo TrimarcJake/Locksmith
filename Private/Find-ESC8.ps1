@@ -52,7 +52,7 @@ authentication to this HTTP endpoint.
 
 If the LAN Manager authentication level of any domain in this forest is 2 or
 less, an attacker can coerce authentication from a Domain Controller (DC) and
-relay it to this HTTP enrollment enpoint to receive a certificate which can be
+relay it to this HTTP enrollment endpoint to receive a certificate which can be
 used to authenticate as that DC.
 
 More info:
@@ -76,7 +76,7 @@ possible.
 
 If those protection are not in place, and the LAN Manager authentication level
 of any domain in this forest is 2 or less, an attacker can coerce authentication
-from a Domain Controller (DC) and relay it to this HTTPS enrollment enpoint to
+from a Domain Controller (DC) and relay it to this HTTPS enrollment endpoint to
 receive a certificate which can be used to authenticate as that DC.
 
 '@
