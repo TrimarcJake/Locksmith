@@ -652,11 +652,17 @@ function Find-ESC2 {
                     Enabled               = $_.Enabled
                     EnabledOn             = $_.EnabledOn
                     Issue                 = @"
-$($entry.IdentityReference) can use this template to request a Subordinate
-Certification Authority (SubCA) certificate without Manager Approval.
+$($entry.IdentityReference) can use this template to request any type
+of certificate - including Enrollment Agent certificates and Subordinate
+Certification Authority (SubCA) certificate - without Manager Approval.
 
-The resultant certificate can be used by an attacker to instantiate their own
-SubCA which is trusted by AD.
+If an attacker requests an Enrollment Agent certificate and there exists at least
+one enabled ESC3 Condition 2 or ESC15 template available that does not require
+Manager Approval, the attacker can request a certificate on behalf of another principal.
+The risk presented depends on the privileges granted to the other principal.
+
+If an attacker requests a SubCA certificate, the resultant certificate can be used
+by an attacker to instantiate their own SubCA which is trusted by AD.
 
 By default, certificates created from this attacker-controlled SubCA cannot be
 used for authentication, but they can be used for other purposes such as TLS
@@ -3291,8 +3297,8 @@ function Set-RiskRating {
             $RiskValue += $OtherTemplateRisk
         }
 
-        # ESC1, ESC4, and ESC15 templates are more dangerous if there's an ESC5 on one or more CA objects
-        if ($Issue.Technique -match 'ESC1|ESC4') {
+        # Disabled ESC1, ESC4, and ESC15 templates are more dangerous if there's an ESC5 on one or more CA objects
+        if ($Issue.Technique -match 'ESC1|ESC4' -and $Issue.Enabled -eq $false ) {
             $ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers -DangerousRights $DangerousRights -SafeOwners '-519$' -SafeObjectTypes $SafeObjectTypes -SkipRisk |
                 Where-Object { $_.objectClass -eq 'pKIEnrollmentService' }
             $ESC5Names = @(($ESC5 | Select-Object -Property Name -Unique).Name)
@@ -3332,7 +3338,7 @@ function Set-RiskRating {
             } # end if ($ESC5Names)
             $RiskValue += $OtherIssueRisk
         }
-        
+
         # ESC5 objectClass determines risk
         if ($Issue.Technique -eq 'ESC5') {
             if ($Issue.objectClass -eq 'certificationAuthority' -and $Issue.distinguishedName -like 'CN=NtAuthCertificates*') {
@@ -4324,7 +4330,7 @@ function Invoke-Locksmith {
         [System.Management.Automation.PSCredential]$Credential
     )
 
-    $Version = '2024.12.23'
+    $Version = '2024.12.25'
     $LogoPart1 = @"
     _       _____  _______ _     _ _______ _______ _____ _______ _     _
     |      |     | |       |____/  |______ |  |  |   |      |    |_____|
