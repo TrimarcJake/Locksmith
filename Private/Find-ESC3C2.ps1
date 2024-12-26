@@ -65,14 +65,14 @@ More info:
   - https://posts.specterops.io/certified-pre-owned-d95910965cd2
 
 "@
-                    Fix = @"
+                    Fix                   = @"
 First, eliminate unused Enrollment Agent templates.
 Then, tightly scope any Enrollment Agent templates that remain and:
 # Enable Manager Approval
 `$Object = `'$($_.DistinguishedName)`'
 Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 2}
 "@
-                    Revert = @"
+                    Revert                = @"
 # Disable Manager Approval
 `$Object = `'$($_.DistinguishedName)`'
 Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}

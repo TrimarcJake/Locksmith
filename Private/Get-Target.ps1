@@ -45,11 +45,10 @@
 
     if ($Forest) {
         $Targets = $Forest
-    }
-    elseif ($InputPath) {
+    } elseif ($InputPath) {
         $Targets = Get-Content $InputPath
     } else {
-        if ($Credential){
+        if ($Credential) {
             $Targets = (Get-ADForest -Credential $Credential).Name
         } else {
             $Targets = (Get-ADForest).Name

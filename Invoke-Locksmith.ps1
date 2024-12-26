@@ -49,7 +49,7 @@ function Export-RevertScript {
 
     .DESCRIPTION
         This script is used to revert changes performed by Locksmith.
-        It takes in various arrays of objects representing auditing issues and ESC misconfirugrations.
+        It takes in various arrays of objects representing auditing issues and ESC misconfigurations.
         It creates a new script called 'Invoke-RevertLocksmith.ps1' and adds the necessary commands
         to revert the changes made by Locksmith.
 
@@ -349,7 +349,7 @@ function Find-ESC11 {
                 Revert            = 'N/A'
             }
             if ($_.InterfaceFlag -eq 'No') {
-                $Issue.Issue = @"
+                $Issue.Issue = @'
 The IF_ENFORCEENCRYPTICERTREQUEST flag is disabled on this Certification
 Authority (CA). It is possible to relay NTLM authentication to the RPC interface
 of this CA.
@@ -361,12 +361,12 @@ receive a certificate which can be used to authenticate as that DC.
 More info:
   - https://blog.compass-security.com/2022/11/relaying-to-ad-certificate-services-over-rpc/
 
-"@
+'@
                 $Issue.Fix = @"
 # Enable the flag
 certutil -config $CAFullname -setreg CA\InterfaceFlags +IF_ENFORCEENCRYPTICERTREQUEST
 
-# Restart the Ceritification Authority service
+# Restart the Certificate Authority service
 Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
     Get-Service -Name `'certsvc`' | Restart-Service -Force
 }
@@ -375,7 +375,7 @@ Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
 # Disable the flag
 certutil -config $CAFullname -setreg CA\InterfaceFlags -IF_ENFORCEENCRYPTICERTREQUEST
 
-# Restart the Ceritification Authority service
+# Restart the Certificate Authority service
 Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
     Get-Service -Name `'certsvc`' | Restart-Service -Force
 }
@@ -902,7 +902,7 @@ function Find-ESC4 {
         Specifies the list of SIDs of safe users who are allowed to have specific rights on the objects. This parameter is mandatory.
 
     .PARAMETER SafeObjectTypes
-        Specifices a list of ObjectTypes which are not a security concern. This parameter is mandatory.
+        Specifies a list of ObjectTypes which are not a security concern. This parameter is mandatory.
 
     .OUTPUTS
         The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
@@ -1092,7 +1092,7 @@ function Find-ESC5 {
         Specifies the list of SIDs of safe users who are allowed to have specific rights on the objects. This parameter is mandatory.
 
     .PARAMETER SafeObjectTypes
-        Specifices a list of ObjectTypes which are not a security concern. This parameter is mandatory.
+        Specifies a list of ObjectTypes that are not a security concern. This parameter is mandatory.
 
     .OUTPUTS
         The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
@@ -1398,7 +1398,7 @@ More info:
 # Disable the flag
 certutil -config $CAFullname -setreg policy\EditFlags -EDITF_ATTRIBUTESUBJECTALTNAME2
 
-# Restart the Ceritification Authority service
+# Restart the Certificate Authority service
 Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
     Get-Service -Name `'certsvc`' | Restart-Service -Force
 }
@@ -1407,7 +1407,7 @@ Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
 # Enable the flag
 certutil -config $CAFullname -setreg policy\EditFlags +EDITF_ATTRIBUTESUBJECTALTNAME2
 
-# Restart the Ceritification Authority service
+# Restart the Certificate Authority service
 Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
     Get-Service -Name `'certsvc`' | Restart-Service -Force
 }
@@ -1475,7 +1475,7 @@ authentication to this HTTP endpoint.
 
 If the LAN Manager authentication level of any domain in this forest is 2 or
 less, an attacker can coerce authentication from a Domain Controller (DC) and
-relay it to this HTTP enrollment enpoint to receive a certificate which can be
+relay it to this HTTP enrollment endpoint to receive a certificate which can be
 used to authenticate as that DC.
 
 More info:
@@ -1499,7 +1499,7 @@ possible.
 
 If those protection are not in place, and the LAN Manager authentication level
 of any domain in this forest is 2 or less, an attacker can coerce authentication
-from a Domain Controller (DC) and relay it to this HTTPS enrollment enpoint to
+from a Domain Controller (DC) and relay it to this HTTPS enrollment endpoint to
 receive a certificate which can be used to authenticate as that DC.
 
 '@
@@ -1528,7 +1528,7 @@ function Find-ESC9 {
         Checks for ESC9 (No Security Extension) Vulnerability
 
     .DESCRIPTION
-        This function checks for certificate templates that contain the flag CT_CLAG_NO_SECURITY_EXTENSION (0x80000),
+        This function checks for certificate templates that contain the flag CT_FLAG_NO_SECURITY_EXTENSION (0x80000),
         which will likely make them vulnerable to ESC9. Another factor to check for ESC9 is the registry values on AD
         domain controllers that can help harden certificate based authentication for Kerberos and SChannel.
 
@@ -1536,7 +1536,7 @@ function Find-ESC9 {
         An ESC9 condition exists when:
 
         - the new msPKI-Enrollment-Flag value on a certificate contains the flag CT_FLAG_NO_SECURITY_EXTENSION (0x80000)
-        - AND an insecure regstry value is set on domain controllers:
+        - AND an insecure registry value is set on domain controllers:
 
           - the StrongCertificateBindingEnforcement registry value for Kerberos is not set to 2 (the default is 1) on domain controllers
             at HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Kdc
@@ -1602,7 +1602,7 @@ function Find-ESC9 {
 
     Import-Module ActiveDirectory
 
-    $templates = Get-ADObject -Filter { ObjectClass -eq "pKICertificateTemplate" } -Properties *
+    $templates = Get-ADObject -Filter { ObjectClass -eq 'pKICertificateTemplate' } -Properties *
     foreach ($template in $templates) {
         $name = $template.Name
 
@@ -1612,10 +1612,10 @@ function Find-ESC9 {
         $certificateNameFlag = $template.'msPKI-Certificate-Name-Flag'
 
         # Check if the template is vulnerable to ESC9
-        if ($subjectNameFlag -eq "Supply in the request" -and
-                ($subjectType -eq "User" -or $subjectType -eq "Computer") -and
+        if ($subjectNameFlag -eq 'Supply in the request' -and
+                ($subjectType -eq 'User' -or $subjectType -eq 'Computer') -and
             # 0x200 means a certificate needs to include a template name certificate extension
-            # 0x220 instructs the client to perform autoenrollment for the specified template
+            # 0x220 instructs the client to perform auto-enrollment for the specified template
                 ($enrollmentFlag -eq 0x200 -or $enrollmentFlag -eq 0x220) -and
             # 0x2 instructs the client to supply subject information in the certificate request (CT_FLAG_ENROLLEE_SUPPLIES_SUBJECT).
             #   This means that any user who is allowed to enroll in a certificate with this setting can request a certificate as any
@@ -1837,7 +1837,7 @@ function Get-RestrictedAdminModeSetting {
         Retrieves the current configuration of the Restricted Admin Mode setting.
 
     .DESCRIPTION
-        This script retrieves the current configuration of the Restricted Admin Mode setting from the registry. 
+        This script retrieves the current configuration of the Restricted Admin Mode setting from the registry.
         It checks if the DisableRestrictedAdmin value is set to '0' and the DisableRestrictedAdminOutboundCreds value is set to '1'.
         If both conditions are met, it returns $true; otherwise, it returns $false.
 
@@ -1925,6 +1925,7 @@ function Get-Target {
     }
     return $Targets
 }
+
 function Install-RSATADPowerShell {
     <#
     .SYNOPSIS
@@ -2067,9 +2068,9 @@ function Invoke-Remediation {
     }
     catch {
         Write-Warning 'Creation of Invoke-RevertLocksmith.ps1 failed.'
-        Write-Host "Continue with this operation? [Y] Yes " -NoNewline
-        Write-Host "[N] " -ForegroundColor Yellow -NoNewline
-        Write-Host "No: " -NoNewline
+        Write-Host 'Continue with this operation? [Y] Yes ' -NoNewline
+        Write-Host '[N] ' -ForegroundColor Yellow -NoNewline
+        Write-Host 'No: ' -NoNewline
         $WarningError = ''
         $WarningError = Read-Host
         if ($WarningError -like 'y') {
@@ -2094,9 +2095,9 @@ function Invoke-Remediation {
             Write-Host 'OPERATIONAL IMPACT:' -ForegroundColor White
             Write-Host "This change should have little to no impact on the AD CS environment.`n" -ForegroundColor Green
             Write-Host "If you continue, Locksmith will attempt to fix this issue.`n" -ForegroundColor Yellow
-            Write-Host "Continue with this operation? [Y] Yes " -NoNewline
-            Write-Host "[N] " -ForegroundColor Yellow -NoNewline
-            Write-Host "No: " -NoNewline
+            Write-Host 'Continue with this operation? [Y] Yes ' -NoNewline
+            Write-Host '[N] ' -ForegroundColor Yellow -NoNewline
+            Write-Host 'No: ' -NoNewline
             $WarningError = ''
             $WarningError = Read-Host
             if ($WarningError -like 'y') {
@@ -2121,15 +2122,15 @@ function Invoke-Remediation {
             Write-Host "$($_.Technique)`n"
             Write-Host 'ACTION TO BE PERFORMED:' -ForegroundColor White
             Write-Host "Locksmith will attempt to enable Manager Approval on the `"$($_.Name)`" template.`n"
-            Write-Host 'CCOMMAND(S) TO BE RUN:'
+            Write-Host 'COMMAND(S) TO BE RUN:'
             Write-Host 'PS> ' -NoNewline
             Write-Host "$($_.Fix)`n" -ForegroundColor Cyan
             Write-Host 'OPERATIONAL IMPACT:' -ForegroundColor White
             Write-Host "WARNING: This change could cause some services to stop working until certificates are approved.`n" -ForegroundColor Yellow
             Write-Host "If you continue, Locksmith will attempt to fix this issue.`n" -ForegroundColor Yellow
-            Write-Host "Continue with this operation? [Y] Yes " -NoNewline
-            Write-Host "[N] " -ForegroundColor Yellow -NoNewline
-            Write-Host "No: " -NoNewline
+            Write-Host 'Continue with this operation? [Y] Yes ' -NoNewline
+            Write-Host '[N] ' -ForegroundColor Yellow -NoNewline
+            Write-Host 'No: ' -NoNewline
             $WarningError = ''
             $WarningError = Read-Host
             if ($WarningError -like 'y') {
@@ -2160,9 +2161,9 @@ function Invoke-Remediation {
             Write-Host 'OPERATIONAL IMPACT:' -ForegroundColor White
             Write-Host "WARNING: This change could cause some services to stop working until certificates are approved.`n" -ForegroundColor Yellow
             Write-Host "If you continue, Locksmith will attempt to fix this issue.`n" -ForegroundColor Yellow
-            Write-Host "Continue with this operation? [Y] Yes " -NoNewline
-            Write-Host "[N] " -ForegroundColor Yellow -NoNewline
-            Write-Host "No: " -NoNewline
+            Write-Host 'Continue with this operation? [Y] Yes ' -NoNewline
+            Write-Host '[N] ' -ForegroundColor Yellow -NoNewline
+            Write-Host 'No: ' -NoNewline
             $WarningError = ''
             $WarningError = Read-Host
             if ($WarningError -like 'y') {
@@ -2179,7 +2180,7 @@ function Invoke-Remediation {
         }
     }
     if ($ESC4) {
-        $ESC4 | Where-Object Issue -Like "* Owner rights *" | ForEach-Object { # This selector sucks - Jake
+        $ESC4 | Where-Object Issue -Like '* Owner rights *' | ForEach-Object { # This selector sucks - Jake
             $FixBlock = [scriptblock]::Create($_.Fix)
             Write-Host 'ISSUE:' -ForegroundColor White
             Write-Host "$($_.Issue)`n"
@@ -2193,9 +2194,9 @@ function Invoke-Remediation {
             Write-Host 'OPERATIONAL IMPACT:' -ForegroundColor White
             Write-Host "This change should have little to no impact on the AD CS environment.`n" -ForegroundColor Green
             Write-Host "If you continue, Locksmith will attempt to fix this issue.`n" -ForegroundColor Yellow
-            Write-Host "Continue with this operation? [Y] Yes " -NoNewline
-            Write-Host "[N] " -ForegroundColor Yellow -NoNewline
-            Write-Host "No: " -NoNewline
+            Write-Host 'Continue with this operation? [Y] Yes ' -NoNewline
+            Write-Host '[N] ' -ForegroundColor Yellow -NoNewline
+            Write-Host 'No: ' -NoNewline
             $WarningError = ''
             $WarningError = Read-Host
             if ($WarningError -like 'y') {
@@ -2212,7 +2213,7 @@ function Invoke-Remediation {
         }
     }
     if ($ESC5) {
-        $ESC5 | Where-Object Issue -Like "* Owner rights *" | ForEach-Object { # TODO This selector sucks - Jake
+        $ESC5 | Where-Object Issue -Like '* Owner rights *' | ForEach-Object { # TODO This selector sucks - Jake
             $FixBlock = [scriptblock]::Create($_.Fix)
             Write-Host 'ISSUE:' -ForegroundColor White
             Write-Host "$($_.Issue)`n"
@@ -2226,9 +2227,9 @@ function Invoke-Remediation {
             Write-Host 'OPERATIONAL IMPACT:' -ForegroundColor White
             Write-Host "This change should have little to no impact on the AD CS environment.`n" -ForegroundColor Green
             Write-Host "If you continue, Locksmith will attempt to fix this issue.`n" -ForegroundColor Yellow
-            Write-Host "Continue with this operation? [Y] Yes " -NoNewline
-            Write-Host "[N] " -ForegroundColor Yellow -NoNewline
-            Write-Host "No: " -NoNewline
+            Write-Host 'Continue with this operation? [Y] Yes ' -NoNewline
+            Write-Host '[N] ' -ForegroundColor Yellow -NoNewline
+            Write-Host 'No: ' -NoNewline
             $WarningError = ''
             $WarningError = Read-Host
             if ($WarningError -like 'y') {
@@ -2252,7 +2253,7 @@ function Invoke-Remediation {
             Write-Host 'TECHNIQUE:' -ForegroundColor White
             Write-Host "$($_.Technique)`n"
             Write-Host 'ACTION TO BE PERFORMED:' -ForegroundColor White
-            Write-Host "Locksmith will attempt to disable the EDITF_ATTRIBUTESUBJECTALTNAME2 flag on Certifiction Authority `"$($_.Name)`".`n"
+            Write-Host "Locksmith will attempt to disable the EDITF_ATTRIBUTESUBJECTALTNAME2 flag on the Certificate Authority `"$($_.Name)`".`n"
             Write-Host 'COMMAND(S) TO BE RUN' -ForegroundColor White
             Write-Host 'PS> ' -NoNewline
             Write-Host "$($_.Fix)`n" -ForegroundColor Cyan
@@ -2260,9 +2261,9 @@ function Invoke-Remediation {
             Write-Host 'OPERATIONAL IMPACT:' -ForegroundColor White
             Write-Host "WARNING: This change could cause some services to stop working.`n" -ForegroundColor Yellow
             Write-Host "If you continue, Locksmith will attempt to fix this issue.`n" -ForegroundColor Yellow
-            Write-Host "Continue with this operation? [Y] Yes " -NoNewline
-            Write-Host "[N] " -ForegroundColor Yellow -NoNewline
-            Write-Host "No: " -NoNewline
+            Write-Host 'Continue with this operation? [Y] Yes ' -NoNewline
+            Write-Host '[N] ' -ForegroundColor Yellow -NoNewline
+            Write-Host 'No: ' -NoNewline
             $WarningError = ''
             $WarningError = Read-Host
             if ($WarningError -like 'y') {
@@ -2287,7 +2288,7 @@ function Invoke-Remediation {
             Write-Host 'TECHNIQUE:' -ForegroundColor White
             Write-Host "$($_.Technique)`n"
             Write-Host 'ACTION TO BE PERFORMED:' -ForegroundColor White
-            Write-Host "Locksmith will attempt to enable the IF_ENFORCEENCRYPTICERTREQUEST flag on Certifiction Authority `"$($_.Name)`".`n"
+            Write-Host "Locksmith will attempt to enable the IF_ENFORCEENCRYPTICERTREQUEST flag on the Certificate Authority `"$($_.Name)`".`n"
             Write-Host 'COMMAND(S) TO BE RUN' -ForegroundColor White
             Write-Host 'PS> ' -NoNewline
             Write-Host "$($_.Fix)`n" -ForegroundColor Cyan
@@ -2295,9 +2296,9 @@ function Invoke-Remediation {
             Write-Host 'OPERATIONAL IMPACT:' -ForegroundColor White
             Write-Host "WARNING: This change could cause some services to stop working.`n" -ForegroundColor Yellow
             Write-Host "If you continue, Locksmith will attempt to fix this issue.`n" -ForegroundColor Yellow
-            Write-Host "Continue with this operation? [Y] Yes " -NoNewline
-            Write-Host "[N] " -ForegroundColor Yellow -NoNewline
-            Write-Host "No: " -NoNewline
+            Write-Host 'Continue with this operation? [Y] Yes ' -NoNewline
+            Write-Host '[N] ' -ForegroundColor Yellow -NoNewline
+            Write-Host 'No: ' -NoNewline
             $WarningError = ''
             $WarningError = Read-Host
             if ($WarningError -like 'y') {
@@ -2329,9 +2330,9 @@ function Invoke-Remediation {
             Write-Host 'OPERATIONAL IMPACT:' -ForegroundColor White
             Write-Host "WARNING: This change could cause some services to stop working until certificates are approved.`n" -ForegroundColor Yellow
             Write-Host "If you continue, Locksmith will attempt to fix this issue.`n" -ForegroundColor Yellow
-            Write-Host "Continue with this operation? [Y] Yes " -NoNewline
-            Write-Host "[N] " -ForegroundColor Yellow -NoNewline
-            Write-Host "No: " -NoNewline
+            Write-Host 'Continue with this operation? [Y] Yes ' -NoNewline
+            Write-Host '[N] ' -ForegroundColor Yellow -NoNewline
+            Write-Host 'No: ' -NoNewline
             $WarningError = ''
             $WarningError = Read-Host
             if ($WarningError -like 'y') {
@@ -2544,8 +2545,8 @@ descriptions, code used to find, code used to fix, and reference URLs. This is i
         Category        The high level category of VCI types, including escalation path, server configuration, GPO setting, etc.
         Subcategory     The subcategory of vulnerable configuration item types.
         Summary         A summary of the vulnerability and how it can be abused.
-        FindIt          The name of the function that is used to look for the VCI, stored as an invokable scriptblock.
-        FixIt           The name of the function that is used to fix the VCI, stored as an invokable scriptblock.
+        FindIt          The name of the function that is used to look for the VCI, stored as an invocable scriptblock.
+        FixIt           The name of the function that is used to fix the VCI, stored as an invocable scriptblock.
         ReferenceUrls   An array of URLs that are used as references to learn more about the VCI.
 #>
 
@@ -2568,7 +2569,7 @@ function New-Dictionary {
             Subcategory   = 'Vulnerable Client Authentication Templates'
             Summary       = ''
             FindIt        = { Find-ESC1 }
-            FixIt         = { Write-Output "Add code to fix the vulnerable configuration." }
+            FixIt         = { Write-Output 'Add code to fix the vulnerable configuration.' }
             ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Misconfigured%20Certificate%20Templates%20%E2%80%94%20ESC1'
         },
         [VulnerableConfigurationItem]@{
@@ -2593,7 +2594,7 @@ function New-Dictionary {
             ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Enrollment%20Agent%20Templates%20%E2%80%94%20ESC3'
         },
         [VulnerableConfigurationItem]@{
-            Name          = 'ESC4';
+            Name          = 'ESC4'
             Category      = 'Escalation Path'
             Subcategory   = 'Certificate Templates with Vulnerable Access Controls'
             Summary       = ''
@@ -2602,7 +2603,7 @@ function New-Dictionary {
             ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Vulnerable%20Certificate%20Template%20Access%20Control%20%E2%80%94%20ESC4'
         },
         [VulnerableConfigurationItem]@{
-            Name          = 'ESC5';
+            Name          = 'ESC5'
             Category      = 'Escalation Path'
             Subcategory   = 'PKI Objects with Vulnerable Access Control'
             Summary       = ''
@@ -3451,10 +3452,10 @@ function Test-IsADAdmin {
          ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole("Administrators") -or
          ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole("Enterprise Admins")
     ) {
-        Return $true
+        return $true
     }
     else {
-        Return $false
+        return $false
     }
 }
 
@@ -3471,7 +3472,7 @@ function Test-IsElevated {
     .EXAMPLE
         # Prompt to launch elevated if not already running as administrator:
         if (!(Test-IsElevated)) {
-            $arguments = "& '" + $myinvocation.mycommand.definition + "'"
+            $arguments = "& '" + $MyInvocation.MyCommand.definition + "'"
             Start-Process powershell -Verb runAs -ArgumentList $arguments
             Break
         }
@@ -3480,6 +3481,7 @@ function Test-IsElevated {
     $principal = New-Object Security.Principal.WindowsPrincipal $identity
     $principal.IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
 }
+
 function Test-IsLocalAccountSession {
     <#
     .SYNOPSIS
@@ -4330,7 +4332,7 @@ function Invoke-Locksmith {
         [System.Management.Automation.PSCredential]$Credential
     )
 
-    $Version = '2024.12.25'
+    $Version = '2024.12.26'
     $LogoPart1 = @"
     _       _____  _______ _     _ _______ _______ _____ _______ _     _
     |      |     | |       |____/  |______ |  |  |   |      |    |_____|

@@ -67,7 +67,7 @@ More info:
   - https://msrc.microsoft.com/update-guide/vulnerability/CVE-2024-49019
 
 "@
-                            Fix                   = @"
+                    Fix                   = @"
 <#
     Option 1: Manual Remediation
     Step 1: Identify if this template is Enabled on any CA.

@@ -26,7 +26,7 @@
         [System.Management.Automation.PSCredential]$Credential
     )
     foreach ( $forest in $Targets ) {
-        if ($Credential){
+        if ($Credential) {
             $ADRoot = (Get-ADRootDSE -Credential $Credential -Server $forest).defaultNamingContext
             Get-ADObject -Filter * -SearchBase "CN=Public Key Services,CN=Services,CN=Configuration,$ADRoot" -SearchScope 2 -Properties * -Credential $Credential
         } else {

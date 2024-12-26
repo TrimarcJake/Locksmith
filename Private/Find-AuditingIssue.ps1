@@ -61,8 +61,8 @@ Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
 "@
         }
         if ($_.AuditFilter -match 'CA Unavailable') {
-            $Issue.Issue  = $_.AuditFilter
-            $Issue.Fix    = 'N/A'
+            $Issue.Issue = $_.AuditFilter
+            $Issue.Fix = 'N/A'
             $Issue.Revert = 'N/A'
         }
         if ($SkipRisk -eq $false) {

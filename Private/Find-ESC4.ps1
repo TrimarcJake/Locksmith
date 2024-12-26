@@ -123,8 +123,8 @@ Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
                 Technique             = 'ESC4'
             }
             if ($SkipRisk -eq $false) {
-                    Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
-                }
+                Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+            }
             $Issue
         }
 

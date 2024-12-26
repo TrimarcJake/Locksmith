@@ -161,8 +161,8 @@ Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL"
                 Technique             = 'ESC5'
             } # end switch ($_.objectClass)
             if ($SkipRisk -eq $false) {
-                    Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
-                }
+                Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+            }
             $Issue
         } # end if ( ($_.objectClass -ne 'pKICertificateTemplate') -and ($SID -notmatch $SafeOwners) )
 

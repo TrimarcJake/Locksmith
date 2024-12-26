@@ -65,37 +65,37 @@ function Format-Result {
         if ($Mode -eq 0) {
             # TODO Refactor this
             switch ($UniqueIssue) {
-                {$_ -in @('DETECT','ESC6','ESC8','ESC11')} {
+                { $_ -in @('DETECT', 'ESC6', 'ESC8', 'ESC11') } {
                     $Issue |
-                        Format-Table Technique, @{l='CA Name';e={$_.Name}}, @{l='Risk';e={$_.RiskName}}, Issue -Wrap |
-                        Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
+                    Format-Table Technique, @{l = 'CA Name'; e = { $_.Name } }, @{l = 'Risk'; e = { $_.RiskName } }, Issue -Wrap |
+                    Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
                 }
-                {$_ -in @('ESC1','ESC2','ESC3','ESC4','ESC13','ESC15/EKUwu')} {
+                { $_ -in @('ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC13', 'ESC15/EKUwu') } {
                     $Issue |
-                        Format-Table Technique, @{l='Template Name';e={$_.Name}}, @{l='Risk';e={$_.RiskName}}, Enabled, Issue -Wrap |
-                        Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
+                    Format-Table Technique, @{l = 'Template Name'; e = { $_.Name } }, @{l = 'Risk'; e = { $_.RiskName } }, Enabled, Issue -Wrap |
+                    Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
                 }
                 'ESC5' {
                     $Issue |
-                        Format-Table Technique, @{l='Object Name';e={$_.Name}}, @{l='Risk';e={$_.RiskName}}, Issue -Wrap |
-                        Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
+                    Format-Table Technique, @{l = 'Object Name'; e = { $_.Name } }, @{l = 'Risk'; e = { $_.RiskName } }, Issue -Wrap |
+                    Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
                 }
             }
         } elseif ($Mode -eq 1) {
             switch ($UniqueIssue) {
-                {$_ -in @('DETECT','ESC6','ESC8','ESC11')} {
+                { $_ -in @('DETECT', 'ESC6', 'ESC8', 'ESC11') } {
                     $Issue |
-                        Format-List Technique, @{l='CA Name';e={$_.Name}}, @{l='Risk';e={$_.RiskName}}, DistinguishedName, Issue, Fix, @{l='Risk Score';e={$_.RiskValue}}, @{l='Risk Score Detail';e={$_.RiskScoring -join "`n"}} |
-                        Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
+                    Format-List Technique, @{l = 'CA Name'; e = { $_.Name } }, @{l = 'Risk'; e = { $_.RiskName } }, DistinguishedName, Issue, Fix, @{l = 'Risk Score'; e = { $_.RiskValue } }, @{l = 'Risk Score Detail'; e = { $_.RiskScoring -join "`n" } } |
+                    Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
                 }
-                {$_ -in @('ESC1','ESC2','ESC3','ESC4','ESC13','ESC15/EKUwu')} {
+                { $_ -in @('ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC13', 'ESC15/EKUwu') } {
                     $Issue |
-                        Format-List Technique, @{l='Template Name';e={$_.Name}}, @{l='Risk';e={$_.RiskName}}, DistinguishedName, Enabled, EnabledOn, Issue, Fix, @{l='Risk Score';e={$_.RiskValue}}, @{l='Risk Score Detail';e={$_.RiskScoring -join "`n"}} |
-                        Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
+                    Format-List Technique, @{l = 'Template Name'; e = { $_.Name } }, @{l = 'Risk'; e = { $_.RiskName } }, DistinguishedName, Enabled, EnabledOn, Issue, Fix, @{l = 'Risk Score'; e = { $_.RiskValue } }, @{l = 'Risk Score Detail'; e = { $_.RiskScoring -join "`n" } } |
+                    Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
                 }
                 'ESC5' {
                     $Issue |
-                    Format-List Technique, @{l='Object Name';e={$_.Name}}, @{l='Risk';e={$_.RiskName}}, DistinguishedName, objectClass, Issue, Fix, @{l='Risk Score';e={$_.RiskValue}}, @{l='Risk Score Detail';e={$_.RiskScoring -join "`n"}} |
+                    Format-List Technique, @{l = 'Object Name'; e = { $_.Name } }, @{l = 'Risk'; e = { $_.RiskName } }, DistinguishedName, objectClass, Issue, Fix, @{l = 'Risk Score'; e = { $_.RiskValue } }, @{l = 'Risk Score Detail'; e = { $_.RiskScoring -join "`n" } } |
                     Write-HostColorized -PatternColorMap $RiskTable -CaseSensitive
                 }
             }

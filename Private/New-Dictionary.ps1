@@ -51,11 +51,11 @@ function New-Dictionary {
             ReferenceUrls = 'https://posts.specterops.io/certified-pre-owned-d95910965cd2#:~:text=Misconfigured%20Certificate%20Templates%20%E2%80%94%20ESC2'
         },
         [VulnerableConfigurationItem]@{
-            Name = 'ESC3'
-            Category = 'Escalation Path'
-            Subcategory = 'Vulnerable Enrollment Agent Templates'
-            Summary = ''
-            FindIt =  {
+            Name          = 'ESC3'
+            Category      = 'Escalation Path'
+            Subcategory   = 'Vulnerable Enrollment Agent Templates'
+            Summary       = ''
+            FindIt        = {
                 Find-ESC3C1
                 Find-ESC3C2
             }
