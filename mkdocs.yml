@@ -1,0 +1,91 @@
+# https://www.mkdocs.org/user-guide/configuration/
+# https://www.mkdocs.org/user-guide/writing-your-docs/
+# https://www.mkdocs.org/user-guide/writing-your-docs/#writing-with-markdown
+# https://mkdocs.readthedocs.io/en/0.15.2/user-guide/writing-your-docs/
+# https://mkdocs.readthedocs.io/en/0.15.2/user-guide/styling-your-docs/
+# https://example-mkdocs-basic.readthedocs.io/en/latest/
+# https://github.com/mkdocs/mkdocs/blob/master/mkdocs.yml
+# https://squidfunk.github.io/mkdocs-material/creating-your-site/
+# mkdocs.yml
+
+site_name: "Locksmith"
+site_url: "https://dotdot.horse/Locksmith"
+repo_url: "https://github.com/TrimarcJake/Locksmith"
+repo_name: "TrimarcJake/Locksmith"
+# edit_uri: edit/main/docs/
+# edit_uri_template:
+site_description: "A small tool to find and fix common misconfigurations in Active Directory Certificate Services." # meta tag to the generated HTML heade
+site_author: "Jake Hildreth" # meta tag to the generated HTML header
+copyright: "(c) 2024 Jake Hildreth."
+# remote_branch: gh-deploy
+# remote_name:
+docs_dir: "docs"
+# site_dir:
+# extra_css:
+# extra_javascript:
+# markdown_extensions:
+# Python Markdown
+# - admonition
+# - toc:
+#     permalink: true
+# code highlighting
+# - pymdownx.highlight:
+#     use_pygments: true
+# - pymdownx.highlight:
+#     anchor_linenums: true
+# - pymdownx.inlinehilite
+# - pymdownx.snippets
+# - pymdownx.superfences
+
+# extra_templates:
+# extra:
+
+#plugins:
+#  - social
+
+theme:
+  name: material
+  highlightjs: true
+  hljs_languages:
+    - yaml
+    - powershell
+  palette:
+    # Palette toggle for automatic mode
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+
+  language: en
+  # custom_dir: overrides
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.path
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.tracking
+    - navigation.sections
+    - navigation.top
+    - toc.follow
+    - toc.integrate
+  # favicon:
+  # icon:
+  #   repo:
+  # font:
+  #   text: Work Sans
+  # logo:

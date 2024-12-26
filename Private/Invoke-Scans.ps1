@@ -101,15 +101,15 @@ function Invoke-Scans {
         }
         ESC13 {
             Write-Host 'Identifying AD CS templates with dangerous ESC13 configurations...'
-            [array]$ESC11 = Find-ESC13 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEKUs -UnsafeUsers $UnsafeUsers
+            [array]$ESC13 = Find-ESC13 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEKUs
         }
         ESC15 {
             Write-Host 'Identifying AD CS templates with dangerous ESC15/EKUwu configurations...'
-            [array]$ESC11 = Find-ESC15 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+            [array]$ESC15 = Find-ESC15 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
         }
         EKUwu {
             Write-Host 'Identifying AD CS templates with dangerous ESC15/EKUwu configurations...'
-            [array]$ESC11 = Find-ESC15 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+            [array]$ESC15 = Find-ESC15 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
         }
         All {
             Write-Host 'Identifying auditing issues...'
