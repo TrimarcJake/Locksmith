@@ -115,7 +115,7 @@ Build-Module -ModuleName 'Locksmith' {
 
     New-ConfigurationImportModule -ImportSelf #-ImportRequiredModules
 
-    New-ConfigurationBuild -Enable:$true -SignModule:$false -DeleteTargetModuleBeforeBuild -MergeModuleOnBuild -UseWildcardForFunctions
+    New-ConfigurationBuild -Enable:$true -SignModule:$false -DeleteTargetModuleBeforeBuild -MergeModuleOnBuild #-UseWildcardForFunctions
 
     $PreScriptMerge = {
         param (
