@@ -150,7 +150,7 @@ function Invoke-Scans {
 
     # Return a hash table of array names (keys) and arrays (values) so they can be directly referenced with other functions
     return @{
-        # AllIssues      = $AllIssues
+        AllIssues      = $AllIssues
         AuditingIssues = $AuditingIssues
         ESC1           = $ESC1
         ESC2           = $ESC2
