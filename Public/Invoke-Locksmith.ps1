@@ -163,14 +163,9 @@ function Invoke-Locksmith {
     $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
 
     <#
-        -512$ = Domain Admins group
         -519$ = Enterprise Admins group
-        -544$ = Administrators group
-        -18$  = SYSTEM
-        -517$ = Cert Publishers
-        -500$ = Built-in Administrator
     #>
-    $SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$'
+    $SafeOwners = '-519$'
 
     <#
         -512$    = Domain Admins group
@@ -270,6 +265,7 @@ function Invoke-Locksmith {
         Mode               = $Mode
         SafeObjectTypes    = $SafeObjectTypes
         SafeOwners         = $SafeOwners
+        SafeUsers          = $SafeUsers
         Scans              = $Scans
         UnsafeUsers        = $UnsafeUsers
         PreferredOwner     = $PreferredOwner

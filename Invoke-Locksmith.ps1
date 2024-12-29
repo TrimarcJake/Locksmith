@@ -159,7 +159,7 @@ function Find-AuditingIssue {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        [array]$ADCSObjects,
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
         [switch]$SkipRisk
     )
 
@@ -223,7 +223,7 @@ function Find-ESC1 {
     .EXAMPLE
         $Targets = Get-Target
         $ADCSObjects = Get-ADCSObject -Targets $Targets
-        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-9$|-526$|-527$|S-1-5-10'
         $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
         $Results = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEKUs
         $Results
@@ -231,14 +231,15 @@ function Find-ESC1 {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        [array]$ADCSObjects,
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
         [Parameter(Mandatory)]
         [string]$SafeUsers,
         [Parameter(Mandatory)]
         $ClientAuthEKUs,
         [Parameter(Mandatory)]
         [int]$Mode,
-        $UnsafeUsers,
+        [Parameter(Mandatory)]
+        [string]$UnsafeUsers,
         [switch]$SkipRisk
     )
     $ADCSObjects | Where-Object {
@@ -329,8 +330,9 @@ function Find-ESC11 {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        $ADCSObjects,
-        $UnsafeUsers,
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
+        [Parameter(Mandatory)]
+        [string]$UnsafeUsers,
         [switch]$SkipRisk
     )
     process {
@@ -413,7 +415,7 @@ function Find-ESC13 {
 
     .EXAMPLE
         $ADCSObjects = Get-ADCSObjects
-        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-9$|-526$|-527$|S-1-5-10'
         $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
         $Results = $ADCSObjects | Find-ESC13 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEKUs
         $Results
@@ -425,8 +427,9 @@ function Find-ESC13 {
         [Parameter(Mandatory)]
         [string]$SafeUsers,
         [Parameter(Mandatory)]
-        $ClientAuthEKUs,
-        $UnsafeUsers,
+        [string]$ClientAuthEKUs,
+        [Parameter(Mandatory)]
+        [string]$UnsafeUsers,
         [switch]$SkipRisk
     )
 
@@ -512,7 +515,7 @@ function Find-ESC15 {
     .EXAMPLE
         $Targets = Get-Target
         $ADCSObjects = Get-ADCSObjects -Targets $Targets
-        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-9$|-526$|-527$|S-1-5-10'
         $Results = Find-ESC15 -ADCSObjects $ADCSObjects -SafeUser $SafeUsers
         $Results
     #>
@@ -520,10 +523,11 @@ function Find-ESC15 {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        [array]$ADCSObjects,
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
         [Parameter(Mandatory)]
-        $SafeUsers,
-        $UnsafeUsers,
+        [string]$SafeUsers,
+        [Parameter(Mandatory)]
+        [string]$UnsafeUsers,
         [switch]$SkipRisk
     )
     $ADCSObjects | Where-Object {
@@ -613,18 +617,18 @@ function Find-ESC2 {
 
     .EXAMPLE
         $ADCSObjects = Get-ADCSObjects
-        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-9$|-526$|-527$|S-1-5-10'
         $Results = $ADCSObjects | Find-ESC2 -SafeUsers $SafeUsers
         $Results
     #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        [array]$ADCSObjects,
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
         [Parameter(Mandatory)]
         [string]$SafeUsers,
         [Parameter(Mandatory)]
-        $UnsafeUsers,
+        [string]$UnsafeUsers,
         [switch]$SkipRisk
     )
     $ADCSObjects | Where-Object {
@@ -717,17 +721,18 @@ function Find-ESC3C1 {
 
     .EXAMPLE
         $ADCSObjects = Get-ADCSObjects
-        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-9$|-526$|-527$|S-1-5-10'
         $Results = $ADCSObjects | Find-ESC3C1 -SafeUsers $SafeUsers
         $Results
     #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        [array]$ADCSObjects,
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
         [Parameter(Mandatory)]
         [string]$SafeUsers,
-        $UnsafeUsers,
+        [Parameter(Mandatory)]
+        [string]$UnsafeUsers,
         [switch]$SkipRisk
     )
     $ADCSObjects | Where-Object {
@@ -808,17 +813,18 @@ function Find-ESC3C2 {
 
     .EXAMPLE
         $ADCSObjects = Get-ADCSObject -Targets (Get-Target)
-        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-9$|-526$|-527$|S-1-5-10'
         $Results = $ADCSObjects | Find-ESC3C2 -SafeUsers $SafeUsers
         $Results
     #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        [array]$ADCSObjects,
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
         [Parameter(Mandatory)]
         [string]$SafeUsers,
-        $UnsafeUsers,
+        [Parameter(Mandatory)]
+        [string]$UnsafeUsers,
         [switch]$SkipRisk
     )
     $ADCSObjects | Where-Object {
@@ -895,9 +901,6 @@ function Find-ESC4 {
     .PARAMETER DangerousRights
         Specifies the list of dangerous rights that should not be assigned to users. This parameter is mandatory.
 
-    .PARAMETER SafeOwners
-        Specifies the list of SIDs of safe owners who are allowed to have owner rights on the objects. This parameter is mandatory.
-
     .PARAMETER SafeUsers
         Specifies the list of SIDs of safe users who are allowed to have specific rights on the objects. This parameter is mandatory.
 
@@ -929,11 +932,12 @@ function Find-ESC4 {
         # -517$    = Cert Publishers
         # -500$    = Built-in Administrator
         # -516$    = Domain Controllers
+        # -521$    = Read-Only Domain Controllers
         # -9$      = Enterprise Domain Controllers
         # -526$    = Key Admins
         # -527$    = Enterprise Key Admins
         # S-1-5-10 = SELF
-        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-9$|-526$|-527$|S-1-5-10'
 
         # The well-known GUIDs for Enroll and AutoEnroll rights on AD CS templates.
         $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
@@ -947,18 +951,19 @@ function Find-ESC4 {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        $ADCSObjects,
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
         [Parameter(Mandatory)]
-        $DangerousRights,
+        [string]$DangerousRights,
         [Parameter(Mandatory)]
-        $SafeOwners,
+        [string]$SafeOwners,
         [Parameter(Mandatory)]
-        $SafeUsers,
+        [string]$SafeUsers,
         [Parameter(Mandatory)]
-        $SafeObjectTypes,
+        [string]$SafeObjectTypes,
         [Parameter(Mandatory)]
         [int]$Mode,
-        $UnsafeUsers,
+        [Parameter(Mandatory)]
+        [string]$UnsafeUsers,
         [switch]$SkipRisk
     )
     $ADCSObjects | Where-Object objectClass -EQ 'pKICertificateTemplate' | ForEach-Object {
@@ -1119,11 +1124,12 @@ function Find-ESC5 {
         # -517$    = Cert Publishers
         # -500$    = Built-in Administrator
         # -516$    = Domain Controllers
+        # -521$    = Read-Only Domain Controllers
         # -9$      = Enterprise Domain Controllers
         # -526$    = Key Admins
         # -527$    = Enterprise Key Admins
         # S-1-5-10 = SELF
-        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-9$|-526$|-527$|S-1-5-10'
 
         # The well-known GUIDs for Enroll and AutoEnroll rights on AD CS templates.
         $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
@@ -1133,16 +1139,17 @@ function Find-ESC5 {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        $ADCSObjects,
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
         [Parameter(Mandatory)]
-        $DangerousRights,
+        [string]$DangerousRights,
         [Parameter(Mandatory)]
-        $SafeOwners,
+        [string]$SafeOwners,
         [Parameter(Mandatory)]
-        $SafeUsers,
+        [string]$SafeUsers,
         [Parameter(Mandatory)]
-        $SafeObjectTypes,
-        $UnsafeUsers,
+        [string]$SafeObjectTypes,
+        [Parameter(Mandatory)]
+        [string]$UnsafeUsers,
         [switch]$SkipRisk
     )
     $ADCSObjects | ForEach-Object {
@@ -1358,8 +1365,9 @@ function Find-ESC6 {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        $ADCSObjects,
-        $UnsafeUsers,
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
+        [Parameter(Mandatory)]
+        [string]$UnsafeUsers,
         [switch]$SkipRisk
     )
     process {
@@ -1453,8 +1461,9 @@ function Find-ESC8 {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        $ADCSObjects,
-        $UnsafeUsers,
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
+        [Parameter(Mandatory)]
+        [string]$UnsafeUsers,
         [switch]$SkipRisk
     )
 
@@ -1570,8 +1579,9 @@ function Find-ESC9 {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        $ADCSObjects,
-        $UnsafeUsers,
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
+        [Parameter(Mandatory)]
+        [string]$UnsafeUsers,
         [switch]$SkipRisk
     )
 
@@ -1813,7 +1823,7 @@ function Get-CAHostObject {
         [parameter(
             Mandatory = $true,
             ValueFromPipeline = $true)]
-        [array]$ADCSObjects,
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
         [System.Management.Automation.PSCredential]$Credential,
         $ForestGC
     )
@@ -2396,17 +2406,27 @@ function Invoke-Scans {
     param (
         # Could split Scans and PromptMe into separate parameter sets.
         [Parameter(Mandatory)]
-        $ADCSObjects,
-        $ClientAuthEkus,
-        $DangerousRights,
-        $EnrollmentAgentEKU,
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
+        [Parameter(Mandatory)]
+        [string]$ClientAuthEkus,
+        [Parameter(Mandatory)]
+        [string]$DangerousRights,
+        [Parameter(Mandatory)]
+        [string]$EnrollmentAgentEKU,
+        [Parameter(Mandatory)]
         [int]$Mode,
-        $SafeObjectTypes,
-        $SafeOwners,
+        [Parameter(Mandatory)]
+        [string]$SafeObjectTypes,
+        [Parameter(Mandatory)]
+        [string]$SafeUsers,
+        [Parameter(Mandatory)]
+        [string]$SafeOwners,
         [ValidateSet('Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'ESC11', 'ESC13', 'ESC15', 'EKUwu', 'All', 'PromptMe')]
         [array]$Scans = 'All',
-        $UnsafeUsers,
-        $PreferredOwner
+        [Parameter(Mandatory)]
+        [string]$UnsafeUsers,
+        [Parameter(Mandatory)]
+        [System.Security.Principal.SecurityIdentifier]$PreferredOwner
     )
 
     if ( $Scans -eq 'PromptMe' ) {
@@ -2757,7 +2777,7 @@ function Set-AdditionalCAProperty {
         [parameter(
             Mandatory = $true,
             ValueFromPipeline = $true)]
-        [array]$ADCSObjects,
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
         [PSCredential]$Credential,
         $ForestGC
     )
@@ -2971,7 +2991,7 @@ function Set-AdditionalTemplateProperty {
     [CmdletBinding(SupportsShouldProcess)]
     param (
         [parameter(Mandatory, ValueFromPipeline)]
-        [array]$ADCSObjects
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects
     )
 
     $ADCSObjects | Where-Object objectClass -Match 'pKICertificateTemplate' -PipelineVariable template | ForEach-Object {
@@ -3017,7 +3037,7 @@ function Set-RiskRating {
         $ADCSObjects = Get-ADCSObject -Targets $Targets
         $DangerousRights = @('GenericAll', 'WriteProperty', 'WriteOwner', 'WriteDacl')
         $SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$'
-        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-9$|-526$|-527$|S-1-5-10'
         $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
         $ESC4Issues = Find-ESC4 -ADCSObjects $ADCSObjects -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeUsers $SafeUsers -SafeObjectTypes $SafeObjectTypes -Mode 1
         foreach ($issue in $ESC4Issues) {
@@ -3030,10 +3050,14 @@ function Set-RiskRating {
     #>
     [CmdletBinding()]
     param (
-        $Issue,
-        $ADCSObjects,
-        $SafeUsers,
-        $UnsafeUsers
+        [Parameter(Mandatory)]
+        [object]$Issue,
+        [Parameter(Mandatory)]
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
+        [Parameter(Mandatory)]
+        [string]$SafeUsers,
+        [Parameter(Mandatory)]
+        [string]$UnsafeUsers
     )
 
     #requires -Version 5
@@ -3298,8 +3322,8 @@ function Set-RiskRating {
             $RiskValue += $OtherTemplateRisk
         }
 
-        # Disabled ESC1, ESC4, and ESC15 templates are more dangerous if there's an ESC5 on one or more CA objects
-        if ($Issue.Technique -match 'ESC1|ESC4' -and $Issue.Enabled -eq $false ) {
+        # Disabled ESC1, ESC2, ESC3, ESC4, and ESC15 templates are more dangerous if there's an ESC5 on one or more CA objects
+        if ($Issue.Technique -match 'ESC1|ESC2|ESC3|ESC4' -and $Issue.Enabled -eq $false ) {
             $ESC5 = Find-ESC5 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers -DangerousRights $DangerousRights -SafeOwners '-519$' -SafeObjectTypes $SafeObjectTypes -SkipRisk |
                 Where-Object { $_.objectClass -eq 'pKIEnrollmentService' }
             $ESC5Names = @(($ESC5 | Select-Object -Property Name -Unique).Name)
@@ -3531,6 +3555,7 @@ function Test-IsMemberOfProtectedUsers {
             Boolean
     #>
 
+
     [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Justification = 'The name of the group we are checking is plural.')]
     [OutputType([Boolean])]
     [CmdletBinding()]
@@ -3721,13 +3746,14 @@ function Update-ESC1Remediation {
     .EXAMPLE
         $Targets = Get-Target
         $ADCSObjects = Get-ADCSObject -Targets $Targets
-        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-9$|-526$|-527$|S-1-5-10'
         $ESC1Issues = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
         foreach ($issue in $ESC1Issues) { Update-ESC1Remediation -Issue $Issue }
     #>
     [CmdletBinding()]
     param(
-        $Issue
+        [Parameter(Mandatory)]
+        [object]$Issue
     )
 
     $Header = "`n[!] ESC1 Issue detected in $($Issue.Name)"
@@ -3828,14 +3854,15 @@ function Update-ESC4Remediation {
         $ADCSObjects = Get-ADCSObject -Targets $Targets
         $DangerousRights = @('GenericAll', 'WriteProperty', 'WriteOwner', 'WriteDacl')
         $SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$'
-        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-9$|-526$|-527$|S-1-5-10'
         $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
         $ESC4Issues = Find-ESC4 -ADCSObjects $ADCSObjects -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeUsers $SafeUsers -SafeObjectTypes $SafeObjectTypes -Mode 1
         foreach ($issue in $ESC4Issues) { Update-ESC4Remediation -Issue $Issue }
     #>
     [CmdletBinding()]
     param(
-        $Issue
+        [Parameter(Mandatory)]
+        [object]$Issue
     )
 
     $Header = "`n[!] ESC4 Issue detected in $($Issue.Name)"
@@ -4342,9 +4369,8 @@ function Invoke-Locksmith {
         [System.Management.Automation.PSCredential]$Credential
     )
 
-    $Version = '2024.12.27'
+    $Version = '2024.12.29'
     $LogoPart1 = @'
-
     _       _____  _______ _     _ _______ _______ _____ _______ _     _
     |      |     | |       |____/  |______ |  |  |   |      |    |_____|
     |_____ |_____| |_____  |    \_ ______| |  |  | __|__    |    |     |
@@ -4394,14 +4420,9 @@ function Invoke-Locksmith {
     $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
 
     <#
-        -512$ = Domain Admins group
         -519$ = Enterprise Admins group
-        -544$ = Administrators group
-        -18$  = SYSTEM
-        -517$ = Cert Publishers
-        -500$ = Built-in Administrator
     #>
-    $SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$'
+    $SafeOwners = '-519$'
 
     <#
         -512$    = Domain Admins group
@@ -4503,6 +4524,7 @@ function Invoke-Locksmith {
         Mode               = $Mode
         SafeObjectTypes    = $SafeObjectTypes
         SafeOwners         = $SafeOwners
+        SafeUsers          = $SafeUsers
         Scans              = $Scans
         UnsafeUsers        = $UnsafeUsers
         PreferredOwner     = $PreferredOwner

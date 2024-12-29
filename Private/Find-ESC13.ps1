@@ -22,7 +22,7 @@ function Find-ESC13 {
 
     .EXAMPLE
         $ADCSObjects = Get-ADCSObjects
-        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-9$|-526$|-527$|S-1-5-10'
         $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
         $Results = $ADCSObjects | Find-ESC13 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEKUs
         $Results
@@ -34,8 +34,9 @@ function Find-ESC13 {
         [Parameter(Mandatory)]
         [string]$SafeUsers,
         [Parameter(Mandatory)]
-        $ClientAuthEKUs,
-        $UnsafeUsers,
+        [string]$ClientAuthEKUs,
+        [Parameter(Mandatory)]
+        [string]$UnsafeUsers,
         [switch]$SkipRisk
     )
 
