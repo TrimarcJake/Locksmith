@@ -2392,7 +2392,7 @@ function Invoke-Scans {
 
     [CmdletBinding()]
     [OutputType([hashtable])]
-    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', 'Invoke-Scans', Justification = 'Performing multiple scans.')]
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Justification = 'Performing multiple scans.')]
     param (
         # Could split Scans and PromptMe into separate parameter sets.
         [Parameter(Mandatory)]
@@ -2466,15 +2466,15 @@ function Invoke-Scans {
         }
         ESC13 {
             Write-Host 'Identifying AD CS templates with dangerous ESC13 configurations...'
-            [array]$ESC11 = Find-ESC13 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEKUs -UnsafeUsers $UnsafeUsers
+            [array]$ESC13 = Find-ESC13 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEKUs
         }
         ESC15 {
             Write-Host 'Identifying AD CS templates with dangerous ESC15/EKUwu configurations...'
-            [array]$ESC11 = Find-ESC15 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+            [array]$ESC15 = Find-ESC15 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
         }
         EKUwu {
             Write-Host 'Identifying AD CS templates with dangerous ESC15/EKUwu configurations...'
-            [array]$ESC11 = Find-ESC15 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
+            [array]$ESC15 = Find-ESC15 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
         }
         All {
             Write-Host 'Identifying auditing issues...'
@@ -3531,7 +3531,7 @@ function Test-IsMemberOfProtectedUsers {
             Boolean
     #>
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', 'Test-IsMemberOfProtectedUsers', Justification = 'The name of the group we are checking is plural.')]
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Justification = 'The name of the group we are checking is plural.')]
     [OutputType([Boolean])]
     [CmdletBinding()]
     param (
@@ -4271,7 +4271,7 @@ function Invoke-Locksmith {
     Specify which scans you want to run. Available scans: 'All' or Auditing, ESC1, ESC2, ESC3, ESC4, ESC5, ESC6, ESC8, or 'PromptMe'
 
     -Scans All
-    Run all scans (default)
+    Run all scans (default).
 
     -Scans PromptMe
     Presents a grid view of the available scan types that can be selected and run them after you click OK.
@@ -4284,16 +4284,26 @@ function Invoke-Locksmith {
 
     .OUTPUTS
     Output types:
-    1. Console display of identified issues
-    2. Console display of identified issues and their fixes
-    3. CSV containing all identified issues
-    4. CSV containing all identified issues and their fixes
+    1. Console display of identified issues.
+    2. Console display of identified issues and their fixes.
+    3. CSV containing all identified issues.
+    4. CSV containing all identified issues and their fixes.
+
+    .EXAMPLE
+    Invoke-Locksmith -Mode 0 -Scans All -OutputPath 'C:\Temp'
+
+    Finds all malconfigurations and displays them in the console.
+
+    .EXAMPLE
+    Invoke-Locksmith -Mode 2 -Scans All -OutputPath 'C:\Temp'
+
+    Finds all malconfigurations and displays them in the console. The findings are saved in a CSV file in C:\Temp.
 
     .NOTES
-    Windows PowerShell cmdlet Restart-Service requires RunAsAdministrator
+    The Windows PowerShell cmdlet Restart-Service requires RunAsAdministrator.
     #>
 
-    [CmdletBinding()]
+    [CmdletBinding(HelpUri = 'https://trimarcjake.github.io/Locksmith/Invoke-Locksmith')]
     param (
         #[string]$Forest, # Not used yet
         #[string]$InputPath, # Not used yet
@@ -4332,18 +4342,19 @@ function Invoke-Locksmith {
         [System.Management.Automation.PSCredential]$Credential
     )
 
-    $Version = '2024.12.26'
-    $LogoPart1 = @"
+    $Version = '2024.12.27'
+    $LogoPart1 = @'
+
     _       _____  _______ _     _ _______ _______ _____ _______ _     _
     |      |     | |       |____/  |______ |  |  |   |      |    |_____|
     |_____ |_____| |_____  |    \_ ______| |  |  | __|__    |    |     |
-"@
-    $LogoPart2 = @"
+'@
+    $LogoPart2 = @'
         .--.                  .--.                  .--.
        /.-. '----------.     /.-. '----------.     /.-. '----------.
        \'-' .---'-''-'-'     \'-' .--'--''-'-'     \'-' .--'--'-''-'
         '--'                  '--'                  '--'
-"@
+'@
     $VersionBanner = "                                                          v$Version"
 
     Write-Host $LogoPart1 -ForegroundColor Magenta
@@ -4423,7 +4434,7 @@ function Invoke-Locksmith {
     # $Dictionary = New-Dictionary
 
     $Forest = Get-ADForest
-    $ForestGC = $(Get-ADDomainController -Discover -Service GlobalCatalog -ForceDiscover | Select-Object -ExpandProperty Hostname) + ":3268"
+    $ForestGC = $(Get-ADDomainController -Discover -Service GlobalCatalog -ForceDiscover | Select-Object -ExpandProperty Hostname) + ':3268'
     # $DNSRoot = [string]($Forest.RootDomain | Get-ADDomain).DNSRoot
     $EnterpriseAdminsSID = ([string]($Forest.RootDomain | Get-ADDomain).DomainSID) + '-519'
     $PreferredOwner = [System.Security.Principal.SecurityIdentifier]::New($EnterpriseAdminsSID)

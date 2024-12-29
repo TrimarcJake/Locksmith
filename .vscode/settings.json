@@ -2,7 +2,7 @@
 {
   "[*]": {
     "editor.tabSize": 4,
-    "files.trimTrailingWhitespace": false,
+    "files.trimTrailingWhitespace": true,
     "editor.insertSpaces": true,
     "files.insertFinalNewline": true
   },
