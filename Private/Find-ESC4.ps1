@@ -50,7 +50,7 @@
         # -526$    = Key Admins
         # -527$    = Enterprise Key Admins
         # S-1-5-10 = SELF
-        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-9$|-526$|-527$|S-1-5-10'
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-498$|-9$|-526$|-527$|S-1-5-10'
 
         # The well-known GUIDs for Enroll and AutoEnroll rights on AD CS templates.
         $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'

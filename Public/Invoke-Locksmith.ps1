@@ -177,11 +177,12 @@ function Invoke-Locksmith {
         -516$    = Domain Controllers
         -521$    = Read-Only Domain Controllers
         -9$      = Enterprise Domain Controllers
+        -498$    = Enterprise Read-Only Domain Controllers
         -526$    = Key Admins
         -527$    = Enterprise Key Admins
         S-1-5-10 = SELF
     #>
-    $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-9$|-526$|-527$|S-1-5-10'
+    $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-498$|-9$|-526$|-527$|S-1-5-10'
 
     <#
         S-1-0-0      = NULL SID
