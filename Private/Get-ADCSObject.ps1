@@ -14,7 +14,7 @@
         Specifies the credentials to use for authentication when retrieving ADCS objects.
 
     .EXAMPLE
-        Get-ADCSObject -Credential $cred
+        Get-ADCSObject -Credential $cred -Targets (Get-Target)
         This example retrieves ADCS objects from the local forest using the specified credentials.
 
     #>
@@ -26,7 +26,7 @@
         [System.Management.Automation.PSCredential]$Credential
     )
     foreach ( $forest in $Targets ) {
-        if ($Credential){
+        if ($Credential) {
             $ADRoot = (Get-ADRootDSE -Credential $Credential -Server $forest).defaultNamingContext
             Get-ADObject -Filter * -SearchBase "CN=Public Key Services,CN=Services,CN=Configuration,$ADRoot" -SearchScope 2 -Properties * -Credential $Credential
         } else {

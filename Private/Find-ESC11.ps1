@@ -23,7 +23,9 @@
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        $ADCSObjects
+        $ADCSObjects,
+        $UnsafeUsers,
+        [switch]$SkipRisk
     )
     process {
         $ADCSObjects | Where-Object {
@@ -72,6 +74,9 @@ Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
     Get-Service -Name `'certsvc`' | Restart-Service -Force
 }
 "@
+            }
+            if ($SkipRisk -eq $false) {
+                Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
             }
             $Issue
         }

@@ -27,6 +27,7 @@ function Test-IsMemberOfProtectedUsers {
             Boolean
     #>
 
+
     [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Justification = 'The name of the group we are checking is plural.')]
     [OutputType([Boolean])]
     [CmdletBinding()]

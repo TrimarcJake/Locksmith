@@ -32,9 +32,11 @@ function Find-ESC13 {
         [Parameter(Mandatory)]
         [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
         [Parameter(Mandatory)]
-        [array]$SafeUsers,
+        [string]$SafeUsers,
         [Parameter(Mandatory)]
-        $ClientAuthEKUs
+        $ClientAuthEKUs,
+        $UnsafeUsers,
+        [switch]$SkipRisk
     )
 
     $ADCSObjects | Where-Object {
@@ -59,6 +61,7 @@ function Find-ESC13 {
                                 Name                  = $_.Name
                                 DistinguishedName     = $_.DistinguishedName
                                 IdentityReference     = $entry.IdentityReference
+                                IdentityReferenceSID  = $SID
                                 ActiveDirectoryRights = $entry.ActiveDirectoryRights
                                 Enabled               = $_.Enabled
                                 EnabledOn             = $_.EnabledOn
@@ -85,6 +88,9 @@ Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 2}
 Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@
                                 Technique             = 'ESC13'
+                            }
+                            if ($SkipRisk -eq $false) {
+                                Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
                             }
                             $Issue
                         }

@@ -180,21 +180,24 @@ function Invoke-Locksmith {
         -517$    = Cert Publishers
         -500$    = Built-in Administrator
         -516$    = Domain Controllers
+        -521$    = Read-Only Domain Controllers
         -9$      = Enterprise Domain Controllers
         -526$    = Key Admins
         -527$    = Enterprise Key Admins
         S-1-5-10 = SELF
     #>
-    $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+    $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-9$|-526$|-527$|S-1-5-10'
 
     <#
-        S-1-1-0 = Everyone
-        -11$    = Authenticated Users
-        -513$   = Domain Users
-        -515$   = Domain Computers
+        S-1-0-0      = NULL SID
+        S-1-1-0      = Everyone
+        S-1-5-7      = Anonymous Logon
+        S-1-5-32-545 = BUILTIN\Users
+        S-1-5-11     = Authenticated Users
+        -513$        = Domain Users
+        -515$        = Domain Computers
     #>
-    $UnsafeOwners = 'S-1-1-0|-11$|-513$|-515$'
-    $UnsafeUsers = 'S-1-1-0|-11$|-513$|-515$'
+    $UnsafeUsers = 'S-1-0-0|S-1-1-0|S-1-5-7|S-1-5-32-545|S-1-5-11|-513$|-515$'
 
     ### Generated variables
     # $Dictionary = New-Dictionary
@@ -268,7 +271,6 @@ function Invoke-Locksmith {
         SafeObjectTypes    = $SafeObjectTypes
         SafeOwners         = $SafeOwners
         Scans              = $Scans
-        UnsafeOwners       = $UnsafeOwners
         UnsafeUsers        = $UnsafeUsers
         PreferredOwner     = $PreferredOwner
     }

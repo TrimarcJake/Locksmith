@@ -30,7 +30,9 @@
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        $ADCSObjects
+        $ADCSObjects,
+        $UnsafeUsers,
+        [switch]$SkipRisk
     )
 
     process {
@@ -82,6 +84,9 @@ receive a certificate which can be used to authenticate as that DC.
 Ensure EPA is enabled.
 Disable NTLM authentication (if possible.)
 '@
+                }
+                if ($SkipRisk -eq $false) {
+                    Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
                 }
                 $Issue
             }
