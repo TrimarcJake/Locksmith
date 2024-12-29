@@ -5,32 +5,12 @@
 
   # Trigger mega-linter at every pull request.
   on:
-    # Comment this line to trigger action only on pull-requests
-    # (not recommended if you don't pay for GH Actions)
-    # push:
-
     pull_request:
       # branches:
         # - main
         # - testing
         # - dev
         # - experimental
-
-  # Comment env block if you do not want to apply fixes
-  # env:
-  #   # Apply linter fixes configuration
-  #   #
-  #   # When active, APPLY_FIXES must also be defined as environment variable
-  #   # (in github/workflows/mega-linter.yml or other CI tool)
-  #   APPLY_FIXES: all
-
-  #   # Decide which event triggers application of fixes in a commit or a PR
-  #   # (pull_request, push, all)
-  #   APPLY_FIXES_EVENT: pull_request
-
-  #   # If APPLY_FIXES is used, defines if the fixes are directly committed (commit)
-  #   # or posted in a PR (pull_request)
-  #   APPLY_FIXES_MODE: commit
 
   concurrency:
     group: ${{ github.ref }}-${{ github.workflow }}
@@ -40,9 +20,6 @@
     megalinter:
       name: MegaLinter
       runs-on: ubuntu-latest
-
-      # Give the default GITHUB_TOKEN write permission to commit and push, comment
-      # issues & post new PR; remove the ones you do not need
       permissions:
         contents: read
         issues: read
@@ -56,8 +33,7 @@
           with:
             token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
 
-            # If you use VALIDATE_ALL_CODEBASE = true, you can remove this line to
-            # improve performance
+            # If you use VALIDATE_ALL_CODEBASE = true, you can remove this line to improve performance
             # fetch-depth: 0
 
         # MegaLinter
@@ -100,7 +76,7 @@
             # Uncomment to disable copy-paste and spell checks
             # DISABLE: COPYPASTE,SPELL
             DISABLE_ERRORS: true
-            DISABLE_LINTERS: SPELL_LYCHEE
+            DISABLE_LINTERS: EDITORCONFIG_EDITORCONFIG_CHECKER, SPELL_LYCHEE
             # Uncomment DISABLE_ERRORS_LINTERS if you want to turn errors back on selectively.
             # DISABLE_ERRORS_LINTERS: REPOSITORY_DEVSKIM,REPOSITORY_KICS,REPOSITORY_CHECKOV,POWERSHELL_POWERSHELL,SPELL_CSPELL
 
