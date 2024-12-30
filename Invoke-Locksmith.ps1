@@ -3048,7 +3048,7 @@ function Set-RiskRating {
         $Targets = Get-Target
         $ADCSObjects = Get-ADCSObject -Targets $Targets
         $DangerousRights = @('GenericAll', 'WriteProperty', 'WriteOwner', 'WriteDacl')
-        $SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$'
+        $SafeOwners = '-519$'
         $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-498$|-9$|-526$|-527$|S-1-5-10'
         $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
         $ESC4Issues = Find-ESC4 -ADCSObjects $ADCSObjects -DangerousRights $DangerousRights -SafeOwners $SafeOwners -SafeUsers $SafeUsers -SafeObjectTypes $SafeObjectTypes -Mode 1
@@ -4381,7 +4381,7 @@ function Invoke-Locksmith {
         [System.Management.Automation.PSCredential]$Credential
     )
 
-    $Version = '2024.12.29'
+    $Version = '2024.12.30'
     $LogoPart1 = @'
     _       _____  _______ _     _ _______ _______ _____ _______ _     _
     |      |     | |       |____/  |______ |  |  |   |      |    |_____|
