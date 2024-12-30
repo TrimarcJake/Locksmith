@@ -52,8 +52,8 @@ jobs:
       #    Copy-Item ./docs/index.md ./README.md
 
       # NOTE: git-auto-commit-action only runs on Linux-based platforms.
-      #- name: 💾 Commit Changes
-      #  uses: stefanzweifel/git-auto-commit-action@v5
-      #  with:
-      #    commit_message: 'Copy MkDocs index to README'
-      #    file_pattern: 'docs/index.md README.md'
+      - name: 💾 Commit Changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'Copy MkDocs README to index'
+          file_pattern: 'README.md docs/index.md'
