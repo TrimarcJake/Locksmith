@@ -17,7 +17,7 @@ function Find-ESC15 {
     .EXAMPLE
         $Targets = Get-Target
         $ADCSObjects = Get-ADCSObjects -Targets $Targets
-        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-498$|-9$|-526$|-527$|S-1-5-10'
         $Results = Find-ESC15 -ADCSObjects $ADCSObjects -SafeUser $SafeUsers
         $Results
     #>
@@ -25,10 +25,11 @@ function Find-ESC15 {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        [array]$ADCSObjects,
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
         [Parameter(Mandatory)]
-        $SafeUsers,
-        $UnsafeUsers,
+        [string]$SafeUsers,
+        [Parameter(Mandatory)]
+        [string]$UnsafeUsers,
         [switch]$SkipRisk
     )
     $ADCSObjects | Where-Object {

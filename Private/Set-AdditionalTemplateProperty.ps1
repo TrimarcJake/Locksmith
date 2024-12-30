@@ -25,7 +25,7 @@
     [CmdletBinding(SupportsShouldProcess)]
     param (
         [parameter(Mandatory, ValueFromPipeline)]
-        [array]$ADCSObjects
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects
     )
 
     $ADCSObjects | Where-Object objectClass -match 'pKICertificateTemplate' -PipelineVariable template | ForEach-Object {

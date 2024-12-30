@@ -33,7 +33,7 @@
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        [array]$ADCSObjects,
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
         [switch]$SkipRisk
     )
 
