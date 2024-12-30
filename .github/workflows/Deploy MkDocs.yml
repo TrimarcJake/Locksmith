@@ -2,6 +2,10 @@ name: 📖 Deploy MkDocs to GitHub
 # Install, build, and deploy MkDocs to GitHub Pages using content from the Docs folder.
 
 on:
+  pull_request:
+    branches:
+      - main
+      - testing
   push:
     branches:
       #- main  # The branch you want to deploy from
@@ -10,7 +14,7 @@ on:
       - 'Docs/**'
       - '.github/workflows/Deploy MkDocs.yml'
       - './mkdocs.yml'
-    workflow_dispatch:
+  workflow_dispatch:
 
 jobs:
   build:
