@@ -19,7 +19,7 @@ site_author: "Jake Hildreth" # meta tag to the generated HTML header
 copyright: "(c) 2024 Jake Hildreth."
 # remote_branch: gh-deploy
 # remote_name:
-docs_dir: "docs"
+docs_dir: "Docs"
 # site_dir:
 # extra_css:
 # extra_javascript:
