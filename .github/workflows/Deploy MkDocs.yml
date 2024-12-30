@@ -4,7 +4,8 @@ name: 📖 Deploy MkDocs to GitHub
 on:
   push:
     branches:
-      - main  # The branch you want to deploy from
+      #- main  # The branch you want to deploy from
+      - testing
     paths:  # Only deploy MkDocs when the contents of the docs folder change or when this workflow changes.
       - 'Docs/**'
       - '.github/workflows/Deploy MkDocs.yml'
