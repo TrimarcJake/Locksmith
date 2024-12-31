@@ -40,10 +40,8 @@ docs_dir: "Docs"
 # extra_templates:
 # extra:
 
-plugins:
+# plugins:
 #  - social
-    - search
-    - mermaid2
 
 theme:
   name: material
