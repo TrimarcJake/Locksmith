@@ -10,7 +10,7 @@ on:
     branches:
       #- main  # The branch you want to deploy from
       - testing
-    paths:  # Only deploy MkDocs when the contents of the docs folder change or when this workflow changes.
+    paths:  # Only deploy MkDocs when the contents of the docs folder change or when this workflow changes
       - 'Docs/**'
       - '.github/workflows/Deploy MkDocs.yml'
       - './mkdocs.yml'
