@@ -4,10 +4,15 @@ name: 📖 Deploy MkDocs to GitHub
 # Install, build, and deploy MkDocs to GitHub Pages using content from the Docs folder.
 
 on:
+  pull_request:
+    branches:
+      - main
+      - testing
   push:
     branches:
-      - main  # The branch you want to deploy from
-    paths:  # Only deploy MkDocs when the contents of the docs folder change or when this workflow changes.
+      #- main  # The branch you want to deploy from
+      - testing
+    paths:  # Only deploy MkDocs when the contents of the docs folder change or when this workflow changes
       - 'Docs/**'
       - '.github/workflows/Deploy MkDocs.yml'
       - './mkdocs.yml'
@@ -41,7 +46,7 @@ jobs:
         shell: pwsh
         run: |
           Write-Output 'Updating Docs\Index.md & \Readme.md'
-          Copy-Item ./README.md ./docs/index.md
+          Copy-Item README.md Docs/index.md
       #    [int16]$LineNumber = (Select-String -Path '.\docs\index.md' -Pattern 'Summary' -List).LineNumber + 1
       #    $IndexTop = Get-Content -Path ./docs/index.md -TotalCount $LineNumber
       #    $ModuleContent = Get-Content -Path ./docs/Locksmith.md | Select-Object -Skip 12
@@ -54,8 +59,8 @@ jobs:
       #    Copy-Item ./docs/index.md ./README.md
 
       # NOTE: git-auto-commit-action only runs on Linux-based platforms.
-      #- name: 💾 Commit Changes
-      #  uses: stefanzweifel/git-auto-commit-action@v5
-      #  with:
-      #    commit_message: 'Copy MkDocs index to README'
-      #    file_pattern: 'docs/index.md README.md'
+      - name: 💾 Commit Changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'Copy MkDocs README to index'
+          file_pattern: 'README.md Docs/index.md'
