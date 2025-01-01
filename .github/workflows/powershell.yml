@@ -6,12 +6,12 @@
 # https://github.com/microsoft/action-psscriptanalyzer
 # For more information on PSScriptAnalyzer in general, see
 # https://github.com/PowerShell/PSScriptAnalyzer
-
+---
 name: PSScriptAnalyzer
 
 on:
   push:
-    branches: [ "testing" ]
+    branches: ["testing", "main"]
   pull_request:
   schedule:
     - cron: '41 14 * * 4'
