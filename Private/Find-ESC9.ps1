@@ -51,8 +51,9 @@ function Find-ESC9 {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        $ADCSObjects,
-        $UnsafeUsers,
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
+        [Parameter(Mandatory)]
+        [string]$UnsafeUsers,
         [switch]$SkipRisk
     )
 

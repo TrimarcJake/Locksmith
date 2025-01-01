@@ -23,7 +23,7 @@
     .EXAMPLE
         $Targets = Get-Target
         $ADCSObjects = Get-ADCSObject -Targets $Targets
-        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-498$|-9$|-526$|-527$|S-1-5-10'
         $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
         $Results = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEKUs
         $Results
@@ -31,14 +31,15 @@
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        [array]$ADCSObjects,
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
         [Parameter(Mandatory)]
         [string]$SafeUsers,
         [Parameter(Mandatory)]
         $ClientAuthEKUs,
         [Parameter(Mandatory)]
         [int]$Mode,
-        $UnsafeUsers,
+        [Parameter(Mandatory)]
+        [string]$UnsafeUsers,
         [switch]$SkipRisk
     )
     $ADCSObjects | Where-Object {

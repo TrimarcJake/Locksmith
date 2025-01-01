@@ -33,7 +33,7 @@
         [parameter(
             Mandatory = $true,
             ValueFromPipeline = $true)]
-        [array]$ADCSObjects,
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
         [System.Management.Automation.PSCredential]$Credential,
         $ForestGC
     )

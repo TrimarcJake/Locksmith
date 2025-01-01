@@ -33,17 +33,27 @@ function Invoke-Scans {
     param (
         # Could split Scans and PromptMe into separate parameter sets.
         [Parameter(Mandatory)]
-        $ADCSObjects,
-        $ClientAuthEkus,
-        $DangerousRights,
-        $EnrollmentAgentEKU,
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
+        [Parameter(Mandatory)]
+        [string]$ClientAuthEkus,
+        [Parameter(Mandatory)]
+        [string]$DangerousRights,
+        [Parameter(Mandatory)]
+        [string]$EnrollmentAgentEKU,
+        [Parameter(Mandatory)]
         [int]$Mode,
-        $SafeObjectTypes,
-        $SafeOwners,
+        [Parameter(Mandatory)]
+        [string]$SafeObjectTypes,
+        [Parameter(Mandatory)]
+        [string]$SafeUsers,
+        [Parameter(Mandatory)]
+        [string]$SafeOwners,
         [ValidateSet('Auditing', 'ESC1', 'ESC2', 'ESC3', 'ESC4', 'ESC5', 'ESC6', 'ESC8', 'ESC11', 'ESC13', 'ESC15', 'EKUwu', 'All', 'PromptMe')]
         [array]$Scans = 'All',
-        $UnsafeUsers,
-        $PreferredOwner
+        [Parameter(Mandatory)]
+        [string]$UnsafeUsers,
+        [Parameter(Mandatory)]
+        [System.Security.Principal.SecurityIdentifier]$PreferredOwner
     )
 
     if ( $Scans -eq 'PromptMe' ) {
@@ -101,11 +111,11 @@ function Invoke-Scans {
         }
         ESC13 {
             Write-Host 'Identifying AD CS templates with dangerous ESC13 configurations...'
-            [array]$ESC13 = Find-ESC13 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEKUs
+            [array]$ESC13 = Find-ESC13 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEKUs -UnsafeUsers $UnsafeUsers
         }
         ESC15 {
             Write-Host 'Identifying AD CS templates with dangerous ESC15/EKUwu configurations...'
-            [array]$ESC15 = Find-ESC15 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
+            [array]$ESC15 = Find-ESC15 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
         }
         EKUwu {
             Write-Host 'Identifying AD CS templates with dangerous ESC15/EKUwu configurations...'
