@@ -13,22 +13,19 @@ All types of contributions are encouraged and valued. See the [Table of Contents
 <!-- omit in toc -->
 ## Table of Contents
 
-- [Code of Conduct](#code-of-conduct)
-- [I Have a Question](#i-have-a-question)
-- [I Want To Contribute](#i-want-to-contribute)
-- [Reporting Bugs](#reporting-bugs)
-- [Suggesting Enhancements](#suggesting-enhancements)
-- [Your First Code Contribution](#your-first-code-contribution)
-- [Improving The Documentation](#improving-the-documentation)
-- [Styleguides](#styleguides)
-- [Commit Messages](#commit-messages)
-- [Join The Project Team](#join-the-project-team)
+- [Contributing to Locksmith](#contributing-to-locksmith)
+  - [Code of Conduct](#code-of-conduct)
+  - [I Have a Question](#i-have-a-question)
+  - [I Want To Contribute](#i-want-to-contribute)
+    - [Reporting Bugs](#reporting-bugs)
+      - [How Do I Submit a Good Bug Report?](#how-do-i-submit-a-good-bug-report)
+    - [Suggesting Enhancements](#suggesting-enhancements)
 
 
 ## Code of Conduct
 
 This project and everyone participating in it is governed by the
-[Locksmith Code of Conduct](https://github.com/TrimarcJake/Locksmithblob/master/CODE_OF_CONDUCT.md).
+[Locksmith Code of Conduct](https://github.com/TrimarcJake/Locksmith/blob/main/CODE_OF_CONDUCT.md).
 By participating, you are expected to uphold this code. Please report unacceptable behavior
 to coc@dotdot.horse.
 
