@@ -1,0 +1,13 @@
+# Mega-Linter Configuration File
+# This must be separate from the GitHub workflow configuration file.
+---
+linters:
+  POWERSHELL_POWERSHELL:
+    DISABLE_RULES:
+      - Write-Host
+
+# Enable/disable linters
+DISABLE_LINTERS:
+  - COPYPASTE_JSCPD
+  - SPELL_CSPELL
+  - EDITORCONFIG_EDITORCONFIG_CHECKER
