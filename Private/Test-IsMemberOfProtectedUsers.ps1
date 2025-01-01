@@ -27,7 +27,8 @@ function Test-IsMemberOfProtectedUsers {
             Boolean
     #>
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', 'Test-IsMemberOfProtectedUsers', Justification='The name of the group we are checking is plural.')]
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Justification = 'The name of the group we are checking is plural.')]
     [OutputType([Boolean])]
     [CmdletBinding()]
     param (
@@ -46,8 +47,7 @@ function Test-IsMemberOfProtectedUsers {
         # These two are different types. Fixed by referencing $CheckUser.SID later, but should fix here by using one type.
         $CurrentUser = ([System.Security.Principal.WindowsIdentity]::GetCurrent().Name).Split('\')[-1]
         $CheckUser = Get-ADUser $CurrentUser -Properties primaryGroupID
-    }
-    else {
+    } else {
         $CheckUser = Get-ADUser $User -Properties primaryGroupID
     }
 

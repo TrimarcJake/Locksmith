@@ -1,0 +1,64 @@
+name: 📖 Deploy MkDocs to GitHub
+# Install, build, and deploy MkDocs to GitHub Pages using content from the Docs folder.
+
+on:
+  pull_request:
+    branches:
+      - main
+      - testing
+  push:
+    branches:
+      #- main  # The branch you want to deploy from
+      - testing
+    paths:  # Only deploy MkDocs when the contents of the docs folder change or when this workflow changes
+      - 'Docs/**'
+      - '.github/workflows/Deploy MkDocs.yml'
+      - './mkdocs.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ✅ Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'  # specify the Python version
+
+      - name: ➕ Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mkdocs mkdocs-material
+
+      - name: 👷‍♂️ Build & Deploy MkDocs
+        run: |
+          mkdocs build
+          mkdocs gh-deploy --force
+
+      # Combine markdown files to create the MkDocs index and the repository readme file.
+      - name: 📖 Update Index & Readme
+        shell: pwsh
+        run: |
+          Write-Output 'Updating Docs\Index.md & \Readme.md'
+          Copy-Item README.md Docs/index.md
+      #    [int16]$LineNumber = (Select-String -Path '.\docs\index.md' -Pattern 'Summary' -List).LineNumber + 1
+      #    $IndexTop = Get-Content -Path ./docs/index.md -TotalCount $LineNumber
+      #    $ModuleContent = Get-Content -Path ./docs/Locksmith.md | Select-Object -Skip 12
+      #    $FooterContent = "`n</Details>`n"
+      #    $CombinedContent = $IndexTop + $ModuleContent + $FooterContent
+      #    $CombinedContent | Set-Content -Path ./docs/index.md
+      #    $ModuleContent = $ModuleContent.Replace( '](' , '](./docs/' )
+      #    $CombinedContent = $IndexTop + $ModuleContent
+      #    $CombinedContent | Set-Content -Path ./README.md
+      #    Copy-Item ./docs/index.md ./README.md
+
+      # NOTE: git-auto-commit-action only runs on Linux-based platforms.
+      - name: 💾 Commit Changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'Copy MkDocs README to index'
+          file_pattern: 'README.md Docs/index.md'

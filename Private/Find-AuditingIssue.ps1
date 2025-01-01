@@ -33,7 +33,8 @@
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        [array]$ADCSObjects
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
+        [switch]$SkipRisk
     )
 
     $ADCSObjects | Where-Object {
@@ -60,9 +61,12 @@ Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
 "@
         }
         if ($_.AuditFilter -match 'CA Unavailable') {
-            $Issue.Issue  = $_.AuditFilter
-            $Issue.Fix    = 'N/A'
+            $Issue.Issue = $_.AuditFilter
+            $Issue.Fix = 'N/A'
             $Issue.Revert = 'N/A'
+        }
+        if ($SkipRisk -eq $false) {
+            Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
         }
         $Issue
     }

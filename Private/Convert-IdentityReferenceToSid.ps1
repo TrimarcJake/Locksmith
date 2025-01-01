@@ -1,4 +1,4 @@
-function ConvertFrom-IdentityReference {
+function Convert-IdentityReferenceToSid {
     <#
     .SYNOPSIS
         Converts an identity reference to a security identifier (SID).

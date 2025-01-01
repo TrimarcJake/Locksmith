@@ -23,7 +23,10 @@
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        $ADCSObjects
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
+        [Parameter(Mandatory)]
+        [string]$UnsafeUsers,
+        [switch]$SkipRisk
     )
     process {
         $ADCSObjects | Where-Object {
@@ -35,10 +38,10 @@
                 Forest            = $_.CanonicalName.split('/')[0]
                 Name              = $_.Name
                 DistinguishedName = $_.DistinguishedName
-                Technique         = 'ESC6'
                 Issue             = $_.SANFlag
                 Fix               = 'N/A'
                 Revert            = 'N/A'
+                Technique         = 'ESC6'
             }
             if ($_.SANFlag -eq 'Yes') {
                 $Issue.Issue = @"
@@ -61,7 +64,7 @@ More info:
 # Disable the flag
 certutil -config $CAFullname -setreg policy\EditFlags -EDITF_ATTRIBUTESUBJECTALTNAME2
 
-# Restart the Ceritification Authority service
+# Restart the Certificate Authority service
 Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
     Get-Service -Name `'certsvc`' | Restart-Service -Force
 }
@@ -70,11 +73,14 @@ Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
 # Enable the flag
 certutil -config $CAFullname -setreg policy\EditFlags +EDITF_ATTRIBUTESUBJECTALTNAME2
 
-# Restart the Ceritification Authority service
+# Restart the Certificate Authority service
 Invoke-Command -ComputerName `'$($_.dNSHostName)`' -ScriptBlock {
     Get-Service -Name `'certsvc`' | Restart-Service -Force
 }
 "@
+            }
+            if ($SkipRisk -eq $false) {
+                Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
             }
             $Issue
         }

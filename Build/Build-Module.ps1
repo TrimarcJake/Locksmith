@@ -10,8 +10,7 @@ if (Get-Module -Name 'PSPublishModule' -ListAvailable) {
     try {
         Install-Module -Name Pester -AllowClobber -Scope CurrentUser -SkipPublisherCheck -Force
         Install-Module -Name PSPublishModule -AllowClobber -Scope CurrentUser -Force
-    }
-    catch {
+    } catch {
         Write-Error 'PSPublishModule installation failed.'
     }
 }
@@ -19,19 +18,21 @@ if (Get-Module -Name 'PSPublishModule' -ListAvailable) {
 Update-Module -Name PSPublishModule
 Import-Module -Name PSPublishModule -Force
 
+$CopyrightYear = if ($Calver) { $CalVer.Split('.')[0] } else { (Get-Date -Format yyyy) }
+
 Build-Module -ModuleName 'Locksmith' {
     # Usual defaults as per standard module
     $Manifest = [ordered] @{
-        ModuleVersion        = if ($Calver) {$CalVer} else {(Get-Date -Format yyyy.M.d)}
+        ModuleVersion        = if ($Calver) { $CalVer } else { (Get-Date -Format yyyy.M.d) }
         CompatiblePSEditions = @('Desktop', 'Core')
         GUID                 = 'b1325b42-8dc4-4f17-aa1f-dcb5984ca14a'
         Author               = 'Jake Hildreth'
-        Copyright            = "(c) 2022 - $((Get-Date).Year). All rights reserved."
+        Copyright            = "(c) 2022 - $CopyrightYear. All rights reserved."
         Description          = 'A small tool to find and fix common misconfigurations in Active Directory Certificate Services.'
         ProjectUri           = 'https://github.com/TrimarcJake/Locksmith'
         IconUri              = 'https://raw.githubusercontent.com/TrimarcJake/Locksmith/main/Images/locksmith.ico'
         PowerShellVersion    = '5.1'
-        Tags                 = @('Windows', 'Locksmith', 'CA', 'PKI', 'ActiveDirectory', 'CertificateServices','ADCS')
+        Tags                 = @('Windows', 'Locksmith', 'CA', 'PKI', 'ActiveDirectory', 'CertificateServices', 'ADCS')
     }
     New-ConfigurationManifest @Manifest
 
@@ -116,23 +117,28 @@ Build-Module -ModuleName 'Locksmith' {
 
     New-ConfigurationImportModule -ImportSelf #-ImportRequiredModules
 
-    New-ConfigurationBuild -Enable:$true -SignModule:$false -DeleteTargetModuleBeforeBuild -MergeModuleOnBuild -UseWildcardForFunctions
+    New-ConfigurationBuild -Enable:$true -SignModule:$false -DeleteTargetModuleBeforeBuild -MergeModuleOnBuild #-UseWildcardForFunctions
 
     $PreScriptMerge = {
         param (
             [int]$Mode,
             [Parameter()]
-                [ValidateSet('Auditing','ESC1','ESC2','ESC3','ESC4','ESC5','ESC6','ESC8','All','PromptMe')]
-                [array]$Scans = 'All'
+            [ValidateSet('Auditing','ESC1','ESC2','ESC3','ESC4','ESC5','ESC6','ESC8','ESC11','ESC13','ESC15','EKUwu','All','PromptMe')]
+            [array]$Scans = 'All'
         )
     }
 
     $PostScriptMerge = { Invoke-Locksmith -Mode $Mode -Scans $Scans }
 
     New-ConfigurationArtefact -Type Packed -Enable -Path "$PSScriptRoot\..\Artefacts\Packed" -ArtefactName '<ModuleName>.zip'
-    New-ConfigurationArtefact -Type Script -Enable -Path "$PSScriptRoot\..\Artefacts\Script" -PreScriptMerge $PreScriptMerge -PostScriptMerge $PostScriptMerge -ScriptName "Invoke-<ModuleName>.ps1"
+    New-ConfigurationArtefact -Type Script -Enable -Path "$PSScriptRoot\..\Artefacts\Script" -PreScriptMerge $PreScriptMerge -PostScriptMerge $PostScriptMerge -ScriptName 'Invoke-<ModuleName>.ps1'
     New-ConfigurationArtefact -Type ScriptPacked -Enable -Path "$PSScriptRoot\..\Artefacts\ScriptPacked" -PreScriptMerge $PreScriptMerge -PostScriptMerge $PostScriptMerge -ScriptName 'Invoke-<ModuleName>.ps1' -ArtefactName 'Invoke-<ModuleName>.zip'
     # New-ConfigurationPublish -Type PowerShellGallery -FilePath 'C:\Users\jake.BLUETUXEDO\Documents\API Keys\PSGallery.txt'
 }
 
 Copy-Item "$PSScriptRoot\..\Artefacts\Script\Invoke-Locksmith.ps1" "$PSScriptRoot\..\"
+
+# Suppress validation errors and cleanup
+[Void]$CalVer
+[void]$Mode
+[void]$Scans

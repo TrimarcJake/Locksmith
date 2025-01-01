@@ -30,7 +30,10 @@
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        $ADCSObjects
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
+        [Parameter(Mandatory)]
+        [string]$UnsafeUsers,
+        [switch]$SkipRisk
     )
 
     process {
@@ -50,12 +53,12 @@ authentication to this HTTP endpoint.
 
 If the LAN Manager authentication level of any domain in this forest is 2 or
 less, an attacker can coerce authentication from a Domain Controller (DC) and
-relay it to this HTTP enrollment enpoint to receive a certificate which can be
+relay it to this HTTP enrollment endpoint to receive a certificate which can be
 used to authenticate as that DC.
 
 More info:
   - https://posts.specterops.io/certified-pre-owned-d95910965cd2
-  
+
 '@
                     Fix                  = @'
 Disable HTTP access and enforce HTTPS.
@@ -74,7 +77,7 @@ possible.
 
 If those protection are not in place, and the LAN Manager authentication level
 of any domain in this forest is 2 or less, an attacker can coerce authentication
-from a Domain Controller (DC) and relay it to this HTTPS enrollment enpoint to
+from a Domain Controller (DC) and relay it to this HTTPS enrollment endpoint to
 receive a certificate which can be used to authenticate as that DC.
 
 '@
@@ -82,6 +85,9 @@ receive a certificate which can be used to authenticate as that DC.
 Ensure EPA is enabled.
 Disable NTLM authentication (if possible.)
 '@
+                }
+                if ($SkipRisk -eq $false) {
+                    Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
                 }
                 $Issue
             }

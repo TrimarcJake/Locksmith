@@ -30,7 +30,7 @@
         [parameter(
             Mandatory = $true,
             ValueFromPipeline = $true)]
-        [array]$ADCSObjects,
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
         [PSCredential]$Credential,
         $ForestGC
     )
@@ -39,7 +39,7 @@
         $CAEnrollmentEndpoint = @()
         if (-not ([System.Management.Automation.PSTypeName]'TrustAllCertsPolicy') ) {
             if ($PSVersionTable.PSEdition -eq 'Desktop') {
-                $code= @"
+                $code = @"
                     using System.Net;
                     using System.Security.Cryptography.X509Certificates;
                     public class TrustAllCertsPolicy : ICertificatePolicy {

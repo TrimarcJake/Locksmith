@@ -14,14 +14,11 @@
     .PARAMETER DangerousRights
         Specifies the list of dangerous rights that should not be assigned to users. This parameter is mandatory.
 
-    .PARAMETER SafeOwners
-        Specifies the list of SIDs of safe owners who are allowed to have owner rights on the objects. This parameter is mandatory.
-
     .PARAMETER SafeUsers
         Specifies the list of SIDs of safe users who are allowed to have specific rights on the objects. This parameter is mandatory.
 
     .PARAMETER SafeObjectTypes
-        Specifices a list of ObjectTypes which are not a security concern. This parameter is mandatory.
+        Specifies a list of ObjectTypes which are not a security concern. This parameter is mandatory.
 
     .OUTPUTS
         The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
@@ -48,11 +45,12 @@
         # -517$    = Cert Publishers
         # -500$    = Built-in Administrator
         # -516$    = Domain Controllers
+        # -521$    = Read-Only Domain Controllers
         # -9$      = Enterprise Domain Controllers
         # -526$    = Key Admins
         # -527$    = Enterprise Key Admins
         # S-1-5-10 = SELF
-        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-498$|-9$|-526$|-527$|S-1-5-10'
 
         # The well-known GUIDs for Enroll and AutoEnroll rights on AD CS templates.
         $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
@@ -66,17 +64,20 @@
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        $ADCSObjects,
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
         [Parameter(Mandatory)]
-        $DangerousRights,
+        [string]$DangerousRights,
         [Parameter(Mandatory)]
-        $SafeOwners,
+        [string]$SafeOwners,
         [Parameter(Mandatory)]
-        $SafeUsers,
+        [string]$SafeUsers,
         [Parameter(Mandatory)]
-        $SafeObjectTypes,
+        [string]$SafeObjectTypes,
         [Parameter(Mandatory)]
-        [int]$Mode
+        [int]$Mode,
+        [Parameter(Mandatory)]
+        [string]$UnsafeUsers,
+        [switch]$SkipRisk
     )
     $ADCSObjects | Where-Object objectClass -eq 'pKICertificateTemplate' | ForEach-Object {
         if ($_.Name -ne '' -and $null -ne $_.Name) {
@@ -90,12 +91,15 @@
 
         if ($SID -notmatch $SafeOwners) {
             $Issue = [pscustomobject]@{
-                Forest            = $_.CanonicalName.split('/')[0]
-                Name              = $_.Name
-                DistinguishedName = $_.DistinguishedName
-                Enabled           = $_.Enabled
-                EnabledOn         = $_.EnabledOn
-                Issue             = @"
+                Forest                = $_.CanonicalName.split('/')[0]
+                Name                  = $_.Name
+                DistinguishedName     = $_.DistinguishedName
+                IdentityReference     = $_.nTSecurityDescriptor.Owner
+                IdentityReferenceSID  = $SID
+                ActiveDirectoryRights = 'Owner'
+                Enabled               = $_.Enabled
+                EnabledOn             = $_.EnabledOn
+                Issue                 = @"
 $($_.nTSecurityDescriptor.Owner) has Owner rights on this template and can
 modify it into a template that can create ESC1, ESC2, and ESC3 templates.
 
@@ -103,19 +107,22 @@ More info:
   - https://posts.specterops.io/certified-pre-owned-d95910965cd2
 
 "@
-                Fix               = @"
+                Fix                   = @"
 `$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$PreferredOwner`')
 `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
 `$ACL.SetOwner(`$Owner)
 Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
 "@
-                Revert            = @"
+                Revert                = @"
 `$Owner = New-Object System.Security.Principal.SecurityIdentifier(`'$($_.nTSecurityDescriptor.Owner)`')
 `$ACL = Get-Acl -Path `'AD:$($_.DistinguishedName)`'
 `$ACL.SetOwner(`$Owner)
 Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
 "@
-                Technique         = 'ESC4'
+                Technique             = 'ESC4'
+            }
+            if ($SkipRisk -eq $false) {
+                Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
             }
             $Issue
         }
@@ -140,6 +147,7 @@ Set-ACL -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
                     Name                  = $_.Name
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
+                    IdentityReferenceSID  = $SID
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Enabled               = $_.Enabled
                     EnabledOn             = $_.EnabledOn
@@ -167,6 +175,9 @@ Set-Acl -Path `'AD:$($_.DistinguishedName)`' -AclObject `$ACL
 
                 if ( $Mode -in @(1, 3, 4) ) {
                     Update-ESC4Remediation -Issue $Issue
+                }
+                if ($SkipRisk -eq $false) {
+                    Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
                 }
                 $Issue
             }

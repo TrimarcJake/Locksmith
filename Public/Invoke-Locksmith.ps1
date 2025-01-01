@@ -1,4 +1,4 @@
-﻿function Invoke-Locksmith {
+function Invoke-Locksmith {
     <#
     .SYNOPSIS
     Finds the most common malconfigurations of Active Directory Certificate Services (AD CS).
@@ -42,7 +42,7 @@
     Specify which scans you want to run. Available scans: 'All' or Auditing, ESC1, ESC2, ESC3, ESC4, ESC5, ESC6, ESC8, or 'PromptMe'
 
     -Scans All
-    Run all scans (default)
+    Run all scans (default).
 
     -Scans PromptMe
     Presents a grid view of the available scan types that can be selected and run them after you click OK.
@@ -55,16 +55,26 @@
 
     .OUTPUTS
     Output types:
-    1. Console display of identified issues
-    2. Console display of identified issues and their fixes
-    3. CSV containing all identified issues
-    4. CSV containing all identified issues and their fixes
+    1. Console display of identified issues.
+    2. Console display of identified issues and their fixes.
+    3. CSV containing all identified issues.
+    4. CSV containing all identified issues and their fixes.
+
+    .EXAMPLE
+    Invoke-Locksmith -Mode 0 -Scans All -OutputPath 'C:\Temp'
+
+    Finds all malconfigurations and displays them in the console.
+
+    .EXAMPLE
+    Invoke-Locksmith -Mode 2 -Scans All -OutputPath 'C:\Temp'
+
+    Finds all malconfigurations and displays them in the console. The findings are saved in a CSV file in C:\Temp.
 
     .NOTES
-    Windows PowerShell cmdlet Restart-Service requires RunAsAdministrator
+    The Windows PowerShell cmdlet Restart-Service requires RunAsAdministrator.
     #>
 
-    [CmdletBinding()]
+    [CmdletBinding(HelpUri = 'https://trimarcjake.github.io/Locksmith/Invoke-Locksmith')]
     param (
         #[string]$Forest, # Not used yet
         #[string]$InputPath, # Not used yet
@@ -104,17 +114,17 @@
     )
 
     $Version = '<ModuleVersion>'
-    $LogoPart1 = @"
+    $LogoPart1 = @'
     _       _____  _______ _     _ _______ _______ _____ _______ _     _
     |      |     | |       |____/  |______ |  |  |   |      |    |_____|
     |_____ |_____| |_____  |    \_ ______| |  |  | __|__    |    |     |
-"@
-    $LogoPart2 = @"
+'@
+    $LogoPart2 = @'
         .--.                  .--.                  .--.
        /.-. '----------.     /.-. '----------.     /.-. '----------.
        \'-' .---'-''-'-'     \'-' .--'--''-'-'     \'-' .--'--'-''-'
         '--'                  '--'                  '--'
-"@
+'@
     $VersionBanner = "                                                          v$Version"
 
     Write-Host $LogoPart1 -ForegroundColor Magenta
@@ -137,7 +147,7 @@
 
     ### Initial variables
     # For output filenames
-    [string]$FilePrefix = "Locksmith $(Get-Date -format 'yyyy-MM-dd hh-mm-ss')"
+    [string]$FilePrefix = "Locksmith $(Get-Date -Format 'yyyy-MM-dd hh-mm-ss')"
 
     # Extended Key Usages for client authentication. A requirement for ESC1, ESC3 Condition 2, and ESC13
     $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
@@ -153,14 +163,9 @@
     $SafeObjectTypes = '0e10c968-78fb-11d2-90d4-00c04f79dc55|a05b8cc2-17bc-4802-a710-e7c15ab866a2'
 
     <#
-        -512$ = Domain Admins group
         -519$ = Enterprise Admins group
-        -544$ = Administrators group
-        -18$  = SYSTEM
-        -517$ = Cert Publishers
-        -500$ = Built-in Administrator
     #>
-    $SafeOwners = '-512$|-519$|-544$|-18$|-517$|-500$'
+    $SafeOwners = '-519$'
 
     <#
         -512$    = Domain Admins group
@@ -170,27 +175,31 @@
         -517$    = Cert Publishers
         -500$    = Built-in Administrator
         -516$    = Domain Controllers
+        -521$    = Read-Only Domain Controllers
         -9$      = Enterprise Domain Controllers
+        -498$    = Enterprise Read-Only Domain Controllers
         -526$    = Key Admins
         -527$    = Enterprise Key Admins
         S-1-5-10 = SELF
     #>
-    $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+    $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-498$|-9$|-526$|-527$|S-1-5-10'
 
     <#
-        S-1-1-0 = Everyone
-        -11$    = Authenticated Users
-        -513$   = Domain Users
-        -515$   = Domain Computers
+        S-1-0-0      = NULL SID
+        S-1-1-0      = Everyone
+        S-1-5-7      = Anonymous Logon
+        S-1-5-32-545 = BUILTIN\Users
+        S-1-5-11     = Authenticated Users
+        -513$        = Domain Users
+        -515$        = Domain Computers
     #>
-    $UnsafeOwners = 'S-1-1-0|-11$|-513$|-515$'
-    $UnsafeUsers = 'S-1-1-0|-11$|-513$|-515$'
+    $UnsafeUsers = 'S-1-0-0|S-1-1-0|S-1-5-7|S-1-5-32-545|S-1-5-11|-513$|-515$'
 
     ### Generated variables
     # $Dictionary = New-Dictionary
 
     $Forest = Get-ADForest
-    $ForestGC = $(Get-ADDomainController -Discover -Service GlobalCatalog -ForceDiscover | Select-Object -ExpandProperty Hostname) + ":3268"
+    $ForestGC = $(Get-ADDomainController -Discover -Service GlobalCatalog -ForceDiscover | Select-Object -ExpandProperty Hostname) + ':3268'
     # $DNSRoot = [string]($Forest.RootDomain | Get-ADDomain).DNSRoot
     $EnterpriseAdminsSID = ([string]($Forest.RootDomain | Get-ADDomain).DomainSID) + '-519'
     $PreferredOwner = [System.Security.Principal.SecurityIdentifier]::New($EnterpriseAdminsSID)
@@ -257,8 +266,8 @@
         Mode               = $Mode
         SafeObjectTypes    = $SafeObjectTypes
         SafeOwners         = $SafeOwners
+        SafeUsers          = $SafeUsers
         Scans              = $Scans
-        UnsafeOwners       = $UnsafeOwners
         UnsafeUsers        = $UnsafeUsers
         PreferredOwner     = $PreferredOwner
     }

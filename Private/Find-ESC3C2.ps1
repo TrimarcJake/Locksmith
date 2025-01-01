@@ -1,4 +1,4 @@
-﻿function Find-ESC3Condition2 {
+﻿function Find-ESC3C2 {
     <#
     .SYNOPSIS
         This script finds AD CS (Active Directory Certificate Services) objects that match the second condition required for ESC3 vulnerability.
@@ -18,17 +18,20 @@
         The script outputs an array of custom objects representing the matching ADCS objects and their associated information.
 
     .EXAMPLE
-        $ADCSObjects = Get-ADCSObjects
-        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
-        $Results = $ADCSObjects | Find-ESC3Condition2 -SafeUsers $SafeUsers
+        $ADCSObjects = Get-ADCSObject -Targets (Get-Target)
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-498$|-9$|-526$|-527$|S-1-5-10'
+        $Results = $ADCSObjects | Find-ESC3C2 -SafeUsers $SafeUsers
         $Results
     #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        [array]$ADCSObjects,
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
         [Parameter(Mandatory)]
-        [array]$SafeUsers
+        [string]$SafeUsers,
+        [Parameter(Mandatory)]
+        [string]$UnsafeUsers,
+        [switch]$SkipRisk
     )
     $ADCSObjects | Where-Object {
         ($_.objectClass -eq 'pKICertificateTemplate') -and
@@ -50,31 +53,36 @@
                     Name                  = $_.Name
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
+                    IdentityReferenceSID  = $SID
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Enabled               = $_.Enabled
                     EnabledOn             = $_.EnabledOn
                     Issue                 = @"
-If the holder of an Enrollment Agent certificate requests a certificate using
-this template, they will receive a certificate which allows them to authenticate
-as $($entry.IdentityReference).
+If the holder of a SubCA, Any Purpose, or Enrollment Agent certificate requests
+a certificate using this template, they will receive a certificate which allows
+them to authenticate as $($entry.IdentityReference).
 
 More info:
   - https://posts.specterops.io/certified-pre-owned-d95910965cd2
 
 "@
-                    Fix = @"
+                    Fix                   = @"
 First, eliminate unused Enrollment Agent templates.
 Then, tightly scope any Enrollment Agent templates that remain and:
 # Enable Manager Approval
 `$Object = `'$($_.DistinguishedName)`'
 Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 2}
 "@
-                    Revert = @"
+                    Revert                = @"
 # Disable Manager Approval
 `$Object = `'$($_.DistinguishedName)`'
 Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@
                     Technique             = 'ESC3'
+                    Condition             = 2
+                }
+                if ($SkipRisk -eq $false) {
+                    Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
                 }
                 $Issue
             }

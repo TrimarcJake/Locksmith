@@ -22,7 +22,7 @@ function Find-ESC13 {
 
     .EXAMPLE
         $ADCSObjects = Get-ADCSObjects
-        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-498$|-9$|-526$|-527$|S-1-5-10'
         $ClientAuthEKUs = '1\.3\.6\.1\.5\.5\.7\.3\.2|1\.3\.6\.1\.5\.2\.3\.4|1\.3\.6\.1\.4\.1\.311\.20\.2\.2|2\.5\.29\.37\.0'
         $Results = $ADCSObjects | Find-ESC13 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers -ClientAuthEKUs $ClientAuthEKUs
         $Results
@@ -32,9 +32,12 @@ function Find-ESC13 {
         [Parameter(Mandatory)]
         [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
         [Parameter(Mandatory)]
-        [array]$SafeUsers,
+        [string]$SafeUsers,
         [Parameter(Mandatory)]
-        $ClientAuthEKUs
+        [string]$ClientAuthEKUs,
+        [Parameter(Mandatory)]
+        [string]$UnsafeUsers,
+        [switch]$SkipRisk
     )
 
     $ADCSObjects | Where-Object {
@@ -59,6 +62,7 @@ function Find-ESC13 {
                                 Name                  = $_.Name
                                 DistinguishedName     = $_.DistinguishedName
                                 IdentityReference     = $entry.IdentityReference
+                                IdentityReferenceSID  = $SID
                                 ActiveDirectoryRights = $entry.ActiveDirectoryRights
                                 Enabled               = $_.Enabled
                                 EnabledOn             = $_.EnabledOn
@@ -85,6 +89,9 @@ Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 2}
 Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@
                                 Technique             = 'ESC13'
+                            }
+                            if ($SkipRisk -eq $false) {
+                                Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
                             }
                             $Issue
                         }

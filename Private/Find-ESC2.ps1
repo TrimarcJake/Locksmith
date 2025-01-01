@@ -19,16 +19,19 @@
 
     .EXAMPLE
         $ADCSObjects = Get-ADCSObjects
-        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-498$|-9$|-526$|-527$|S-1-5-10'
         $Results = $ADCSObjects | Find-ESC2 -SafeUsers $SafeUsers
         $Results
     #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        [array]$ADCSObjects,
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
         [Parameter(Mandatory)]
-        [string]$SafeUsers
+        [string]$SafeUsers,
+        [Parameter(Mandatory)]
+        [string]$UnsafeUsers,
+        [switch]$SkipRisk
     )
     $ADCSObjects | Where-Object {
         ($_.ObjectClass -eq 'pKICertificateTemplate') -and
@@ -49,15 +52,22 @@
                     Name                  = $_.Name
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
+                    IdentityReferenceSID  = $SID
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Enabled               = $_.Enabled
                     EnabledOn             = $_.EnabledOn
                     Issue                 = @"
-$($entry.IdentityReference) can use this template to request a Subordinate
-Certification Authority (SubCA) certificate without Manager Approval.
+$($entry.IdentityReference) can use this template to request any type
+of certificate - including Enrollment Agent certificates and Subordinate
+Certification Authority (SubCA) certificate - without Manager Approval.
 
-The resultant certificate can be used by an attacker to instantiate their own
-SubCA which is trusted by AD.
+If an attacker requests an Enrollment Agent certificate and there exists at least
+one enabled ESC3 Condition 2 or ESC15 template available that does not require
+Manager Approval, the attacker can request a certificate on behalf of another principal.
+The risk presented depends on the privileges granted to the other principal.
+
+If an attacker requests a SubCA certificate, the resultant certificate can be used
+by an attacker to instantiate their own SubCA which is trusted by AD.
 
 By default, certificates created from this attacker-controlled SubCA cannot be
 used for authentication, but they can be used for other purposes such as TLS
@@ -81,6 +91,9 @@ Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 2}
 Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
 "@
                     Technique             = 'ESC2'
+                }
+                if ($SkipRisk -eq $false) {
+                    Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
                 }
                 $Issue
             }

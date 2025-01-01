@@ -17,7 +17,7 @@ function Find-ESC15 {
     .EXAMPLE
         $Targets = Get-Target
         $ADCSObjects = Get-ADCSObjects -Targets $Targets
-        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-498$|-9$|-526$|-527$|S-1-5-10'
         $Results = Find-ESC15 -ADCSObjects $ADCSObjects -SafeUser $SafeUsers
         $Results
     #>
@@ -25,14 +25,17 @@ function Find-ESC15 {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        [array]$ADCSObjects,
+        [Microsoft.ActiveDirectory.Management.ADEntity[]]$ADCSObjects,
         [Parameter(Mandatory)]
-        $SafeUsers
+        [string]$SafeUsers,
+        [Parameter(Mandatory)]
+        [string]$UnsafeUsers,
+        [switch]$SkipRisk
     )
     $ADCSObjects | Where-Object {
         ($_.objectClass -eq 'pKICertificateTemplate') -and
         ($_.'msPKI-Template-Schema-Version' -eq 1) -and
-        ($Enabled)
+        ($_.Enabled)
     } | ForEach-Object {
         foreach ($entry in $_.nTSecurityDescriptor.Access) {
             $Principal = New-Object System.Security.Principal.NTAccount($entry.IdentityReference)
@@ -47,6 +50,7 @@ function Find-ESC15 {
                     Name                  = $_.Name
                     DistinguishedName     = $_.DistinguishedName
                     IdentityReference     = $entry.IdentityReference
+                    IdentityReferenceSID  = $SID
                     ActiveDirectoryRights = $entry.ActiveDirectoryRights
                     Enabled               = $_.Enabled
                     EnabledOn             = $_.EnabledOn
@@ -64,21 +68,28 @@ More info:
   - https://msrc.microsoft.com/update-guide/vulnerability/CVE-2024-49019
 
 "@
-                            Fix                   = @"
-# Option 1: Manual Remediation
-# Step 1: Identify if this template is Enabled on any CA.
-# Step 2: If Enabled, identify if this template has recently been used to generate a certificate.
-# Step 3a: If recently used, either restrict enrollment scope or convert to the template to Schema V2.
-# Step 3b: If not recently used, unpublish the template from all CAs.
+                    Fix                   = @"
+<#
+    Option 1: Manual Remediation
+    Step 1: Identify if this template is Enabled on any CA.
+    Step 2: If Enabled, identify if this template has recently been used to generate a certificate.
+    Step 3a: If recently used, either restrict enrollment scope or convert to the template to Schema V2.
+    Step 3b: If not recently used, unpublish the template from all CAs.
+#>
 
-# Option 2: Scripted Remediation
-# Step 1: Open an elevated Powershell session as an AD or PKI Admin
-# Step 2: Run Unpublish-SchemaV1Templates.ps1
+<#
+    Option 2: Scripted Remediation
+    Step 1: Open an elevated Powershell session as an AD or PKI Admin
+    Step 2: Run Unpublish-SchemaV1Templates.ps1
+#>
 Invoke-WebRequest -Uri https://bit.ly/Fix-ESC15 | Invoke-Expression
 
 "@
                     Revert                = '[TODO]'
                     Technique             = 'ESC15/EKUwu'
+                }
+                if ($SkipRisk -eq $false) {
+                    Set-RiskRating -ADCSObjects $ADCSObjects -Issue $Issue -SafeUsers $SafeUsers -UnsafeUsers $UnsafeUsers
                 }
                 $Issue
             }

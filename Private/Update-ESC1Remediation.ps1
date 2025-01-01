@@ -25,13 +25,14 @@ function Update-ESC1Remediation {
     .EXAMPLE
         $Targets = Get-Target
         $ADCSObjects = Get-ADCSObject -Targets $Targets
-        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-9$|-526$|-527$|S-1-5-10'
+        $SafeUsers = '-512$|-519$|-544$|-18$|-517$|-500$|-516$|-521$|-498$|-9$|-526$|-527$|S-1-5-10'
         $ESC1Issues = Find-ESC1 -ADCSObjects $ADCSObjects -SafeUsers $SafeUsers
         foreach ($issue in $ESC1Issues) { Update-ESC1Remediation -Issue $Issue }
     #>
     [CmdletBinding()]
     param(
-        $Issue
+        [Parameter(Mandatory)]
+        [object]$Issue
     )
 
     $Header = "`n[!] ESC1 Issue detected in $($Issue.Name)"
@@ -83,21 +84,25 @@ Get-ADObject `$Object | Set-ADObject -Replace @{'msPKI-Enrollment-Flag' = 0}
         }
     } elseif ($Enroll -eq 'n') {
         $Issue.Fix = @"
-# 1. Open the Certification Templates Console: certtmpl.msc
-# 2. Double-click the $($Issue.Name) template to open its Properties page.
-# 3. Select the Security tab.
-# 4. Select the entry for $($Issue.IdentityReference).
-# 5. Uncheck the "Enroll" and/or "Autoenroll" boxes.
-# 6. Click OK.
+<#
+    1. Open the Certification Templates Console: certtmpl.msc
+    2. Double-click the $($Issue.Name) template to open its Properties page.
+    3. Select the Security tab.
+    4. Select the entry for $($Issue.IdentityReference).
+    5. Uncheck the "Enroll" and/or "Autoenroll" boxes.
+    6. Click OK.
+#>
 "@
 
         $Issue.Revert = @"
-# 1. Open the Certification Templates Console: certtmpl.msc
-# 2. Double-click the $($Issue.Name) template to open its Properties page.
-# 3. Select the Security tab.
-# 4. Select the entry for $($Issue.IdentityReference).
-# 5. Check the "Enroll" and/or "Autoenroll" boxes depending on your specific needs.
-# 6. Click OK.
+<#
+    1. Open the Certification Templates Console: certtmpl.msc
+    2. Double-click the $($Issue.Name) template to open its Properties page.
+    3. Select the Security tab.
+    4. Select the entry for $($Issue.IdentityReference).
+    5. Check the "Enroll" and/or "Autoenroll" boxes depending on your specific needs.
+    6. Click OK.
+#>
 "@
-    }
+    } # end if ($Enroll -eq 'y')/elseif ($Enroll -eq 'n')
 }
