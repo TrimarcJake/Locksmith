@@ -1,8 +1,11 @@
+# Create external help ZIP and CAB files for PowerShell.
+# Requires Windows to use the makecab command.
+---
 name: 📚 Create External Help
 
 on:
   pull_request:
-  #push:
+  # push:
   workflow_dispatch:
 
 jobs:

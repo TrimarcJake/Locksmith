@@ -10,6 +10,7 @@
      '--'                  '--'                  '--'
 ```
 A small tool built to find and fix common misconfigurations in Active Directory Certificate Services.
+
 <!-- locksmith-badges-start -->
 ![GitHub release](https://img.shields.io/github/v/release/trimarcjake/locksmith?sort=semver)
 ![GitHub top language](https://img.shields.io/github/languages/top/trimarcjake/locksmith)
