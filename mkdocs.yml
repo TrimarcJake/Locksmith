@@ -7,7 +7,7 @@
 # https://github.com/mkdocs/mkdocs/blob/master/mkdocs.yml
 # https://squidfunk.github.io/mkdocs-material/creating-your-site/
 # mkdocs.yml
-
+---
 site_name: "Locksmith"
 site_url: "https://dotdot.horse/Locksmith"
 repo_url: "https://github.com/TrimarcJake/Locksmith"
@@ -40,8 +40,8 @@ docs_dir: "docs"
 # extra_templates:
 # extra:
 
-#plugins:
-#  - social
+# #plugins:
+# #  - social
 
 theme:
   name: material
@@ -83,9 +83,10 @@ theme:
     - navigation.top
     - toc.follow
     - toc.integrate
-  # favicon:
-  # icon:
-  #   repo:
-  # font:
-  #   text: Work Sans
-  # logo:
+
+  #  favicon:
+  #  icon:
+  #    repo:
+  #  font:
+  #    text: Work Sans
+  #  logo:
