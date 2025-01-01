@@ -21,14 +21,12 @@ All types of contributions are encouraged and valued. See the [Table of Contents
       - [How Do I Submit a Good Bug Report?](#how-do-i-submit-a-good-bug-report)
     - [Suggesting Enhancements](#suggesting-enhancements)
 
-
 ## Code of Conduct
 
 This project and everyone participating in it is governed by the
 [Locksmith Code of Conduct](https://github.com/TrimarcJake/Locksmith/blob/main/CODE_OF_CONDUCT.md).
 By participating, you are expected to uphold this code. Please report unacceptable behavior
-to coc@dotdot.horse.
-
+to <coc@dotdot.horse>.
 
 ## I Have a Question
 
@@ -38,7 +36,7 @@ Before you ask a question, it is best to search for existing [Issues](https://gi
 
 If you then still feel the need to ask a question and need clarification, we recommend the following:
 
-- Open an [Issue](https://github.com/TrimarcJake/Locksmith/issues/new).
+- Open an [Issue](https://github.com/TrimarcJake/Locksmith/issues/new/choose).
 - Provide as much context as you can about what you're running into.
 - Provide project and platform versions (Windows Version, Powershell Version, Windows Terminal, etc.), depending on what seems relevant.
 
