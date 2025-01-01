@@ -109,7 +109,7 @@ Invoke-Locksmith
 .\Invoke-Locksmith.ps1
 ```
 
-Example Output for Mode 0: <https://github.com/TrimarcJake/Locksmith/blob/main/examples/Mode0.md>
+Example Output for Mode 0: <https://github.com/TrimarcJake/Locksmith/blob/main//Docs/Examples/Mode0.md>
 
 &nbsp;
 &nbsp;
@@ -129,7 +129,7 @@ Invoke-Locksmith -Mode 1
 .\Invoke-Locksmith.ps1 -Mode 1
 ```
 
-Example Output for Mode 1: <https://github.com/TrimarcJake/Locksmith/blob/main/examples/Mode1.md>
+Example Output for Mode 1: <https://github.com/TrimarcJake/Locksmith/blob/main/Docs/Examples/Mode1.md>
 
 &nbsp;
 &nbsp;
@@ -149,7 +149,7 @@ Invoke-Locksmith -Mode 2
 .\Invoke-Locksmith.ps1 -Mode 2
 ```
 
-Example Output for Mode 2: <https://github.com/TrimarcJake/Locksmith/blob/main/examples/Mode2.md>
+Example Output for Mode 2: <https://github.com/TrimarcJake/Locksmith/blob/main/Docs/Examples/Mode2.md>
 
 &nbsp;
 &nbsp;
@@ -169,7 +169,7 @@ Invoke-Locksmith -Mode 3
 .\Invoke-Locksmith.ps1 -Mode 3
 ```
 
-Example Output for Mode 3: <https://github.com/TrimarcJake/Locksmith/blob/main/examples/Mode3.md>
+Example Output for Mode 3: <https://github.com/TrimarcJake/Locksmith/blob/main/Docs/Examples/Mode3.md>
 
 &nbsp;
 &nbsp;
@@ -189,7 +189,7 @@ Invoke-Locksmith -Mode 4
 .\Invoke-Locksmith.ps1 -Mode 4
 ```
 
-Example Output for Mode 4: <https://github.com/TrimarcJake/Locksmith/blob/main/examples/Mode4.md>
+Example Output for Mode 4: <https://github.com/TrimarcJake/Locksmith/blob/main/Docs/Examples/Mode4.md>
 
 &nbsp;
 &nbsp;
