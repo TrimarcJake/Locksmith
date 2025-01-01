@@ -1,91 +1,94 @@
 # MegaLinter GitHub Action configuration file
 # More info at https://megalinter.io
 ---
-  name: MegaLinter
+name: MegaLinter
 
-  # Trigger mega-linter at every pull request.
-  on:
-    pull_request:
-      # branches:
-        # - main
-        # - testing
-        # - dev
-        # - experimental
+# Trigger mega-linter at every pull request.
+on:
+  pull_request:
+    # branches:
+      # - main
+      # - testing
+  # push:
+    # branches:
+      # - main
+      # - testing
+  # workflow_dispatch:
 
-  concurrency:
-    group: ${{ github.ref }}-${{ github.workflow }}
-    cancel-in-progress: true
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
 
-  jobs:
-    megalinter:
-      name: MegaLinter
-      runs-on: ubuntu-latest
-      permissions:
-        contents: read
-        issues: read
-        pull-requests: read
+jobs:
+  megalinter:
+    name: MegaLinter
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
 
-      steps:
+    steps:
 
-        # Git Checkout
-        - name: Checkout Code
-          uses: actions/checkout@v4
-          with:
-            token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+      # Git Checkout
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
 
-            # If you use VALIDATE_ALL_CODEBASE = true, you can remove this line to improve performance
-            # fetch-depth: 0
+          # If you use VALIDATE_ALL_CODEBASE = true, you can remove this line to improve performance
+          # fetch-depth: 0
 
-        # MegaLinter
-        - name: MegaLinter
+      # MegaLinter
+      - name: MegaLinter
 
-          # You can override MegaLinter flavor used to have faster performances
-          # More info at https://megalinter.io/flavors/
-          # The dotnet flavor includes PowerShell, MD, YAML, JSON, spelling, and more.
-          uses: oxsecurity/megalinter/flavors/dotnet@v8.3.0
+        # You can override MegaLinter flavor used to have faster performances
+        # More info at https://megalinter.io/flavors/
+        # The dotnet flavor includes PowerShell, MD, YAML, JSON, spelling, and more.
+        uses: oxsecurity/megalinter/flavors/dotnet@v8.3.0
 
-          id: ml
+        id: ml
 
-          # All available variables are described in documentation
-          # https://megalinter.io/configuration/
-          env:
+        # All available variables are described in documentation
+        # https://megalinter.io/configuration/
+        env:
 
-            # Validates all source when push on main, else just the git diff with
-            # main. Override with true if you always want to lint all sources
-            #
-            # To validate the entire codebase, set to:
-            VALIDATE_ALL_CODEBASE: true
-            #
-            # To validate only diff with main, set to:
-            # VALIDATE_ALL_CODEBASE: >-
-            #   ${{
-            #     github.event_name == 'push' &&
-            #     contains(fromJSON('["refs/heads/main", "refs/heads/master"]'), github.ref)
-            #   }}
-            # VALIDATE_ALL_CODEBASE: >-
-            #   ${{
-            #     github.event_name == 'push' &&
-            #     contains(fromJSON('["refs/heads/main", "refs/heads/master"]'), github.ref)
-            #   }}
+          # Validates all source when push on main, else just the git diff with
+          # main. Override with true if you always want to lint all sources
+          #
+          # To validate the entire codebase, set to:
+          VALIDATE_ALL_CODEBASE: true
+          #
+          # To validate only diff with main, set to:
+          # VALIDATE_ALL_CODEBASE: >-
+          #   ${{
+          #     github.event_name == 'push' &&
+          #     contains(fromJSON('["refs/heads/main", "refs/heads/master"]'), github.ref)
+          #   }}
+          # VALIDATE_ALL_CODEBASE: >-
+          #   ${{
+          #     github.event_name == 'push' &&
+          #     contains(fromJSON('["refs/heads/main", "refs/heads/master"]'), github.ref)
+          #   }}
 
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-            # ADD YOUR CUSTOM ENV VARIABLES HERE OR DEFINE THEM IN A FILE
-            # .mega-linter.yml AT THE ROOT OF YOUR REPOSITORY
+          # ADD YOUR CUSTOM ENV VARIABLES HERE OR DEFINE THEM IN A FILE
+          # .mega-linter.yml AT THE ROOT OF YOUR REPOSITORY
 
-            # Uncomment to disable copy-paste and spell checks
-            # DISABLE: COPYPASTE,SPELL
-            DISABLE_ERRORS: true
-            DISABLE_LINTERS: EDITORCONFIG_EDITORCONFIG_CHECKER, SPELL_LYCHEE
-            # Uncomment DISABLE_ERRORS_LINTERS if you want to turn errors back on selectively.
-            # DISABLE_ERRORS_LINTERS: REPOSITORY_DEVSKIM,REPOSITORY_KICS,REPOSITORY_CHECKOV,POWERSHELL_POWERSHELL,SPELL_CSPELL
+          # Uncomment to disable copy-paste and spell checks
+          # DISABLE: COPYPASTE,SPELL
+          DISABLE_ERRORS: true
+          DISABLE_LINTERS: EDITORCONFIG_EDITORCONFIG_CHECKER, SPELL_LYCHEE
+          # Uncomment DISABLE_ERRORS_LINTERS if you want to turn errors back on selectively.
+          # DISABLE_ERRORS_LINTERS: REPOSITORY_DEVSKIM,REPOSITORY_KICS,REPOSITORY_CHECKOV,POWERSHELL_POWERSHELL,SPELL_CSPELL
 
-        # Upload MegaLinter artifacts
-        - name: Archive production artifacts
-          uses: actions/upload-artifact@v4
-          if: success() || failure()
-          with:
-            name: MegaLinter reports
-            path: |
-              megalinter-reports
-              mega-linter.log
+      # Upload MegaLinter artifacts
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: MegaLinter reports
+          path: |
+            megalinter-reports
+            mega-linter.log
